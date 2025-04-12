@@ -1,6 +1,12 @@
 #pragma once
 
+#include "WidthBalancer.h"
+#include "TiltEQ.h"
+#include "ModDelay.h"
+
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_dsp/juce_dsp.h>
+
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
@@ -42,7 +48,22 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    float getCurrentTilt() const { return tiltEQ.getTilt(); }
+    float getCurrentDelayMs() const { return modDelay.getDelayTimeMs(); }
+    float getCurrentWidth() const { return widthBalancer.getWidth(); }
+    
+    juce::AudioProcessorValueTreeState parameters;
+
 private:
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    // New DSP modules
+    WidthBalancer widthBalancer;
+    TiltEQ tiltEQ;
+    ModDelay modDelay;
+
+    juce::dsp::ProcessSpec spec;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };

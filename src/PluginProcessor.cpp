@@ -10,7 +10,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ), parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
 {
 }
 
@@ -86,9 +86,22 @@ void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String
 //==============================================================================
 void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
-    juce::ignoreUnused (sampleRate, samplesPerBlock);
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+
+    widthBalancer.prepare(spec);
+    tiltEQ.prepare(spec);
+    modDelay.prepare(spec);
+
+    // Set initial parameters (can later be controlled by sliders)
+    widthBalancer.setWidth(1.0f);     // Normal width
+    widthBalancer.setMidGain(0.0f);
+    widthBalancer.setSideGain(0.0f);
+
+    tiltEQ.setTilt(0.0f);             // Neutral
+
+    modDelay.setParams(10.0f, 0.5f, 0.3f); // Delay = 10ms, mod depth = 0.5ms, mod rate = 0.3Hz
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -124,33 +137,25 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
-    juce::ignoreUnused (midiMessages);
-
+    juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+
+    // Ensure unused output channels are cleared (only if applicable)
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-        juce::ignoreUnused (channelData);
-        // ..do something to the data...
-    }
+    // Wrap the buffer for DSP processing
+    juce::dsp::AudioBlock<float> block(buffer);
+
+    // Process each effect in order
+    // Apply modulated delay for stereo widening or chorus-like effect
+    modDelay.process(block);
+    // Apply tilt EQ for spectral balance
+    tiltEQ.process(block);
+    // Adjust mid-side balance based on user-defined width
+    widthBalancer.process(block);
 }
 
 //==============================================================================
@@ -167,17 +172,28 @@ juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 //==============================================================================
 void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-    juce::ignoreUnused (destData);
+    juce::MemoryOutputStream stream(destData, true);
+    parameters.state.writeToStream(stream);
 }
 
 void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-    juce::ignoreUnused (data, sizeInBytes);
+    juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
+
+    if (tree.isValid())
+        parameters.state = tree;
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "bitReduction", "Bit Reduction", juce::NormalisableRange<float>(1.0f, 32.0f), 16.0f));
+
+    // You can add more parameters here
+
+    return { params.begin(), params.end() };
 }
 
 //==============================================================================
