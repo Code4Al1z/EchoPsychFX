@@ -15,6 +15,7 @@ public:
 private:
     juce::dsp::IIR::Filter<float> lowShelf, highShelf;
     float tilt = 0.0f;
+    double sampleRate = 44100.0;
     bool needsUpdate = true;
     void updateFilters();
 

@@ -11,6 +11,27 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
 
     WidthBalancerGUI();
 
+    TiltEQGUI();
+
+}
+
+void AudioPluginAudioProcessorEditor::TiltEQGUI()
+{
+    tiltSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    tiltSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    tiltSlider.setRange(-1.0, 1.0, 0.01);
+    tiltSlider.setSkewFactorFromMidPoint(0.0); // "Flat" in the center
+    addAndMakeVisible(tiltSlider);
+
+    tiltTextBox.setText("Tilt");
+    tiltTextBox.setReadOnly(true);
+    tiltTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    tiltTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
+    tiltTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    tiltTextBox.setJustification(juce::Justification::centred); // Center text
+    addAndMakeVisible(tiltTextBox);
+
+    tiltAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "tiltEQ", tiltSlider);
 }
 
 void AudioPluginAudioProcessorEditor::WidthBalancerGUI()
@@ -76,8 +97,19 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::resized()
 {
+    WidthBalancerResized();
+
+    // TiltEQ
+    tiltSlider.setBounds(210, 100, knobSize, knobSize);
+
+    tiltTextBox.setBounds(tiltSlider.getX() + tiltSlider.getWidth() / 3, tiltSlider.getY() + 150, 60, 20);
+    tiltTextBox.toFront(false);
+}
+
+void AudioPluginAudioProcessorEditor::WidthBalancerResized()
+{
     // Place the widthSlider in the left corner, 200x200 pixels
-    widthSlider.setBounds(0, 0, 200, 200);
+    widthSlider.setBounds(0, 0, knobSize, knobSize);
 
     // Place the midSideSlider next to it on the right
     midSideSlider.setBounds(210, 40, getWidth() - 220, 20); // 10 pixels gap, 20 pixels high

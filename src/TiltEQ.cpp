@@ -1,8 +1,7 @@
 #include "TiltEQ.h"
 
 void TiltEQ::prepare(const juce::dsp::ProcessSpec& spec) {
-    lowShelf.reset();
-    highShelf.reset();
+    sampleRate = spec.sampleRate;
     lowShelf.prepare(spec);
     highShelf.prepare(spec);
     updateFilters();
@@ -14,16 +13,21 @@ void TiltEQ::setTilt(float tiltAmount) {
 }
 
 void TiltEQ::updateFilters() {
-    float gain = tilt * 6.0f; // tilt range ±6dB
-    auto lowCoeffs = juce::dsp::IIR::Coefficients<float>::makeLowShelf(44100.0, 200.0, 0.707f, juce::Decibels::decibelsToGain(gain));
-    auto highCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighShelf(44100.0, 4000.0, 0.707f, juce::Decibels::decibelsToGain(-gain));
-    *lowShelf.coefficients = *lowCoeffs;
-    *highShelf.coefficients = *highCoeffs;
+    float gain = tilt * 6.0f; // ±6 dB tilt
+    auto low = juce::dsp::IIR::Coefficients<float>::makeLowShelf(sampleRate, 200.0f, 0.707f, juce::Decibels::decibelsToGain(gain));
+    auto high = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, 4000.0f, 0.707f, juce::Decibels::decibelsToGain(-gain));
+
+    *lowShelf.coefficients = *low;
+    *highShelf.coefficients = *high;
+
     needsUpdate = false;
 }
 
 void TiltEQ::process(juce::dsp::AudioBlock<float>& block) {
-    if (needsUpdate) updateFilters();
-    lowShelf.process(juce::dsp::ProcessContextReplacing<float>(block));
-    highShelf.process(juce::dsp::ProcessContextReplacing<float>(block));
+    if (needsUpdate)
+        updateFilters();
+
+    juce::dsp::ProcessContextReplacing<float> context(block);
+    lowShelf.process(context);
+    highShelf.process(context);
 }

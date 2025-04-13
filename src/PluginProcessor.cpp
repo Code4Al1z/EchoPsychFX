@@ -160,6 +160,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Apply modulated delay for stereo widening or chorus-like effect
     modDelay.process(block);
     // Apply tilt EQ for spectral balance
+    float tilt = *parameters.getRawParameterValue("tiltEQ");
+    tiltEQ.setTilt(tilt);
     tiltEQ.process(block);
     // Adjust mid-side balance based on user-defined width
     widthBalancer.process(block);
@@ -195,14 +197,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "width", "Width", juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f), 1.0f));
+    // WidthBalancer
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("width", "Width", juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f), 1.0f));
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "midSideBalance", "Mid/Side Balance", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("midSideBalance", "Mid/Side Balance", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
 
-    params.push_back(std::make_unique<juce::AudioParameterBool>(
-        "mono", "Mono", false));
+    params.push_back(std::make_unique<juce::AudioParameterBool>("mono", "Mono", false));
+
+    // TiltEQ
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("tiltEQ", "Tilt EQ", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
+
 
     return { params.begin(), params.end() };
 }
