@@ -3,16 +3,18 @@
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
-     : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                       ), parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
+    : AudioProcessor(BusesProperties()
+#if ! JucePlugin_IsMidiEffect
+#if ! JucePlugin_IsSynth
+        .withInput("Input", juce::AudioChannelSet::stereo(), true)
+#endif
+        .withOutput("Output", juce::AudioChannelSet::stereo(), true)
+#endif
+    ),
+    parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
 {
 }
+
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
@@ -94,11 +96,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     tiltEQ.prepare(spec);
     modDelay.prepare(spec);
 
-    
+    dryBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
 
-    tiltEQ.setTilt(0.0f);             // Neutral
-
-    modDelay.setParams(10.0f, 0.5f, 0.3f); // Delay = 10ms, mod depth = 0.5ms, mod rate = 0.3Hz
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -131,41 +130,67 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
   #endif
 }
 
-void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
-                                              juce::MidiBuffer& midiMessages)
+void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
+    juce::MidiBuffer& midiMessages)
 {
-    /*
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
-    // Ensure unused output channels are cleared (only if applicable)
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
-    */
 
-    // Wrap the buffer for DSP processing
+    // Wrap the input buffer for processing
     juce::dsp::AudioBlock<float> block(buffer);
 
+    // Copy the input buffer to the dry buffer for later wet/dry mixing
+    dryBuffer.makeCopyOf(buffer, true); // true = clear extra space if needed
+    juce::dsp::AudioBlock<float> dryBlock(dryBuffer);
+
+    // Read parameters from ValueTreeState
+    float delayTime = *parameters.getRawParameterValue("delayTime");
+    float depth = *parameters.getRawParameterValue("modDepth");
+    float rate = *parameters.getRawParameterValue("modRate");
+    float feedback = *parameters.getRawParameterValue("feedback");
+    float mixValue = *parameters.getRawParameterValue("mix");
+
+    // Set delay parameters
+    modDelay.setParams(delayTime, depth, rate, feedback, mixValue);
+
+    // Apply modulated delay effect
+    modDelay.process(block);
+
+    // Wet/dry mix using the dryBlock
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* dry = dryBlock.getChannelPointer(ch);
+        auto* wet = block.getChannelPointer(ch);
+
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            wet[i] = wet[i] * mixValue + dry[i] * (1.0f - mixValue);
+    }
+
+    // Apply tilt EQ
+    float tilt = *parameters.getRawParameterValue("tiltEQ");
+    tiltEQ.setTilt(tilt);
+    tiltEQ.process(block);
+
+    // Apply stereo width and mono/stereo processing
     float width = *parameters.getRawParameterValue("width");
     float balance = *parameters.getRawParameterValue("midSideBalance");
-    bool mono = parameters.getRawParameterValue("mono")->load(); // for thread safety
+    bool mono = parameters.getRawParameterValue("mono")->load();
 
     widthBalancer.setWidth(width);
     widthBalancer.setMidSideBalance(balance);
     widthBalancer.setMono(mono);
 
-    // Process each effect in order
-    // Apply modulated delay for stereo widening or chorus-like effect
-    modDelay.process(block);
-    // Apply tilt EQ for spectral balance
-    float tilt = *parameters.getRawParameterValue("tiltEQ");
-    tiltEQ.setTilt(tilt);
-    tiltEQ.process(block);
-    // Adjust mid-side balance based on user-defined width
+    // Final stage
     widthBalancer.process(block);
 }
+
+
 
 //==============================================================================
 bool AudioPluginAudioProcessor::hasEditor() const
@@ -199,14 +224,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 
     // WidthBalancer
     params.push_back(std::make_unique<juce::AudioParameterFloat>("width", "Width", juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f), 1.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>("midSideBalance", "Mid/Side Balance", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterBool>("mono", "Mono", false));
 
     // TiltEQ
     params.push_back(std::make_unique<juce::AudioParameterFloat>("tiltEQ", "Tilt EQ", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
 
+	// ModDelay
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("delayTime", "Delay Time", 1.0f, 2000.0f, 400.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("feedback", "Feedback", 0.0f, 0.95f, 0.4f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("mix", "Mix", 0.0f, 1.0f, 0.5f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("modDepth", "Mod Depth", 0.0f, 10.0f, 2.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("modRate", "Mod Rate", 0.01f, 10.0f, 0.25f));
+    params.push_back(std::make_unique<juce::AudioParameterBool>("sync", "Sync", false));
 
     return { params.begin(), params.end() };
 }

@@ -62,6 +62,9 @@ private:
     TiltEQ tiltEQ;
     ModDelay modDelay;
 
+    juce::dsp::AudioBlock<float> tempBlock;
+    juce::AudioBuffer<float> dryBuffer;
+
     juce::dsp::ProcessSpec spec;
 
     //==============================================================================
