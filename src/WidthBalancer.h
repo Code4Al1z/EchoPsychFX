@@ -3,22 +3,25 @@
 
 class WidthBalancer {
 public:
-	WidthBalancer() = default;
-	~WidthBalancer() = default;
+    WidthBalancer() = default;
+    ~WidthBalancer() = default;
+
     void prepare(const juce::dsp::ProcessSpec& spec);
 
-    void setWidth(float width);       // 0 = mono, 1 = normal, 2 = extra wide
-    void setMidGain(float gainDb);    // -12 to +12 dB
-    void setSideGain(float gainDb);   // -12 to +12 dB
+    void setWidth(float width);           // 0 = mono, 1 = normal, 2 = wide
+    void setMidSideBalance(float balance); // -1 (only side) to 1 (only mid)
+    void setMono(bool shouldMono);        // collapse to mono
 
     void process(juce::dsp::AudioBlock<float>& block);
 
     float getWidth() const { return width; }
+    float getMidSideBalance() const { return midSideBalance; }
+    bool isMono() const { return mono; }
 
 private:
-    float width = 1.0f;
-    float midGain = 0.0f;
-    float sideGain = 0.0f;
+    float width = 1.0f;               // 0 to 2
+    float midSideBalance = 0.0f;      // -1 to 1
+    bool mono = false;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WidthBalancer)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WidthBalancer)
 };

@@ -7,13 +7,45 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (400, 300);
+    setSize (600, 600);
 
-    bitReductionSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    bitReductionSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    addAndMakeVisible(bitReductionSlider);
+    WidthBalancerGUI();
 
-    bitReductionAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "bitReduction", bitReductionSlider);
+}
+
+void AudioPluginAudioProcessorEditor::WidthBalancerGUI()
+{
+    widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(widthSlider);
+
+    midSideSlider.setSliderStyle(juce::Slider::LinearBar);
+    midSideSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(midSideSlider);
+
+    monoToggle.setButtonText("Mono");
+    addAndMakeVisible(monoToggle);
+
+    widthTextBox.setText("Width");
+    widthTextBox.setReadOnly(true); // Prevent the user from editing the text
+    widthTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    widthTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
+    widthTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black); // Set the text color
+    widthTextBox.setJustification(juce::Justification::centred); // Center text
+    addAndMakeVisible(widthTextBox);
+
+    midSideTextBox.setText("Mid-Side");
+    midSideTextBox.setReadOnly(true);
+    midSideTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    midSideTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
+    midSideTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    addAndMakeVisible(midSideTextBox);
+
+    widthAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "width", widthSlider);
+
+    midSideAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "midSideBalance", midSideSlider);
+
+    monoAttachment = new juce::AudioProcessorValueTreeState::ButtonAttachment(processorRef.parameters, "mono", monoToggle);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -24,26 +56,41 @@ AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    //g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 
-    g.fillAll(juce::Colours::black);
+    //g.fillAll(juce::Colours::black);
     g.setColour(juce::Colours::white);
     g.setFont(15.0f);
 
     auto& processor = processorRef;
 
-    g.drawText("Tilt: " + juce::String(processor.getCurrentTilt(), 2),
+    /*g.drawText("Tilt: " + juce::String(processor.getCurrentTilt(), 2),
         10, 20, getWidth(), 20, juce::Justification::left);
 
     g.drawText("Delay: " + juce::String(processor.getCurrentDelayMs(), 1) + " ms",
         10, 40, getWidth(), 20, juce::Justification::left);
 
     g.drawText("Stereo Width: " + juce::String(processor.getCurrentWidth(), 2),
-        10, 60, getWidth(), 20, juce::Justification::left);
+        10, 60, getWidth(), 20, juce::Justification::left);*/
 }
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-    bitReductionSlider.setBounds(10, 10, getWidth() - 20, 30);
+    // Place the widthSlider in the left corner, 200x200 pixels
+    widthSlider.setBounds(0, 0, 200, 200);
+
+    // Place the midSideSlider next to it on the right
+    midSideSlider.setBounds(210, 40, getWidth() - 220, 20); // 10 pixels gap, 20 pixels high
+
+    // Place the monoToggle below the midSideSlider
+    monoToggle.setBounds(210, 70, getWidth() - 220, 50); // 10 pixels gap, 50 pixels high
+
+    // Position the text boxes
+    widthTextBox.setBounds(widthSlider.getX() + widthSlider.getWidth() / 3, widthSlider.getY() + 150, 60, 20);
+    midSideTextBox.setBounds(midSideSlider.getX(), midSideSlider.getY() - 20, 80, 20);
+
+    // Make sure the text boxes are in front of the sliders.
+    widthTextBox.toFront(false);
+    midSideTextBox.toFront(false);
 
 }

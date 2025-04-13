@@ -94,10 +94,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     tiltEQ.prepare(spec);
     modDelay.prepare(spec);
 
-    // Set initial parameters (can later be controlled by sliders)
-    widthBalancer.setWidth(1.0f);     // Normal width
-    widthBalancer.setMidGain(0.0f);
-    widthBalancer.setSideGain(0.0f);
+    
 
     tiltEQ.setTilt(0.0f);             // Neutral
 
@@ -137,6 +134,7 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
+    /*
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
@@ -145,9 +143,18 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
+    */
 
     // Wrap the buffer for DSP processing
     juce::dsp::AudioBlock<float> block(buffer);
+
+    float width = *parameters.getRawParameterValue("width");
+    float balance = *parameters.getRawParameterValue("midSideBalance");
+    bool mono = parameters.getRawParameterValue("mono")->load(); // for thread safety
+
+    widthBalancer.setWidth(width);
+    widthBalancer.setMidSideBalance(balance);
+    widthBalancer.setMono(mono);
 
     // Process each effect in order
     // Apply modulated delay for stereo widening or chorus-like effect
@@ -189,9 +196,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "bitReduction", "Bit Reduction", juce::NormalisableRange<float>(1.0f, 32.0f), 16.0f));
+        "width", "Width", juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f), 1.0f));
 
-    // You can add more parameters here
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "midSideBalance", "Mid/Side Balance", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        "mono", "Mono", false));
 
     return { params.begin(), params.end() };
 }
