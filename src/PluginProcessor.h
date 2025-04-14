@@ -48,10 +48,6 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    float getCurrentTilt() const { return tiltEQ.getTilt(); }
-    float getCurrentDelayMs() const { return modDelay.getDelayTimeMs(); }
-    float getCurrentWidth() const { return widthBalancer.getWidth(); }
-    
     juce::AudioProcessorValueTreeState parameters;
 
 private:
