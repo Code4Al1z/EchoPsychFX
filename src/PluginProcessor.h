@@ -17,12 +17,12 @@ public:
     ~AudioPluginAudioProcessor() override;
 
     //==============================================================================
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+    bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     using AudioProcessor::processBlock;
 
     //==============================================================================
@@ -40,23 +40,23 @@ public:
     //==============================================================================
     int getNumPrograms() override;
     int getCurrentProgram() override;
-    void setCurrentProgram (int index) override;
-    const juce::String getProgramName (int index) override;
-    void changeProgramName (int index, const juce::String& newName) override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String& newName) override;
 
     //==============================================================================
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState parameters;
-
-private:
-    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     // New DSP modules
     WidthBalancer widthBalancer;
     TiltEQ tiltEQ;
     ModDelay modDelay;
+
+private:
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     juce::dsp::AudioBlock<float> tempBlock;
     juce::AudioBuffer<float> dryBuffer;
@@ -64,5 +64,5 @@ private:
     juce::dsp::ProcessSpec spec;
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 };

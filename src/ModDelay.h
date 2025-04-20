@@ -1,14 +1,31 @@
 #pragma once
+#include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
 
 class ModDelay {
 public:
+
+    enum class ModulationType
+    {
+        Sine,
+        Triangle,
+        Square,
+        SawtoothUp,
+        SawtoothDown
+        // Add more waveforms as needed
+    };
+
+
     ModDelay() = default;
     ~ModDelay() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
-    void setParams(float delayMs, float modDepth, float modRateHz, float feedback, float mix);
+    void setParams(float delayMs, float depth, float rateHz, float feedbackL, float feedbackR, float mix);
     void process(juce::dsp::AudioBlock<float>& block);
+    void setModulationType(ModulationType newType);
+    ModulationType getModulationType() const { return modulationType; }
+
+    ModulationType modulationType; // Explicit declaration here
 
 private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayL;
@@ -22,9 +39,11 @@ private:
     juce::LinearSmoothedValue<float> delayMs;
     juce::LinearSmoothedValue<float> modDepth;
     juce::LinearSmoothedValue<float> modRateHz;
-    juce::LinearSmoothedValue<float> feedback;
+    juce::LinearSmoothedValue<float> feedbackL;
+    juce::LinearSmoothedValue<float> feedbackR;
     juce::LinearSmoothedValue<float> mix;
 
+    float calculateModulation(float rateHz, float depth, float currentPhase);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelay)
 };

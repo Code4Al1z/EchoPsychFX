@@ -1,16 +1,18 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "ModDelay.h" // Include ModDelay header
 
 //==============================================================================
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
+    public juce::ComboBox::Listener
 {
 public:
-    explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
+    explicit AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor&);
     ~AudioPluginAudioProcessorEditor() override;
 
     //==============================================================================
-    void paint (juce::Graphics&) override;
+    void paint(juce::Graphics&) override;
     void resized() override;
 
     void TiltEQResized();
@@ -19,7 +21,6 @@ public:
     void ModDelayGUI();
     void TiltEQGUI();
     void ModDelayResized();
-
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -49,13 +50,15 @@ private:
     //==============================================================================
 
     // ModDelay GUI
-    juce::Slider delayTimeSlider, feedbackSlider, mixSlider, modDepthSlider, modRateSlider;
-    juce::ToggleButton syncToggle;
+    juce::Slider delayTimeSlider, feedbackLSlider, feedbackRSlider, mixSlider, modDepthSlider, modRateSlider;
+    juce::ComboBox modulationTypeComboBox; // New combo box for modulation type
 
-    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> delayAttachment, feedbackAttachment, mixAttachment, depthAttachment, rateAttachment;
-    juce::ScopedPointer<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> delayAttachment, feedbackLAttachment, feedbackRAttachment, mixAttachment, depthAttachment, rateAttachment;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment; // Attachment for combo box
 
-	juce::TextEditor delayTimeTextBox, feedbackTextBox, mixTextBox, modDepthTextBox, modRateTextBox;
+    juce::TextEditor delayTimeTextBox, feedbackLTextBox, feedbackRTextBox, mixTextBox, modDepthTextBox, modRateTextBox;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessorEditor)
+    void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override; // Correct callback
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };

@@ -11,8 +11,11 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
     ),
-    parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
+    parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
+    modDelay() // Initialize the ModDelay object
 {
+    // Optionally set the initial modulation type
+    modDelay.setModulationType(ModDelay::ModulationType::Sine);
 }
 
 
@@ -28,29 +31,29 @@ const juce::String AudioPluginAudioProcessor::getName() const
 
 bool AudioPluginAudioProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool AudioPluginAudioProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool AudioPluginAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 double AudioPluginAudioProcessor::getTailLengthSeconds() const
@@ -60,8 +63,8 @@ double AudioPluginAudioProcessor::getTailLengthSeconds() const
 
 int AudioPluginAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1; // NB: some hosts don't cope very well if you tell them there are 0 programs,
+    // so this should be at least 1, even if you're not really implementing programs.
 }
 
 int AudioPluginAudioProcessor::getCurrentProgram()
@@ -69,24 +72,24 @@ int AudioPluginAudioProcessor::getCurrentProgram()
     return 0;
 }
 
-void AudioPluginAudioProcessor::setCurrentProgram (int index)
+void AudioPluginAudioProcessor::setCurrentProgram(int index)
 {
-    juce::ignoreUnused (index);
+    juce::ignoreUnused(index);
 }
 
-const juce::String AudioPluginAudioProcessor::getProgramName (int index)
+const juce::String AudioPluginAudioProcessor::getProgramName(int index)
 {
-    juce::ignoreUnused (index);
+    juce::ignoreUnused(index);
     return {};
 }
 
-void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void AudioPluginAudioProcessor::changeProgramName(int index, const juce::String& newName)
 {
-    juce::ignoreUnused (index, newName);
+    juce::ignoreUnused(index, newName);
 }
 
 //==============================================================================
-void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = samplesPerBlock;
@@ -94,10 +97,9 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 
     widthBalancer.prepare(spec);
     tiltEQ.prepare(spec);
-    modDelay.prepare(spec);
+    modDelay.prepare(spec); // Initialize the ModDelay with the processing spec
 
     dryBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
-
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -106,28 +108,28 @@ void AudioPluginAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
+#if JucePlugin_IsMidiEffect
+    juce::ignoreUnused(layouts);
     return true;
-  #else
+#else
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
     // Some plugin hosts, such as certain GarageBand versions, will only
     // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
+#if ! JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
-   #endif
+#endif
 
     return true;
-  #endif
+#endif
 }
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
@@ -153,11 +155,17 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float delayTime = *parameters.getRawParameterValue("delayTime");
     float depth = *parameters.getRawParameterValue("modDepth");
     float rate = *parameters.getRawParameterValue("modRate");
-    float feedback = *parameters.getRawParameterValue("feedback");
+    float feedbackL = *parameters.getRawParameterValue("feedbackL"); // Get separate feedback values
+    float feedbackR = *parameters.getRawParameterValue("feedbackR");
     float mixValue = *parameters.getRawParameterValue("mix");
+    int modulationTypeValue = parameters.state.getProperty("modulationType"); // Get the raw value
+
+    // Convert the raw value to the enum
+    ModDelay::ModulationType modulationType = static_cast<ModDelay::ModulationType>(modulationTypeValue);
+    modDelay.setModulationType(modulationType);
 
     // Set delay parameters
-    modDelay.setParams(delayTime, depth, rate, feedback, mixValue);
+    modDelay.setParams(delayTime, depth, rate, feedbackL, feedbackR, mixValue);
 
     // Apply modulated delay effect
     modDelay.process(block);
@@ -200,22 +208,29 @@ bool AudioPluginAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 {
-    return new AudioPluginAudioProcessorEditor (*this);
+    return new AudioPluginAudioProcessorEditor(*this);
 }
 
 //==============================================================================
-void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void AudioPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::MemoryOutputStream stream(destData, true);
     parameters.state.writeToStream(stream);
+    stream.writeInt((int)modDelay.modulationType); // Save the modulation type
 }
 
-void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
 
     if (tree.isValid())
+    {
         parameters.state = tree;
+        if (tree.hasProperty("modulationType"))
+        {
+            modDelay.setModulationType(static_cast<ModDelay::ModulationType>((int)tree.getProperty("modulationType")));
+        }
+    }
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
@@ -230,13 +245,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     // TiltEQ
     params.push_back(std::make_unique<juce::AudioParameterFloat>("tiltEQ", "Tilt EQ", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
 
-	// ModDelay
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("delayTime", "Delay Time", 1.0f, 2000.0f, 400.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("feedback", "Feedback", 0.0f, 0.95f, 0.4f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("mix", "Mix", 0.0f, 1.0f, 0.5f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("modDepth", "Mod Depth", 0.0f, 10.0f, 2.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("modRate", "Mod Rate", 0.01f, 10.0f, 0.25f));
-    params.push_back(std::make_unique<juce::AudioParameterBool>("sync", "Sync", false));
+    // ModDelay
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("delayTime", "Delay Time", juce::NormalisableRange<float>(1.0f, 2000.0f, 0.1f), 400.0f, "ms"));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("feedbackL", "Feedback L", juce::NormalisableRange<float>(0.0f, 0.95f), 0.4f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("feedbackR", "Feedback R", juce::NormalisableRange<float>(0.0f, 0.95f), 0.4f));
+    // The 'mix' and 'modDepth' lines are likely correct as they use NormalisableRange
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("mix", "Mix", juce::NormalisableRange<float>(0.0f, 1.0f), 0.5f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("modDepth", "Mod Depth", juce::NormalisableRange<float>(0.0f, 10.0f), 2.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("modRate", "Mod Rate", juce::NormalisableRange<float>(0.01f, 10.0f), 0.25f, "Hz"));
+    params.push_back(std::make_unique<juce::AudioParameterInt>("modulationType", "Modulation Type",
+        (int)ModDelay::ModulationType::Sine,
+        (int)ModDelay::ModulationType::SawtoothDown,
+        (int)ModDelay::ModulationType::Sine));
 
     return { params.begin(), params.end() };
 }

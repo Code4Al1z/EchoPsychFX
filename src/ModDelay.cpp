@@ -1,5 +1,6 @@
 #include "ModDelay.h"
 #include <juce_core/juce_core.h>
+#include <juce_dsp/juce_dsp.h>
 
 void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
     sampleRate = static_cast<float>(spec.sampleRate);
@@ -20,15 +21,17 @@ void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
     delayMs.reset(sampleRate, smoothingTime);
     modDepth.reset(sampleRate, smoothingTime);
     modRateHz.reset(sampleRate, smoothingTime);
-    feedback.reset(sampleRate, smoothingTime);
+    feedbackL.reset(sampleRate, smoothingTime);
+    feedbackR.reset(sampleRate, smoothingTime);
     mix.reset(sampleRate, smoothingTime);
 }
 
-void ModDelay::setParams(float dMs, float depth, float rate, float fb, float m) {
+void ModDelay::setParams(float dMs, float depth, float rate, float fbL, float fbR, float m) {
     delayMs.setTargetValue(dMs);
     modDepth.setTargetValue(depth);
     modRateHz.setTargetValue(rate);
-    feedback.setTargetValue(juce::jlimit(0.0f, 0.95f, fb));
+    feedbackL.setTargetValue(juce::jlimit(0.0f, 0.95f, fbL));
+    feedbackR.setTargetValue(juce::jlimit(0.0f, 0.95f, fbR));
     mix.setTargetValue(juce::jlimit(0.0f, 1.0f, m));
 }
 
@@ -37,29 +40,19 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
     auto* right = block.getChannelPointer(1);
     const auto numSamples = static_cast<int>(block.getNumSamples());
 
-    // Smooth parameters once per block
-    const float targetDelayMs = delayMs.getTargetValue();
-    const float targetDepth = modDepth.getTargetValue();
-    const float targetFeedback = feedback.getTargetValue();
-    const float targetMix = mix.getTargetValue();
-
-    // Apply smoothing (linear smoothing happens over time, but we just get current value once per block)
-    float currentDelayMs = delayMs.getNextValue();
-    float currentDepth = modDepth.getNextValue();
-    float currentFeedback = feedback.getNextValue();
-    float currentMix = mix.getNextValue();
-
-    // Limit modulation depth to avoid weird jumps or phasing
-    currentDepth = std::min(currentDepth, currentDelayMs * 0.5f);
-
-    // Apply gentle smoothing to modRateHz (manually - exponential smoothing)
-    const float smoothingCoeff = 0.02f; // smaller = smoother, slower
-    smoothedModRateHz += smoothingCoeff * (modRateHz.getTargetValue() - smoothedModRateHz);
-    float currentRateHz = smoothedModRateHz;
-
-    // Modulation processing
     for (int i = 0; i < numSamples; ++i) {
-        float mod = std::sin(2.0f * juce::MathConstants<float>::pi * phase) * currentDepth;
+        // Get the next smoothed parameter values for this sample
+        float currentDelayMs = delayMs.getNextValue();
+        float currentDepth = modDepth.getNextValue();
+        float currentFeedbackL = feedbackL.getNextValue();
+        float currentFeedbackR = feedbackR.getNextValue();
+        float currentMix = mix.getNextValue();
+        float currentRateHz = modRateHz.getNextValue();
+
+        currentDepth = std::min(currentDepth, currentDelayMs * 0.5f);
+
+        // Calculate modulation value based on selected waveform and phase
+        float mod = calculateModulation(currentRateHz, currentDepth, phase);
 
         float modulatedDelayL = (currentDelayMs + mod) * 0.001f * sampleRate;
         float modulatedDelayR = (currentDelayMs - mod) * 0.001f * sampleRate;
@@ -70,16 +63,38 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
         float inputL = left[i];
         float inputR = right[i];
 
-        delayL.pushSample(0, inputL + delayedL * currentFeedback);
-        delayR.pushSample(1, inputR + delayedR * currentFeedback);
+        delayL.pushSample(0, inputL + delayedL * currentFeedbackL);
+        delayR.pushSample(1, inputR + delayedR * currentFeedbackR);
 
         left[i] = inputL * (1.0f - currentMix) + delayedL * currentMix;
         right[i] = inputR * (1.0f - currentMix) + delayedR * currentMix;
 
-        // Advance phase for modulation
         phase += currentRateHz / sampleRate;
         if (phase >= 1.0f)
             phase -= 1.0f;
     }
 }
 
+void ModDelay::setModulationType(ModulationType newType)
+{
+    modulationType = newType;
+}
+
+float ModDelay::calculateModulation(float rateHz, float depth, float currentPhase)
+{
+    switch (modulationType)
+    {
+    case ModulationType::Sine:
+        return std::sin(2.0f * juce::MathConstants<float>::pi * currentPhase) * depth;
+    case ModulationType::Triangle:
+        return (2.0f * std::abs(2.0f * (currentPhase - std::floor(currentPhase + 0.5f))) - 1.0f) * depth;
+    case ModulationType::Square:
+        return (currentPhase < 0.5f ? 1.0f : -1.0f) * depth;
+    case ModulationType::SawtoothUp:
+        return (2.0f * (currentPhase - std::floor(currentPhase))) * depth - depth;
+    case ModulationType::SawtoothDown:
+        return (1.0f - 2.0f * (currentPhase - std::floor(currentPhase))) * depth - depth;
+    default:
+        return 0.0f;
+    }
+}

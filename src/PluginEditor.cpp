@@ -2,19 +2,18 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor (&p), processorRef (p)
+AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor& p)
+    : AudioProcessorEditor(&p), processorRef(p)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (800, 600);
+    setSize(800, 600);
 
     WidthBalancerGUI();
 
     TiltEQGUI();
 
     ModDelayGUI();
-
 }
 
 void AudioPluginAudioProcessorEditor::WidthBalancerGUI()
@@ -76,75 +75,89 @@ void AudioPluginAudioProcessorEditor::ModDelayGUI()
     addAndMakeVisible(delayTimeSlider);
     delayTimeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     delayTimeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    delayTimeSlider.setRange(1.0, 1000.0); // ms
     delayAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "delayTime", delayTimeSlider);
 
-    addAndMakeVisible(feedbackSlider);
-    feedbackSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    feedbackSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    feedbackSlider.setRange(0.0, 0.95);
-    feedbackAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "feedback", feedbackSlider);
+    addAndMakeVisible(feedbackLSlider);
+    feedbackLSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    feedbackLSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    feedbackLAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "feedbackL", feedbackLSlider);
+
+    addAndMakeVisible(feedbackRSlider);
+    feedbackRSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    feedbackRSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    feedbackRAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "feedbackR", feedbackRSlider);
 
     addAndMakeVisible(mixSlider);
     mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    mixSlider.setRange(0.0, 1.0);
     mixAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "mix", mixSlider);
 
     addAndMakeVisible(modDepthSlider);
     modDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     modDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    modDepthSlider.setRange(0.0, 20.0); // percent or ms depending on interpretation
     depthAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "modDepth", modDepthSlider);
 
     addAndMakeVisible(modRateSlider);
     modRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     modRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    modRateSlider.setRange(0.01, 10.0); // Hz
     rateAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "modRate", modRateSlider);
 
-    addAndMakeVisible(syncToggle);
-    syncToggle.setButtonText("Sync");
-    syncAttachment = new juce::AudioProcessorValueTreeState::ButtonAttachment(processorRef.parameters, "syncToBPM", syncToggle);
+    addAndMakeVisible(modulationTypeComboBox);
+    modulationTypeComboBox.addItem("Sine", static_cast<int>(ModDelay::ModulationType::Sine) + 1);
+    modulationTypeComboBox.addItem("Triangle", static_cast<int>(ModDelay::ModulationType::Triangle) + 1);
+    modulationTypeComboBox.addItem("Square", static_cast<int>(ModDelay::ModulationType::Square) + 1);
+    modulationTypeComboBox.addItem("Sawtooth Up", static_cast<int>(ModDelay::ModulationType::SawtoothUp) + 1);
+    modulationTypeComboBox.addItem("Sawtooth Down", static_cast<int>(ModDelay::ModulationType::SawtoothDown) + 1);
+    modulationTypeComboBox.setSelectedId(static_cast<int>(processorRef.modDelay.getModulationType()) + 1); // Set initial value
+    modulationTypeComboBox.addListener(this);
+    modulationTypeAttachment = new juce::AudioProcessorValueTreeState::ComboBoxAttachment(processorRef.parameters, "modulationType", modulationTypeComboBox);
 
-	delayTimeTextBox.setText("Delay Time");
-	delayTimeTextBox.setReadOnly(true);
-	delayTimeTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-	delayTimeTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-	delayTimeTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-	delayTimeTextBox.setJustification(juce::Justification::centred); // Center text
-	addAndMakeVisible(delayTimeTextBox);
+    delayTimeTextBox.setText("Delay Time");
+    delayTimeTextBox.setReadOnly(true);
+    delayTimeTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    delayTimeTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    delayTimeTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    delayTimeTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(delayTimeTextBox);
 
-	feedbackTextBox.setText("Feedback");
-	feedbackTextBox.setReadOnly(true);
-	feedbackTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-	feedbackTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-	feedbackTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-	feedbackTextBox.setJustification(juce::Justification::centred); // Center text
-	addAndMakeVisible(feedbackTextBox);
+    feedbackLTextBox.setText("Feedback L");
+    feedbackLTextBox.setReadOnly(true);
+    feedbackLTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    feedbackLTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    feedbackLTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    feedbackLTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(feedbackLTextBox);
 
-	mixTextBox.setText("Mix");
-	mixTextBox.setReadOnly(true);
-	mixTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-	mixTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-	mixTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-	mixTextBox.setJustification(juce::Justification::centred); // Center text
-	addAndMakeVisible(mixTextBox);
+    feedbackRTextBox.setText("Feedback R");
+    feedbackRTextBox.setReadOnly(true);
+    feedbackRTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    feedbackRTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    feedbackRTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    feedbackRTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(feedbackRTextBox);
 
-	modDepthTextBox.setText("Mod Depth");
-	modDepthTextBox.setReadOnly(true);
-	modDepthTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-	modDepthTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-	modDepthTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-	modDepthTextBox.setJustification(juce::Justification::centred); // Center text
+    mixTextBox.setText("Mix");
+    mixTextBox.setReadOnly(true);
+    mixTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    mixTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    mixTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    mixTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(mixTextBox);
+
+    modDepthTextBox.setText("Mod Depth");
+    modDepthTextBox.setReadOnly(true);
+    modDepthTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    modDepthTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    modDepthTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    modDepthTextBox.setJustification(juce::Justification::centred);
     addAndMakeVisible(modDepthTextBox);
 
     modRateTextBox.setText("Mod Rate");
     modRateTextBox.setReadOnly(true);
     modRateTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    modRateTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
+    modRateTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
     modRateTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    modRateTextBox.setJustification(juce::Justification::centred); // Center text
+    modRateTextBox.setJustification(juce::Justification::centred);
     addAndMakeVisible(modRateTextBox);
 }
 
@@ -153,10 +166,10 @@ AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 }
 
 //==============================================================================
-void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
+void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
 
     //g.fillAll(juce::Colours::black);
     g.setColour(juce::Colours::white);
@@ -209,16 +222,38 @@ void AudioPluginAudioProcessorEditor::ModDelayResized()
     int x = margin;
 
     delayTimeSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
-    feedbackSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
+    feedbackLSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
+    feedbackRSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
     mixSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
     modDepthSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
     modRateSlider.setBounds(x, 230, knobSize, knobSize);
 
-    syncToggle.setBounds(10, knobSize + 30, 100, 30);
+    modulationTypeComboBox.setBounds(10, 40 + knobSize, 150, 30); // Position the combo box
 
-	delayTimeTextBox.setBounds(delayTimeSlider.getX() + delayTimeSlider.getWidth() / 3, delayTimeSlider.getY() + 80, 70, 20);
-	feedbackTextBox.setBounds(feedbackSlider.getX() + feedbackSlider.getWidth() / 3, feedbackSlider.getY() + 80, 70, 20);
-	mixTextBox.setBounds(mixSlider.getX() + mixSlider.getWidth() / 3, mixSlider.getY() + 80, 70, 20);
-	modDepthTextBox.setBounds(modDepthSlider.getX() + modDepthSlider.getWidth() / 3, modDepthSlider.getY() + 80, 70, 20);
-	modRateTextBox.setBounds(modRateSlider.getX() + modRateSlider.getWidth() / 3, modRateSlider.getY() + 80, 70, 20);
+    delayTimeTextBox.setBounds(delayTimeSlider.getX() + delayTimeSlider.getWidth() / 3, delayTimeSlider.getY() + 80, 70, 20);
+    feedbackLTextBox.setBounds(feedbackLSlider.getX() + feedbackLSlider.getWidth() / 3, feedbackLSlider.getY() + 80, 70, 20);
+    feedbackRTextBox.setBounds(feedbackRSlider.getX() + feedbackRSlider.getWidth() / 3, feedbackRSlider.getY() + 80, 70, 20);
+    mixTextBox.setBounds(mixSlider.getX() + mixSlider.getWidth() / 3, mixSlider.getY() + 80, 70, 20);
+    modDepthTextBox.setBounds(modDepthSlider.getX() + modDepthSlider.getWidth() / 3, modDepthSlider.getY() + 80, 70, 20);
+    modRateTextBox.setBounds(modRateSlider.getX() + modRateSlider.getWidth() / 3, modRateSlider.getY() + 80, 70, 20); // Finish this line
+    modRateTextBox.toFront(false); // Ensure it's in front
+
+    delayTimeTextBox.toFront(false);
+    feedbackLTextBox.toFront(false);
+    feedbackRTextBox.toFront(false);
+    mixTextBox.toFront(false);
+    modDepthTextBox.toFront(false);
+}
+
+void AudioPluginAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
+{
+    if (comboBoxThatHasChanged == &modulationTypeComboBox)
+    {
+        if (modulationTypeComboBox.getSelectedId() > 0)
+        {
+            processorRef.parameters.getParameter("modulationType")->setValueNotifyingHost(
+                static_cast<float>(modulationTypeComboBox.getSelectedId() - 1) / static_cast<float>(static_cast<int>(ModDelay::ModulationType::SawtoothDown))
+            );
+        }
+    }
 }
