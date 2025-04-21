@@ -14,6 +14,8 @@ public:
 
     void process(juce::dsp::AudioBlock<float>& block);
 
+    void setIntensity(float newIntensity);
+
     float getWidth() const { return width; }
     float getMidSideBalance() const { return midSideBalance; }
     bool isMono() const { return mono; }
@@ -21,6 +23,7 @@ public:
 private:
     float width = 1.0f;               // 0 to 2
     float midSideBalance = 0.0f;      // -1 to 1
+	float intensity = 1.0f;           // 0 to 1, non-linearly scaled    
     bool mono = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WidthBalancer)

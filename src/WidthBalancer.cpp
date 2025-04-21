@@ -20,40 +20,45 @@ void WidthBalancer::process(juce::dsp::AudioBlock<float>& block) {
 
     auto left = block.getChannelPointer(0);
     auto right = block.getChannelPointer(1);
+    size_t numSamples = block.getNumSamples();
 
-    for (size_t i = 0; i < block.getNumSamples(); ++i) {
+    float currentWidth = width; // Could be a smoothed value
+    float currentMidSideBalance = midSideBalance; // Could be a smoothed value
+    float currentIntensity = intensity; // 0.0 to 1.0, non-linearly scaled
+
+    // Apply intensity scaling (example - adjust curve as needed)
+    float scaledWidth = 1.0f + (currentWidth - 1.0f) * currentIntensity * 0.5f; // Subtle width change
+    float scaledMidSideBalance = currentMidSideBalance * currentIntensity * 0.75f; // More subtle balance
+
+    for (size_t i = 0; i < numSamples; ++i) {
         float l = left[i];
         float r = right[i];
 
         float mid = (l + r) * 0.5f;
         float side = (l - r) * 0.5f;
 
-        // Apply width
-        side *= width;
+        // Apply width (subtly)
+        side *= scaledWidth;
 
-        // Apply mid/side balance
-        float midScale = 1.0f - std::abs(midSideBalance);
-        float sideScale = 1.0f - midScale;
+        // Apply mid/side balance (subtly) - Using constant power for natural feel
+        float balanceAngle = scaledMidSideBalance * juce::MathConstants<float>::pi / 2.0f;
+        float midGain = std::cos(balanceAngle);
+        float sideGain = std::sin(balanceAngle);
 
-        if (midSideBalance > 0.0f) {
-            // Favor mid
-            mid *= 1.0f;
-            side *= 1.0f - midSideBalance;
-        }
-        else {
-            // Favor side
-            mid *= 1.0f + midSideBalance;
-            side *= 1.0f;
-        }
+        mid *= midGain;
+        side *= sideGain;
 
         if (mono) {
-            float monoSignal = mid;
-            left[i] = monoSignal;
-            right[i] = monoSignal;
+            left[i] = mid;
+            right[i] = mid;
         }
         else {
             left[i] = mid + side;
             right[i] = mid - side;
         }
     }
+}
+
+void WidthBalancer::setIntensity(float newIntensity) {
+    intensity = juce::jlimit(0.0f, 1.0f, newIntensity);
 }
