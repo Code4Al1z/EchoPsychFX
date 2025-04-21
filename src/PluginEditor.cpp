@@ -14,6 +14,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     TiltEQGUI();
 
     ModDelayGUI();
+
+    SpatialFXGUI();
 }
 
 void AudioPluginAudioProcessorEditor::WidthBalancerGUI()
@@ -176,6 +178,64 @@ void AudioPluginAudioProcessorEditor::ModDelayGUI()
 
 }
 
+
+void AudioPluginAudioProcessorEditor::SpatialFXGUI()
+{
+    // Phase Offset Left
+    phaseOffsetLeftSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    phaseOffsetLeftSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(phaseOffsetLeftSlider);
+    phaseOffsetLeftTextBox.setText("Phase L Offset");
+    phaseOffsetLeftTextBox.setReadOnly(true);
+    phaseOffsetLeftTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    phaseOffsetLeftTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    phaseOffsetLeftTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    phaseOffsetLeftTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(phaseOffsetLeftTextBox);
+    phaseOffsetLeftAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "phaseOffsetL", phaseOffsetLeftSlider);
+
+    // Phase Offset Right
+    phaseOffsetRightSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    phaseOffsetRightSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(phaseOffsetRightSlider);
+    phaseOffsetRightTextBox.setText("Phase R Offset");
+    phaseOffsetRightTextBox.setReadOnly(true);
+    phaseOffsetRightTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    phaseOffsetRightTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    phaseOffsetRightTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    phaseOffsetRightTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(phaseOffsetRightTextBox);
+    phaseOffsetRightAttachment = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "phaseOffsetR", phaseOffsetRightSlider);
+
+    // Modulation Rate (SFX)
+    modulationRateSliderSFX.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    modulationRateSliderSFX.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    modulationRateSliderSFX.setRange(0.0f, 10.0f, 0.01f); // Example range
+    addAndMakeVisible(modulationRateSliderSFX);
+    modulationRateTextBoxSFX.setText("SFX Rate");
+    modulationRateTextBoxSFX.setReadOnly(true);
+    modulationRateTextBoxSFX.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    modulationRateTextBoxSFX.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    modulationRateTextBoxSFX.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    modulationRateTextBoxSFX.setJustification(juce::Justification::centred);
+    addAndMakeVisible(modulationRateTextBoxSFX);
+    modulationRateAttachmentSFX = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "sfxModRate", modulationRateSliderSFX);
+
+    // Modulation Depth (SFX)
+    modulationDepthSliderSFX.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    modulationDepthSliderSFX.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    modulationDepthSliderSFX.setRange(0.0f, 1.0f, 0.01f); // Example range
+    addAndMakeVisible(modulationDepthSliderSFX);
+    modulationDepthTextBoxSFX.setText("SFX Depth");
+    modulationDepthTextBoxSFX.setReadOnly(true);
+    modulationDepthTextBoxSFX.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    modulationDepthTextBoxSFX.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    modulationDepthTextBoxSFX.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    modulationDepthTextBoxSFX.setJustification(juce::Justification::centred);
+    addAndMakeVisible(modulationDepthTextBoxSFX);
+    modulationDepthAttachmentSFX = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "sfxModDepth", modulationDepthSliderSFX);
+}
+
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 {
 }
@@ -201,6 +261,8 @@ void AudioPluginAudioProcessorEditor::resized()
     TiltEQResized();
 
     ModDelayResized();
+
+    SpatialFXResized();
 }
 
 void AudioPluginAudioProcessorEditor::WidthBalancerResized()
@@ -247,12 +309,12 @@ void AudioPluginAudioProcessorEditor::ModDelayResized()
 
     modulationTypeComboBox.setBounds(10, knobSize + 70, 150, 30); // Position the combo box
 
-    delayTimeTextBox.setBounds(delayTimeSlider.getX() + delayTimeSlider.getWidth() / 3, delayTimeSlider.getY() + 80, 70, 20);
-    feedbackLTextBox.setBounds(feedbackLSlider.getX() + feedbackLSlider.getWidth() / 3, feedbackLSlider.getY() + 80, 70, 20);
-    feedbackRTextBox.setBounds(feedbackRSlider.getX() + feedbackRSlider.getWidth() / 3, feedbackRSlider.getY() + 80, 70, 20);
-    mixTextBox.setBounds(mixSlider.getX() + mixSlider.getWidth() / 3, mixSlider.getY() + 80, 70, 20);
-    modDepthTextBox.setBounds(modDepthSlider.getX() + modDepthSlider.getWidth() / 3, modDepthSlider.getY() + 80, 70, 20);
-    modRateTextBox.setBounds(modRateSlider.getX() + modRateSlider.getWidth() / 3, modRateSlider.getY() + 80, 70, 20); // Finish this line
+    delayTimeTextBox.setBounds(delayTimeSlider.getX() + delayTimeSlider.getWidth() / 10, delayTimeSlider.getY() + 80, 100, 20);
+    feedbackLTextBox.setBounds(feedbackLSlider.getX() + feedbackLSlider.getWidth() / 10, feedbackLSlider.getY() + 80, 100, 20);
+    feedbackRTextBox.setBounds(feedbackRSlider.getX() + feedbackRSlider.getWidth() / 10, feedbackRSlider.getY() + 80, 100, 20);
+    mixTextBox.setBounds(mixSlider.getX() + mixSlider.getWidth() / 10, mixSlider.getY() + 80, 70, 20);
+    modDepthTextBox.setBounds(modDepthSlider.getX() + modDepthSlider.getWidth() / 10, modDepthSlider.getY() + 80, 100, 20);
+    modRateTextBox.setBounds(modRateSlider.getX() + modRateSlider.getWidth() / 10, modRateSlider.getY() + 80, 100, 20); // Finish this line
     modRateTextBox.toFront(false); // Ensure it's in front
 
     delayTimeTextBox.toFront(false);
@@ -260,6 +322,32 @@ void AudioPluginAudioProcessorEditor::ModDelayResized()
     feedbackRTextBox.toFront(false);
     mixTextBox.toFront(false);
     modDepthTextBox.toFront(false);
+}
+
+void AudioPluginAudioProcessorEditor::SpatialFXResized()
+{
+    int startY = 470; // Example starting Y position
+    int x = margin;
+    int textBoxYOffset = 80;
+
+    phaseOffsetLeftSlider.setBounds(x, startY, knobSize, knobSize);
+    phaseOffsetLeftTextBox.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
+    phaseOffsetLeftTextBox.toFront(false);
+    x += knobSize + margin;
+
+    phaseOffsetRightSlider.setBounds(x, startY, knobSize, knobSize);
+    phaseOffsetRightTextBox.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
+    phaseOffsetRightTextBox.toFront(false);
+    x += knobSize + margin;
+
+    modulationRateSliderSFX.setBounds(x, startY, knobSize, knobSize);
+    modulationRateTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
+    modulationRateTextBoxSFX.toFront(false);
+    x += knobSize + margin;
+
+    modulationDepthSliderSFX.setBounds(x, startY, knobSize, knobSize);
+    modulationDepthTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
+    modulationDepthTextBoxSFX.toFront(false);
 }
 
 void AudioPluginAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)

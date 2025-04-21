@@ -12,7 +12,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #endif
     ),
     parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
-    modDelay() // Initialize the ModDelay object
+    modDelay(), // Initialize the ModDelay object
+    spatialFX()
 {
     // Optionally set the initial modulation type
     modDelay.setModulationType(ModDelay::ModulationType::Sine);
@@ -97,7 +98,8 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
 
     widthBalancer.prepare(spec);
     tiltEQ.prepare(spec);
-    modDelay.prepare(spec); // Initialize the ModDelay with the processing spec
+    modDelay.prepare(spec);
+    spatialFX.prepare(spec);
 
     dryBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
 }
@@ -159,6 +161,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float feedbackR = *parameters.getRawParameterValue("feedbackR");
     float mixValue = *parameters.getRawParameterValue("mix");
     int modulationTypeValue = parameters.state.getProperty("modulationType"); // Get the raw value
+    float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL"); // **[HIGHLIGHT] Get Phase Offset L**
+    float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR"); // **[HIGHLIGHT] Get Phase Offset R**
+    float sfxModRate = *parameters.getRawParameterValue("sfxModRate");   // **[HIGHLIGHT] Get SFX Mod Rate**
+    float sfxModDepth = *parameters.getRawParameterValue("sfxModDepth");  // **[HIGHLIGHT] Get SFX Mod Depth**
+
 
     // Convert the raw value to the enum
     ModDelay::ModulationType modulationType = static_cast<ModDelay::ModulationType>(modulationTypeValue);
@@ -196,6 +203,12 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     // Final stage
     widthBalancer.process(block);
+
+    // **[HIGHLIGHT] Apply SpatialFX processing**
+    spatialFX.setPhaseOffset(phaseOffsetL, phaseOffsetR);
+    spatialFX.setModulationRate(sfxModRate);
+    spatialFX.setModulationDepth(sfxModDepth);
+    spatialFX.process(block);
 }
 
 
@@ -231,6 +244,21 @@ void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeIn
             modDelay.setModulationType(static_cast<ModDelay::ModulationType>((int)tree.getProperty("modulationType")));
         }
     }
+}
+
+void AudioPluginAudioProcessor::setPhaseOffsetParameter(float leftOffset, float rightOffset)
+{
+    spatialFX.setPhaseOffset(leftOffset, rightOffset);
+}
+
+void AudioPluginAudioProcessor::setModulationRateParameter(float rate)
+{
+    spatialFX.setModulationRate(rate);
+}
+
+void AudioPluginAudioProcessor::setModulationDepthParameter(float depth)
+{
+    spatialFX.setModulationDepth(depth);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
@@ -340,6 +368,43 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         (int)ModDelay::ModulationType::Sine));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>("sync", "Sync", false));
+
+    // **[HIGHLIGHT] SpatialFX Parameters**
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "phaseOffsetL", 1 },
+        "Phase L Offset",
+        juce::NormalisableRange<float>(-0.1f, 0.1f, 0.001f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "phaseOffsetR", 1 },
+        "Phase R Offset",
+        juce::NormalisableRange<float>(-0.1f, 0.1f, 0.001f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxModRate", 1 },
+        "SFX Rate",
+        juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
+        0.1f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxModDepth", 1 },
+        "SFX Depth",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
 
     return { params.begin(), params.end() };
 }

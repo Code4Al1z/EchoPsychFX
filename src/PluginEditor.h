@@ -1,7 +1,8 @@
 #pragma once
 
 #include "PluginProcessor.h"
-#include "ModDelay.h" // Include ModDelay header
+#include "ModDelay.h"
+#include "SpatialFX.h"
 
 //==============================================================================
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
@@ -21,6 +22,8 @@ public:
     void ModDelayGUI();
     void TiltEQGUI();
     void ModDelayResized();
+    void SpatialFXGUI();
+    void SpatialFXResized();
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -64,6 +67,18 @@ private:
     juce::ScopedPointer<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
 
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override; // Correct callback
+
+
+    //==============================================================================
+    // SpatialFX GUI
+    juce::Slider phaseOffsetLeftSlider, phaseOffsetRightSlider, modulationRateSliderSFX, modulationDepthSliderSFX;
+    juce::TextEditor phaseOffsetLeftTextBox, phaseOffsetRightTextBox, modulationRateTextBoxSFX, modulationDepthTextBoxSFX;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> phaseOffsetLeftAttachment;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> phaseOffsetRightAttachment;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> modulationRateAttachmentSFX;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> modulationDepthAttachmentSFX;
+    //==============================================================================
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };
