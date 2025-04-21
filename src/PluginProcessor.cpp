@@ -237,29 +237,113 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
+    // Helper lambdas
+    auto floatToString2dp = [](float value, int) {
+        return juce::String(value, 2); // show 2 decimals
+        };
+    auto stringToFloat = [](const juce::String& text) {
+        return text.getFloatValue(); // parse from string
+        };
+
     // WidthBalancer
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("width", "Width", juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f), 1.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("midSideBalance", "Mid/Side Balance", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "width", 1 },
+        "Width",
+        juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f),
+        1.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "midSideBalance", 1 },
+        "Mid/Side Balance",
+        juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
     params.push_back(std::make_unique<juce::AudioParameterBool>("mono", "Mono", false));
 
     // TiltEQ
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("tiltEQ", "Tilt EQ", juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "tiltEQ", 1 },
+        "Tilt EQ",
+        juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
 
     // ModDelay
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("delayTime", "Delay Time", juce::NormalisableRange<float>(1.0f, 2000.0f, 0.1f), 400.0f, "ms"));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("feedbackL", "Feedback L", juce::NormalisableRange<float>(0.0f, 0.95f), 0.4f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("feedbackR", "Feedback R", juce::NormalisableRange<float>(0.0f, 0.95f), 0.4f));
-    // The 'mix' and 'modDepth' lines are likely correct as they use NormalisableRange
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("mix", "Mix", juce::NormalisableRange<float>(0.0f, 1.0f), 0.5f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("modDepth", "Mod Depth", juce::NormalisableRange<float>(0.0f, 10.0f), 2.0f));
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("modRate", "Mod Rate", juce::NormalisableRange<float>(0.01f, 10.0f), 0.25f, "Hz"));
-    params.push_back(std::make_unique<juce::AudioParameterInt>("modulationType", "Modulation Type",
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "delayTime", 1 },
+        "Delay Time",
+        juce::NormalisableRange<float>(1.0f, 2000.0f, 0.1f),
+        400.0f,
+        juce::AudioParameterFloatAttributes()
+        .withLabel("ms")
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "feedbackL", 1 },
+        "Feedback L",
+        juce::NormalisableRange<float>(0.0f, 0.95f),
+        0.4f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "feedbackR", 1 },
+        "Feedback R",
+        juce::NormalisableRange<float>(0.0f, 0.95f),
+        0.4f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "mix", 1 },
+        "Mix",
+        juce::NormalisableRange<float>(0.0f, 1.0f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "modDepth", 1 },
+        "Mod Depth",
+        juce::NormalisableRange<float>(0.0f, 10.0f),
+        2.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "modRate", 1 },
+        "Mod Rate",
+        juce::NormalisableRange<float>(0.01f, 10.0f),
+        0.25f,
+        juce::AudioParameterFloatAttributes()
+        .withLabel("Hz")
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterInt>(
+        "modulationType", "Modulation Type",
         (int)ModDelay::ModulationType::Sine,
         (int)ModDelay::ModulationType::SawtoothDown,
         (int)ModDelay::ModulationType::Sine));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>("sync", "Sync", false));
+
     return { params.begin(), params.end() };
 }
+
 
 //==============================================================================
 // This creates new instances of the plugin..

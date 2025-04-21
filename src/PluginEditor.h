@@ -58,6 +58,11 @@ private:
 
     juce::TextEditor delayTimeTextBox, feedbackLTextBox, feedbackRTextBox, mixTextBox, modDepthTextBox, modRateTextBox;
 
+    juce::TextEditor modulationTypeTextBox;
+    juce::ToggleButton syncToggle;
+
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
+
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override; // Correct callback
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)

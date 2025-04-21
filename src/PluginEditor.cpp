@@ -159,6 +159,21 @@ void AudioPluginAudioProcessorEditor::ModDelayGUI()
     modRateTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
     modRateTextBox.setJustification(juce::Justification::centred);
     addAndMakeVisible(modRateTextBox);
+
+    // Modulation Type Label
+    modulationTypeTextBox.setText("Mod Type");
+    modulationTypeTextBox.setReadOnly(true);
+    modulationTypeTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    modulationTypeTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    modulationTypeTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    modulationTypeTextBox.setJustification(juce::Justification::centred);
+    addAndMakeVisible(modulationTypeTextBox);
+
+    // Sync Toggle
+    syncToggle.setButtonText("Sync");
+    addAndMakeVisible(syncToggle);
+    syncAttachment = new juce::AudioProcessorValueTreeState::ButtonAttachment(processorRef.parameters, "sync", syncToggle);
+
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -228,7 +243,9 @@ void AudioPluginAudioProcessorEditor::ModDelayResized()
     modDepthSlider.setBounds(x, 230, knobSize, knobSize); x += knobSize + margin;
     modRateSlider.setBounds(x, 230, knobSize, knobSize);
 
-    modulationTypeComboBox.setBounds(10, 40 + knobSize, 150, 30); // Position the combo box
+    syncToggle.setBounds(10, knobSize + 30, 100, 30);
+
+    modulationTypeComboBox.setBounds(10, knobSize + 70, 150, 30); // Position the combo box
 
     delayTimeTextBox.setBounds(delayTimeSlider.getX() + delayTimeSlider.getWidth() / 3, delayTimeSlider.getY() + 80, 70, 20);
     feedbackLTextBox.setBounds(feedbackLSlider.getX() + feedbackLSlider.getWidth() / 3, feedbackLSlider.getY() + 80, 70, 20);

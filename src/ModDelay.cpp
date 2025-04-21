@@ -15,8 +15,7 @@ void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
 
     phase = 0.0f;
 
-    // Set smoothing time (50 ms = 0.05 seconds)
-    constexpr double smoothingTime = 0.05;
+    constexpr double smoothingTime = 0.05; // 50 ms smoothing
 
     delayMs.reset(sampleRate, smoothingTime);
     modDepth.reset(sampleRate, smoothingTime);
@@ -40,18 +39,28 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
     auto* right = block.getChannelPointer(1);
     const auto numSamples = static_cast<int>(block.getNumSamples());
 
+    float currentRateHz = modRateHz.getNextValue(); // Smooth once per block (optional smoothing inside loop below)
+
     for (int i = 0; i < numSamples; ++i) {
-        // Get the next smoothed parameter values for this sample
+        // Uncomment this if you want to optimize CPU:
+         if (i % 32 == 0)
+             currentRateHz = modRateHz.getNextValue();
+
         float currentDelayMs = delayMs.getNextValue();
         float currentDepth = modDepth.getNextValue();
         float currentFeedbackL = feedbackL.getNextValue();
         float currentFeedbackR = feedbackR.getNextValue();
         float currentMix = mix.getNextValue();
-        float currentRateHz = modRateHz.getNextValue();
 
-        currentDepth = std::min(currentDepth, currentDelayMs * 0.5f);
+        // Clamp minimum delay time for safety
+        currentDelayMs = std::max(currentDelayMs, 5.0f);
 
-        // Calculate modulation value based on selected waveform and phase
+        // Smart safety mechanism: limit depth so modulation doesn't push delay below 5ms or too far
+        float safeDepth = currentDelayMs - 5.0f;                          // Avoid going below 5ms
+        float maxAllowedDepth = currentDelayMs * 0.4f;                   // Max swing is ±40% of delay
+        currentDepth = std::min(currentDepth, std::min(safeDepth, maxAllowedDepth));
+
+        // Modulation value based on current phase and selected waveform
         float mod = calculateModulation(currentRateHz, currentDepth, phase);
 
         float modulatedDelayL = (currentDelayMs + mod) * 0.001f * sampleRate;
