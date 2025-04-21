@@ -5,31 +5,36 @@
 
 class SpatialFX {
 public:
-    SpatialFX() = default;
+    SpatialFX();
     ~SpatialFX() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
-    void process(juce::dsp::AudioBlock<float>& block);
+    void reset();
 
-    // Parameters to control the spatial effects
-    void setPhaseOffset(float leftOffset, float rightOffset);
-    void setModulationRate(float rateHz);
-    void setModulationDepth(float depth);
+    void setPhaseOffsetLeft(float seconds);
+    void setPhaseOffsetRight(float seconds);
+    void setModulationRate(float hz);
+    void setModulationDepth(float seconds);
+    void setWetDryMix(float mix); // 0.0 = dry, 1.0 = wet
+
+    void process(juce::dsp::AudioBlock<float>& block);
 
 private:
     double sampleRate = 44100.0;
+    const float maxDelaySeconds = 0.05f; // 50ms
+    const int maxDelaySamples = static_cast<int>(maxDelaySeconds * 48000);
+    const double smoothingTime = 0.05; // 50 ms smoothing
 
-    // Example: For a simple static phase offset
-    float currentPhaseOffsetLeft = 0.0f;
-    float currentPhaseOffsetRight = 0.0f;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineLeft{ maxDelaySamples };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineRight{ maxDelaySamples };
 
-    // Example: For a modulated phase effect (using a sine oscillator)
     juce::dsp::Oscillator<float> lfoLeft;
     juce::dsp::Oscillator<float> lfoRight;
-    float modulationRate = 0.1f;
-    float modulationDepth = 0.0f;
-    float phaseLeft = 0.0f;
-    float phaseRight = juce::MathConstants<float>::pi / 4.0f; // Initial phase difference
+
+    juce::SmoothedValue<float> phaseOffsetLeft{ 0.0f };
+    juce::SmoothedValue<float> phaseOffsetRight{ 0.0f };
+    juce::SmoothedValue<float> modulationDepth{ 0.0f };
+    juce::SmoothedValue<float> wetDryMix{ 0.0f };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpatialFX)
 };

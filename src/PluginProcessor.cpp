@@ -205,7 +205,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     widthBalancer.process(block);
 
     // **[HIGHLIGHT] Apply SpatialFX processing**
-    spatialFX.setPhaseOffset(phaseOffsetL, phaseOffsetR);
+    spatialFX.setPhaseOffsetLeft(phaseOffsetL);
+    spatialFX.setPhaseOffsetRight(phaseOffsetR);
     spatialFX.setModulationRate(sfxModRate);
     spatialFX.setModulationDepth(sfxModDepth);
     spatialFX.process(block);
@@ -248,7 +249,8 @@ void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeIn
 
 void AudioPluginAudioProcessor::setPhaseOffsetParameter(float leftOffset, float rightOffset)
 {
-    spatialFX.setPhaseOffset(leftOffset, rightOffset);
+    spatialFX.setPhaseOffsetLeft(leftOffset);
+    spatialFX.setPhaseOffsetRight(rightOffset);
 }
 
 void AudioPluginAudioProcessor::setModulationRateParameter(float rate)
