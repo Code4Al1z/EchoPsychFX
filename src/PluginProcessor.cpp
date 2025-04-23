@@ -408,6 +408,15 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)));
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxWetDryMix", 1 },
+        "SFX Wet/Dry",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.5f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
     return { params.begin(), params.end() };
 }
 

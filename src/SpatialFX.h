@@ -21,7 +21,7 @@ public:
 
 private:
     double sampleRate = 44100.0;
-    const float maxDelaySeconds = 0.05f; // 50ms
+    const float maxDelaySeconds = 0.1f; // 100 ms
     const int maxDelaySamples = static_cast<int>(maxDelaySeconds * 48000);
     const double smoothingTime = 0.05; // 50 ms smoothing
 

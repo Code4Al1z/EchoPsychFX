@@ -71,12 +71,13 @@ private:
 
     //==============================================================================
     // SpatialFX GUI
-    juce::Slider phaseOffsetLeftSlider, phaseOffsetRightSlider, modulationRateSliderSFX, modulationDepthSliderSFX;
-    juce::TextEditor phaseOffsetLeftTextBox, phaseOffsetRightTextBox, modulationRateTextBoxSFX, modulationDepthTextBoxSFX;
+    juce::Slider phaseOffsetLeftSlider, phaseOffsetRightSlider, modulationRateSliderSFX, modulationDepthSliderSFX, wetDrySliderSFX;
+    juce::TextEditor phaseOffsetLeftTextBox, phaseOffsetRightTextBox, modulationRateTextBoxSFX, modulationDepthTextBoxSFX, wetDryTextBoxSFX;
     juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> phaseOffsetLeftAttachment;
     juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> phaseOffsetRightAttachment;
     juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> modulationRateAttachmentSFX;
     juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> modulationDepthAttachmentSFX;
+    juce::ScopedPointer<juce::AudioProcessorValueTreeState::SliderAttachment> wetDryAttachmentSFX;
     //==============================================================================
 
 

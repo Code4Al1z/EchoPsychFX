@@ -7,7 +7,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize(800, 600);
+    setSize(900, 600);
 
     WidthBalancerGUI();
 
@@ -234,6 +234,24 @@ void AudioPluginAudioProcessorEditor::SpatialFXGUI()
     modulationDepthTextBoxSFX.setJustification(juce::Justification::centred);
     addAndMakeVisible(modulationDepthTextBoxSFX);
     modulationDepthAttachmentSFX = new juce::AudioProcessorValueTreeState::SliderAttachment(processorRef.parameters, "sfxModDepth", modulationDepthSliderSFX);
+
+    // Wet/Dry Mix (SFX)
+    wetDrySliderSFX.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    wetDrySliderSFX.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    wetDrySliderSFX.setRange(0.0f, 1.0f, 0.01f);
+    addAndMakeVisible(wetDrySliderSFX);
+
+    wetDryTextBoxSFX.setText("SFX Wet/Dry");
+    wetDryTextBoxSFX.setReadOnly(true);
+    wetDryTextBoxSFX.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
+    wetDryTextBoxSFX.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
+    wetDryTextBoxSFX.setColour(juce::TextEditor::textColourId, juce::Colours::black);
+    wetDryTextBoxSFX.setJustification(juce::Justification::centred);
+    addAndMakeVisible(wetDryTextBoxSFX);
+
+    wetDryAttachmentSFX = new juce::AudioProcessorValueTreeState::SliderAttachment(
+        processorRef.parameters, "sfxWetDryMix", wetDrySliderSFX);
+
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -348,6 +366,11 @@ void AudioPluginAudioProcessorEditor::SpatialFXResized()
     modulationDepthSliderSFX.setBounds(x, startY, knobSize, knobSize);
     modulationDepthTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
     modulationDepthTextBoxSFX.toFront(false);
+    x += knobSize + margin;
+
+    wetDrySliderSFX.setBounds(x, startY, knobSize, knobSize);
+    wetDryTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
+    wetDryTextBoxSFX.toFront(false);
 }
 
 void AudioPluginAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
