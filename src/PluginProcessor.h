@@ -67,7 +67,7 @@ private:
 
     juce::dsp::AudioBlock<float> tempBlock;
     juce::AudioBuffer<float> dryBuffer;
-
+    double bpm = 120.0; // Default BPM
     juce::dsp::ProcessSpec spec;
 
     //==============================================================================

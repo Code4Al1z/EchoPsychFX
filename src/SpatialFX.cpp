@@ -26,6 +26,8 @@ void SpatialFX::prepare(const juce::dsp::ProcessSpec& spec)
     phaseOffsetRight.reset(sampleRate, smoothingTime);
     modulationDepth.reset(sampleRate, smoothingTime);
     wetDryMix.reset(sampleRate, smoothingTime);
+
+    currentBpm.store(120.0f); // default initial BPM
 }
 
 void SpatialFX::reset()
@@ -46,10 +48,31 @@ void SpatialFX::setPhaseOffsetRight(float seconds)
     phaseOffsetRight.setTargetValue(seconds);
 }
 
-void SpatialFX::setModulationRate(float hz)
+void SpatialFX::setModulationRate(float rateOrNote)
 {
-    lfoLeft.setFrequency(hz);
-    lfoRight.setFrequency(hz);
+    targetRateOrNote = rateOrNote;
+
+    updateLfoFrequencies();
+}
+
+void SpatialFX::updateLfoFrequencies()
+{
+    const bool sync = (syncParameter != nullptr) ? (*syncParameter > 0.5f) : false;
+
+    if (sync)
+    {
+        const float bpm = currentBpm.load();
+        const float beatsPerSecond = bpm / 60.0f;
+        const float syncedFrequency = beatsPerSecond / targetRateOrNote;
+
+        lfoLeft.setFrequency(syncedFrequency);
+        lfoRight.setFrequency(syncedFrequency);
+    }
+    else
+    {
+        lfoLeft.setFrequency(targetRateOrNote);
+        lfoRight.setFrequency(targetRateOrNote);
+    }
 }
 
 void SpatialFX::setModulationDepth(float seconds)
@@ -62,37 +85,59 @@ void SpatialFX::setWetDryMix(float mix)
     wetDryMix.setTargetValue(juce::jlimit(0.0f, 1.0f, mix));
 }
 
-void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
+void SpatialFX::process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead* playHead)
 {
-    auto numSamples = block.getNumSamples();
-
-    for (size_t ch = 0; ch < block.getNumChannels(); ++ch)
+    if (playHead != nullptr)
     {
-        auto* data = block.getChannelPointer(ch);
-
-        for (size_t i = 0; i < numSamples; ++i)
+        juce::AudioPlayHead::CurrentPositionInfo info;
+        if (playHead->getCurrentPosition(info) && info.isPlaying)
         {
-            float delaySeconds = (ch == 0 ? phaseOffsetLeft.getNextValue() : phaseOffsetRight.getNextValue())
-                + modulationDepth.getNextValue() * (ch == 0 ? lfoLeft.processSample(0.0f) : lfoRight.processSample(0.0f));
+            if (info.bpm > 0.0f)
+            {
+                if (std::abs(currentBpm.load() - info.bpm) > 0.01f)
+                {
+                    currentBpm.store(info.bpm);
+                    updateLfoFrequencies();
+                }
+            }
+        }
+    }
 
-            float delaySamples = juce::jlimit(0.0f, maxDelaySeconds, delaySeconds) * sampleRate;
+    const auto numSamples = block.getNumSamples();
+    const auto numChannels = block.getNumChannels();
 
-            float delayedSample = (ch == 0)
-                ? delayLineLeft.popSample(0, delaySamples)
-                : delayLineRight.popSample(0, delaySamples);
+    for (size_t i = 0; i < numSamples; ++i)
+    {
+        // Update smoothed parameters once per sample
+        const float phaseL = phaseOffsetLeft.getNextValue();
+        const float phaseR = phaseOffsetRight.getNextValue();
+        const float depth = modulationDepth.getNextValue();
+        const float mix = wetDryMix.getNextValue();
 
-            float drySample = data[i];
-            float wet = delayedSample;
-            float dry = drySample;
+        const float lfoValueLeft = lfoLeft.processSample(0.0f);
+        const float lfoValueRight = lfoRight.processSample(0.0f);
 
-            float mixed = dry * (1.0f - wetDryMix.getNextValue()) + wet * wetDryMix.getNextValue();
+        const float modulatedDelayL = juce::jlimit(0.0f, maxDelaySeconds, phaseL + depth * lfoValueLeft) * sampleRate;
+        const float modulatedDelayR = juce::jlimit(0.0f, maxDelaySeconds, phaseR + depth * lfoValueRight) * sampleRate;
+
+        for (size_t ch = 0; ch < numChannels; ++ch)
+        {
+            auto* data = block.getChannelPointer(ch);
+
+            const float drySample = data[i];
 
             if (ch == 0)
+            {
                 delayLineLeft.pushSample(0, drySample);
+                const float delayedSample = delayLineLeft.popSample(0, modulatedDelayL);
+                data[i] = drySample * (1.0f - mix) + delayedSample * mix;
+            }
             else
+            {
                 delayLineRight.pushSample(0, drySample);
-
-            data[i] = mixed;
+                const float delayedSample = delayLineRight.popSample(0, modulatedDelayR);
+                data[i] = drySample * (1.0f - mix) + delayedSample * mix;
+            }
         }
     }
 }

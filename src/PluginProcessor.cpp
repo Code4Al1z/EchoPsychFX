@@ -96,6 +96,18 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = getTotalNumOutputChannels();
 
+    if (auto* playHead = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo info;
+        if (playHead->getCurrentPosition(info))
+        {
+            if (info.bpm > 0.0)
+                bpm = info.bpm;
+            else
+                bpm = 120.0; // fallback
+        }
+    }
+
     widthBalancer.prepare(spec);
     tiltEQ.prepare(spec);
     modDelay.prepare(spec);
@@ -157,6 +169,17 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float delayTime = *parameters.getRawParameterValue("delayTime");
     float depth = *parameters.getRawParameterValue("modDepth");
     float rate = *parameters.getRawParameterValue("modRate");
+
+    bool syncEnabled = parameters.getRawParameterValue("sync")->load(); // assume you add a bool parameter "sync"
+
+    if (syncEnabled)
+    {
+        // Interpret "rate" as a musical value: 1.0 = 1/4 note, 2.0 = 1/2 note, etc.
+        // We'll convert musical note value to Hz
+        double beatsPerSecond = bpm / 60.0;
+        rate = static_cast<float>(beatsPerSecond) / rate;
+    }
+
     float feedbackL = *parameters.getRawParameterValue("feedbackL"); // Get separate feedback values
     float feedbackR = *parameters.getRawParameterValue("feedbackR");
     float mixValue = *parameters.getRawParameterValue("mix");
@@ -164,6 +187,13 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL"); // **[HIGHLIGHT] Get Phase Offset L**
     float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR"); // **[HIGHLIGHT] Get Phase Offset R**
     float sfxModRate = *parameters.getRawParameterValue("sfxModRate");   // **[HIGHLIGHT] Get SFX Mod Rate**
+
+    if (syncEnabled)
+    {
+        double beatsPerSecond = bpm / 60.0;
+        sfxModRate = static_cast<float>(beatsPerSecond) / sfxModRate;
+    }
+
     float sfxModDepth = *parameters.getRawParameterValue("sfxModDepth");  // **[HIGHLIGHT] Get SFX Mod Depth**
 
 
@@ -209,7 +239,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     spatialFX.setPhaseOffsetRight(phaseOffsetR);
     spatialFX.setModulationRate(sfxModRate);
     spatialFX.setModulationDepth(sfxModDepth);
-    spatialFX.process(block);
+    spatialFX.setWetDryMix(mixValue);
+    spatialFX.process(block, getPlayHead());
 }
 
 

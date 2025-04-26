@@ -17,13 +17,19 @@ public:
     void setModulationDepth(float seconds);
     void setWetDryMix(float mix); // 0.0 = dry, 1.0 = wet
 
-    void process(juce::dsp::AudioBlock<float>& block);
+    void process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead* playHead);
 
 private:
     double sampleRate = 44100.0;
     const float maxDelaySeconds = 0.1f; // 100 ms
     const int maxDelaySamples = static_cast<int>(maxDelaySeconds * 48000);
     const double smoothingTime = 0.05; // 50 ms smoothing
+
+    std::atomic<float>* syncParameter = nullptr;
+    std::atomic<float> currentBpm{ 120.0f };
+    float targetRateOrNote = 1.0f;
+
+    void updateLfoFrequencies();
 
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineLeft{ maxDelaySamples };
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineRight{ maxDelaySamples };
