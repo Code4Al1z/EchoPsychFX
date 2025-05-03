@@ -19,6 +19,11 @@ juce_add_plugin(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME}
     PRIVATE
+        WidthBalancerComponent.cpp
+        PerceptionModeComponent.cpp
+        SpatialFXComponent.cpp
+        ModDelayComponent.cpp
+        TiltEQComponent.cpp
         SpatialFX.cpp
         PluginEditor.cpp
         PluginProcessor.cpp)

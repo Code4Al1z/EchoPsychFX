@@ -10,14 +10,11 @@ void SpatialFX::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;
 
-    delayLineLeft.reset();
-    delayLineRight.reset();
+    delayLineLeft.setMaximumDelayInSamples(maxDelaySamples);
+    delayLineRight.setMaximumDelayInSamples(maxDelaySamples);
 
     delayLineLeft.prepare(spec);
     delayLineRight.prepare(spec);
-
-    delayLineLeft.setMaximumDelayInSamples(maxDelaySamples);
-    delayLineRight.setMaximumDelayInSamples(maxDelaySamples);
 
     lfoLeft.prepare(spec);
     lfoRight.prepare(spec);
@@ -27,7 +24,7 @@ void SpatialFX::prepare(const juce::dsp::ProcessSpec& spec)
     modulationDepth.reset(sampleRate, smoothingTime);
     wetDryMix.reset(sampleRate, smoothingTime);
 
-    currentBpm.store(120.0f); // default initial BPM
+    currentBpm.store(120.0f); // default BPM
 }
 
 void SpatialFX::reset()
@@ -51,7 +48,6 @@ void SpatialFX::setPhaseOffsetRight(float seconds)
 void SpatialFX::setModulationRate(float rateOrNote)
 {
     targetRateOrNote = rateOrNote;
-
     updateLfoFrequencies();
 }
 
@@ -90,15 +86,12 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead
     if (playHead != nullptr)
     {
         juce::AudioPlayHead::CurrentPositionInfo info;
-        if (playHead->getCurrentPosition(info) && info.isPlaying)
+        if (playHead->getCurrentPosition(info) && info.isPlaying && info.bpm > 0.0f)
         {
-            if (info.bpm > 0.0f)
+            if (std::abs(currentBpm.load() - info.bpm) > 0.01f)
             {
-                if (std::abs(currentBpm.load() - info.bpm) > 0.01f)
-                {
-                    currentBpm.store(info.bpm);
-                    updateLfoFrequencies();
-                }
+                currentBpm.store(info.bpm);
+                updateLfoFrequencies();
             }
         }
     }
@@ -106,9 +99,11 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead
     const auto numSamples = block.getNumSamples();
     const auto numChannels = block.getNumChannels();
 
+    float* leftChannel = block.getChannelPointer(0);
+    float* rightChannel = (numChannels > 1) ? block.getChannelPointer(1) : nullptr;
+
     for (size_t i = 0; i < numSamples; ++i)
     {
-        // Update smoothed parameters once per sample
         const float phaseL = phaseOffsetLeft.getNextValue();
         const float phaseR = phaseOffsetRight.getNextValue();
         const float depth = modulationDepth.getNextValue();
@@ -120,24 +115,17 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead
         const float modulatedDelayL = juce::jlimit(0.0f, maxDelaySeconds, phaseL + depth * lfoValueLeft) * sampleRate;
         const float modulatedDelayR = juce::jlimit(0.0f, maxDelaySeconds, phaseR + depth * lfoValueRight) * sampleRate;
 
-        for (size_t ch = 0; ch < numChannels; ++ch)
+        const float dryL = leftChannel[i];
+        const float delayedL = delayLineLeft.popSample(0, modulatedDelayL);
+        delayLineLeft.pushSample(0, dryL);
+        leftChannel[i] = dryL * (1.0f - mix) + delayedL * mix;
+
+        if (rightChannel != nullptr)
         {
-            auto* data = block.getChannelPointer(ch);
-
-            const float drySample = data[i];
-
-            if (ch == 0)
-            {
-                delayLineLeft.pushSample(0, drySample);
-                const float delayedSample = delayLineLeft.popSample(0, modulatedDelayL);
-                data[i] = drySample * (1.0f - mix) + delayedSample * mix;
-            }
-            else
-            {
-                delayLineRight.pushSample(0, drySample);
-                const float delayedSample = delayLineRight.popSample(0, modulatedDelayR);
-                data[i] = drySample * (1.0f - mix) + delayedSample * mix;
-            }
+            const float dryR = rightChannel[i];
+            const float delayedR = delayLineRight.popSample(0, modulatedDelayR);
+            delayLineRight.pushSample(0, dryR);
+            rightChannel[i] = dryR * (1.0f - mix) + delayedR * mix;
         }
     }
 }
