@@ -60,3 +60,18 @@ void WidthBalancerComponent::resized()
     midSideTextBox.toFront(false);
 }
 
+void WidthBalancerComponent::setWidth(float newValue)
+{
+    widthSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void WidthBalancerComponent::setMidSideBalance(float newValue)
+{
+    midSideSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void WidthBalancerComponent::setMono(bool newValue)
+{
+    monoToggle.setToggleState(newValue, juce::dontSendNotification);
+}
+

@@ -13,6 +13,8 @@ public:
 
     void resized() override;
 
+    void setTilt(float newValue);
+
 private:
 
     int knobSize = 120;

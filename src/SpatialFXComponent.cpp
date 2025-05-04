@@ -105,3 +105,28 @@ void SpatialFXComponent::resized()
     wetDryTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
 }
 
+void SpatialFXComponent::setPhaseOffsetLeft(float newValue)
+{
+	phaseOffsetLeftSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void SpatialFXComponent::setPhaseOffsetRight(float newValue)
+{
+    phaseOffsetRightSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void SpatialFXComponent::setModulationRate(float newValue)
+{
+	modulationRateSliderSFX.setValue(newValue, juce::dontSendNotification);
+}
+
+void SpatialFXComponent::setModulationDepth(float newValue)
+{
+	modulationDepthSliderSFX.setValue(newValue, juce::dontSendNotification);
+}
+
+void SpatialFXComponent::setWetDryMix(float newValue)
+{
+	wetDrySliderSFX.setValue(newValue, juce::dontSendNotification);
+}
+

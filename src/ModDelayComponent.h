@@ -4,6 +4,7 @@
 #include <memory>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "ModDelay.h"
 
 class ModDelayComponent: public juce::Component,
                          private juce::ComboBox::Listener
@@ -13,6 +14,15 @@ public:
     ~ModDelayComponent() override;
 
     void resized() override;
+
+    void setModulationType(ModDelay::ModulationType type);
+
+    void setDelayTime(float newValue);
+    void setFeedbackLeft(float newValue);
+    void setFeedbackRight(float newValue);
+    void setMix(float newValue);
+    void setModDepth(float newValue);
+    void setModRate(float newValue);
 
 private:
 
@@ -33,6 +43,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
 
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged);
+    ModDelay modDelay;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelayComponent)
 };

@@ -16,7 +16,7 @@ public:
     };
 
 
-    ModDelay() = default;
+    ModDelay() : modulationType(ModulationType::Sine) {}
     ~ModDelay() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
@@ -25,7 +25,7 @@ public:
     void setModulationType(ModulationType newType);
     ModulationType getModulationType() const { return modulationType; }
 
-    ModulationType modulationType; // Explicit declaration here
+	ModulationType modulationType = ModulationType::Sine;
 
 private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayL;

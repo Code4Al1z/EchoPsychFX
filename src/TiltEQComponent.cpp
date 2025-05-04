@@ -39,3 +39,8 @@ void TiltEQComponent::resized()
     tiltTextBox.setBounds(tiltSlider.getX(), tiltSlider.getBottom() + 6, knobSize, textBoxHeight);
 }
 
+void TiltEQComponent::setTilt(float newValue)
+{
+	tiltSlider.setValue(newValue, juce::dontSendNotification);
+}
+

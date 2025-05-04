@@ -13,6 +13,12 @@ public:
 
     void resized() override;
 
+    void setPhaseOffsetLeft(float newValue);
+    void setPhaseOffsetRight(float newValue);
+    void setModulationRate(float newValue);
+    void setModulationDepth(float newValue);
+    void setWetDryMix(float newValue);
+
 private:
 
     int knobSize = 120;

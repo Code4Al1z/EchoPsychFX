@@ -77,9 +77,11 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 
     // Modulation Type
     addAndMakeVisible(modulationTypeComboBox);
-    modulationTypeComboBox.addItem("Sine", 1);
-    modulationTypeComboBox.addItem("Triangle", 2);
-    modulationTypeComboBox.addItem("Square", 3);
+    modulationTypeComboBox.addItem("Sine", static_cast<int>(ModDelay::ModulationType::Sine));
+    modulationTypeComboBox.addItem("Triangle", static_cast<int>(ModDelay::ModulationType::Triangle));
+    modulationTypeComboBox.addItem("Square", static_cast<int>(ModDelay::ModulationType::Square));
+    modulationTypeComboBox.addItem("Sawtooth Up", static_cast<int>(ModDelay::ModulationType::SawtoothUp));
+    modulationTypeComboBox.addItem("Sawtooth Down", static_cast<int>(ModDelay::ModulationType::SawtoothDown));
     modulationTypeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state, "modulationType", modulationTypeComboBox);
 
     auto modTypeValue = state.getRawParameterValue("modulationType");
@@ -93,6 +95,14 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     addAndMakeVisible(modulationTypeTextBox);
 
     modulationTypeComboBox.addListener(this);
+
+    //modulationTypeComboBox.onChange = [this]()
+    //    {
+    //        auto selectedId = modulationTypeComboBox.getSelectedId();
+
+    //        // Pass enum to ModDelay instance
+    //        setModulationType(static_cast<ModDelay::ModulationType>(selectedId));
+    //    };
 
     // Sync Toggle
     addAndMakeVisible(syncToggle);
@@ -161,6 +171,41 @@ void ModDelayComponent::resized()
     placeKnob(knobArea, modRateSlider, modRateTextBox);
 }
 
+void ModDelayComponent::setModulationType(ModDelay::ModulationType type)
+{
+    //modDelay.setModulationType(type);
+    modulationTypeComboBox.setSelectedId(static_cast<int>(type), juce::dontSendNotification);
+}
+
+void ModDelayComponent::setDelayTime(float newValue)
+{
+    delayTimeSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void ModDelayComponent::setFeedbackLeft(float newValue)
+{
+    feedbackLSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void ModDelayComponent::setFeedbackRight(float newValue)
+{
+    feedbackRSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void ModDelayComponent::setMix(float newValue)
+{
+    mixSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void ModDelayComponent::setModDepth(float newValue)
+{
+    modDepthSlider.setValue(newValue, juce::dontSendNotification);
+}
+
+void ModDelayComponent::setModRate(float newValue)
+{
+    modRateSlider.setValue(newValue, juce::dontSendNotification);
+}
 
 
 void ModDelayComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)

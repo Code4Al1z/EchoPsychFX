@@ -13,6 +13,10 @@ public:
 
     void resized() override;
 
+    void setWidth(float newValue);
+    void setMidSideBalance(float newValue);
+    void setMono(bool newValue);
+
 private:
 
     int knobSize = 120;

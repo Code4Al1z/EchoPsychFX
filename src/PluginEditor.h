@@ -6,6 +6,7 @@
 #include "ModDelayComponent.h"
 #include "SpatialFXComponent.h"
 #include "PerceptionModeComponent.h"
+#include "PerceptionPresetManager.h"
 #include "ModDelay.h"
 #include "SpatialFX.h"
 
@@ -29,16 +30,16 @@ public:
     std::unique_ptr<TiltEQComponent> tiltEQComponent;
     std::unique_ptr<ModDelayComponent> modDelayComponent;
     std::unique_ptr<SpatialFXComponent> spatialFXComponent;
+    std::unique_ptr<PerceptionPresetManager> presetManager;
     std::unique_ptr<PerceptionModeComponent> perceptionModeComponent;
 
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
     AudioPluginAudioProcessor& processorRef;
 
     juce::ToggleButton modeToggle;
-
     juce::ComboBox modulationTypeComboBox;
+
+    //PerceptionPresetManager presetManager;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };
