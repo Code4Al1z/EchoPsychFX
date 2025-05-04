@@ -6,7 +6,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     // Delay Time
     addAndMakeVisible(delayTimeSlider);
     delayTimeSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    delayTimeSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    delayTimeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     delayAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "delayTime", delayTimeSlider);
 
     delayTimeTextBox.setText("Delay Time", false);
@@ -18,7 +18,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     // Feedback Left
     addAndMakeVisible(feedbackLSlider);
     feedbackLSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    feedbackLSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    feedbackLSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     feedbackLAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "feedbackL", feedbackLSlider);
 
     feedbackLTextBox.setText("Feedback L", false);
@@ -30,7 +30,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     // Feedback Right
     addAndMakeVisible(feedbackRSlider);
     feedbackRSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    feedbackRSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    feedbackRSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     feedbackRAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "feedbackR", feedbackRSlider);
 
     feedbackRTextBox.setText("Feedback R", false);
@@ -42,7 +42,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     // Mix
     addAndMakeVisible(mixSlider);
     mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    mixSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "mix", mixSlider);
 
     mixTextBox.setText("Mix", false);
@@ -54,7 +54,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     // Mod Depth
     addAndMakeVisible(modDepthSlider);
     modDepthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    modDepthSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    modDepthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     depthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "modDepth", modDepthSlider);
 
     modDepthTextBox.setText("Mod Depth", false);
@@ -66,7 +66,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     // Mod Rate
     addAndMakeVisible(modRateSlider);
     modRateSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    modRateSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    modRateSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     rateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "modRate", modRateSlider);
 
     modRateTextBox.setText("Mod Rate", false);
@@ -111,9 +111,27 @@ void ModDelayComponent::resized()
     int labelHeight = 24;
     int textSpacing = 6;
 
-    // If this should be placed to the right of something, reserve that space
-    int shiftRight = knobSize + margin * 2;
-    area.removeFromLeft(shiftRight); // leave space for TiltEQ
+    // --- Stack syncToggle and combo box vertically on the left ---
+    auto controlColumnWidth = knobSize / 2 + margin;
+    auto controlColumn = area.removeFromLeft(controlColumnWidth);
+
+    // Sync toggle on top
+    syncToggle.setBounds(controlColumn.removeFromTop(30));
+
+    controlColumn.removeFromTop(textSpacing);
+
+    // Combo box under it
+    modulationTypeComboBox.setBounds(controlColumn.removeFromTop(30)); // dropdown height ~30
+
+    controlColumn.removeFromTop(textSpacing);
+
+    modulationTypeTextBox.setBounds(controlColumn.removeFromTop(labelHeight));
+
+    area.removeFromLeft(margin); // spacing before knobs
+
+    // --- Now place the knob row ---
+    auto row = area.removeFromTop(knobSize + labelHeight + textSpacing + margin);
+    auto colWidth = knobSize + margin;
 
     auto placeKnob = [this, labelHeight, textSpacing](juce::Rectangle<int>& bounds, juce::Component& knob, juce::Component& label)
         {
@@ -122,35 +140,27 @@ void ModDelayComponent::resized()
             label.setBounds(bounds.removeFromTop(labelHeight));
         };
 
-    auto topRow = area.removeFromTop(knobSize + labelHeight + textSpacing + margin);
-    auto bottomRow = area.removeFromTop(knobSize + labelHeight + textSpacing);
+    juce::Rectangle<int> knobArea;
 
-    auto colWidth = knobSize + margin;
-
-    auto knobArea = topRow.removeFromLeft(colWidth);
+    knobArea = row.removeFromLeft(colWidth);
     placeKnob(knobArea, delayTimeSlider, delayTimeTextBox);
 
-    knobArea = topRow.removeFromLeft(colWidth);
+    knobArea = row.removeFromLeft(colWidth);
     placeKnob(knobArea, feedbackLSlider, feedbackLTextBox);
 
-    knobArea = topRow.removeFromLeft(colWidth);
+    knobArea = row.removeFromLeft(colWidth);
     placeKnob(knobArea, feedbackRSlider, feedbackRTextBox);
 
-    knobArea = topRow.removeFromLeft(colWidth);
+    knobArea = row.removeFromLeft(colWidth);
     placeKnob(knobArea, mixSlider, mixTextBox);
 
-    knobArea = bottomRow.removeFromLeft(colWidth);
+    knobArea = row.removeFromLeft(colWidth);
     placeKnob(knobArea, modDepthSlider, modDepthTextBox);
 
-    knobArea = bottomRow.removeFromLeft(colWidth);
+    knobArea = row.removeFromLeft(colWidth);
     placeKnob(knobArea, modRateSlider, modRateTextBox);
-
-    auto comboArea = bottomRow.removeFromLeft(knobSize + margin);
-    modulationTypeComboBox.setBounds(comboArea.removeFromTop(labelHeight));
-    modulationTypeTextBox.setBounds(comboArea.removeFromTop(labelHeight));
-
-    syncToggle.setBounds(bottomRow.removeFromLeft(knobSize / 2));
 }
+
 
 
 void ModDelayComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)

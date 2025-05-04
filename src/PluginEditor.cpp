@@ -78,27 +78,32 @@ void AudioPluginAudioProcessorEditor::resized()
     {
         auto area = bounds;
 
-        // Width balancer full-width on top
-        auto widthBalancerArea = area.removeFromTop(150);
+        // First row: WidthBalancer on the left, TiltEQ on the right
+        auto topRowHeight = 150;
+        auto topRow = area.removeFromTop(topRowHeight);
+
+        auto widthBalancerWidth = getWidth() * 0.6;
+        auto widthBalancerArea = topRow.removeFromLeft(widthBalancerWidth);
         widthBalancerComponent->setBounds(widthBalancerArea);
-        area.removeFromTop(spacing);
 
-        // Split next row horizontally between TiltEQ and ModDelay
-        auto tiltAndDelayRow = area.removeFromTop(knobSize + 24 + 10 + 10); // height for knob + label + spacing
+        topRow.removeFromLeft(spacing); // spacing between components
 
-        auto tiltWidth = knobSize + spacing * 2;
-        auto tiltEQArea = tiltAndDelayRow.removeFromLeft(tiltWidth);
+        auto tiltEQArea = topRow;
         tiltEQComponent->setBounds(tiltEQArea);
 
-        tiltAndDelayRow.removeFromLeft(spacing); // spacing between the two
+        area.removeFromTop(spacing);
 
-        auto modDelayWidth = knobSize * 6 + spacing * 6; // 6 knobs with spacing
-        auto modDelayArea = tiltAndDelayRow.removeFromLeft(modDelayWidth);
+        // Second row: ModDelay full width
+        auto modDelayHeight = knobSize + 24 + 10 + 10;
+        auto modDelayArea = area.removeFromTop(modDelayHeight);
         modDelayComponent->setBounds(modDelayArea);
 
         area.removeFromTop(spacing);
 
-        auto spatialFXArea = area.removeFromTop(150);
+        // Bottom: SpatialFX
+        auto spatialFXHeight = 150;
+        auto spatialFXArea = area.removeFromTop(spatialFXHeight);
         spatialFXComponent->setBounds(spatialFXArea);
     }
 }
+
