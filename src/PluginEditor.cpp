@@ -65,6 +65,7 @@ void AudioPluginAudioProcessorEditor::resized()
     auto bounds = getLocalBounds().reduced(10);
     int toggleHeight = 30;
     int spacing = 10;
+    int knobSize = 120;
 
     modeToggle.setBounds(bounds.removeFromTop(toggleHeight));
     bounds.removeFromTop(spacing);
@@ -75,17 +76,29 @@ void AudioPluginAudioProcessorEditor::resized()
     }
     else
     {
-        int componentHeight = (bounds.getHeight() - 3 * spacing) / 4;
+        auto area = bounds;
 
-        widthBalancerComponent->setBounds(bounds.removeFromTop(componentHeight));
-        bounds.removeFromTop(spacing);
+        // Width balancer full-width on top
+        auto widthBalancerArea = area.removeFromTop(150);
+        widthBalancerComponent->setBounds(widthBalancerArea);
+        area.removeFromTop(spacing);
 
-        tiltEQComponent->setBounds(bounds.removeFromTop(componentHeight));
-        bounds.removeFromTop(spacing);
+        // Split next row horizontally between TiltEQ and ModDelay
+        auto tiltAndDelayRow = area.removeFromTop(knobSize + 24 + 10 + 10); // height for knob + label + spacing
 
-        modDelayComponent->setBounds(bounds.removeFromTop(componentHeight));
-        bounds.removeFromTop(spacing);
+        auto tiltWidth = knobSize + spacing * 2;
+        auto tiltEQArea = tiltAndDelayRow.removeFromLeft(tiltWidth);
+        tiltEQComponent->setBounds(tiltEQArea);
 
-        spatialFXComponent->setBounds(bounds);
+        tiltAndDelayRow.removeFromLeft(spacing); // spacing between the two
+
+        auto modDelayWidth = knobSize * 6 + spacing * 6; // 6 knobs with spacing
+        auto modDelayArea = tiltAndDelayRow.removeFromLeft(modDelayWidth);
+        modDelayComponent->setBounds(modDelayArea);
+
+        area.removeFromTop(spacing);
+
+        auto spatialFXArea = area.removeFromTop(150);
+        spatialFXComponent->setBounds(spatialFXArea);
     }
 }

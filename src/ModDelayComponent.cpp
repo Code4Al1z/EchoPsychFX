@@ -107,34 +107,51 @@ ModDelayComponent::~ModDelayComponent()
 
 void ModDelayComponent::resized()
 {
+    auto area = getLocalBounds().reduced(margin);
     int labelHeight = 24;
-    int startX = margin;
+    int textSpacing = 6;
 
-    auto placeKnob = [this, labelHeight](juce::Component& knob, juce::Component& label, int x, int y) {
-        knob.setBounds(x, y, knobSize, knobSize);
-        label.setBounds(x, y + knobSize, knobSize, labelHeight);
+    // If this should be placed to the right of something, reserve that space
+    int shiftRight = knobSize + margin * 2;
+    area.removeFromLeft(shiftRight); // leave space for TiltEQ
+
+    auto placeKnob = [this, labelHeight, textSpacing](juce::Rectangle<int>& bounds, juce::Component& knob, juce::Component& label)
+        {
+            knob.setBounds(bounds.removeFromTop(knobSize));
+            bounds.removeFromTop(textSpacing);
+            label.setBounds(bounds.removeFromTop(labelHeight));
         };
 
-    int y = margin;
-    placeKnob(delayTimeSlider, delayTimeTextBox, startX, y);
-    startX += knobSize + margin;
-    placeKnob(feedbackLSlider, feedbackLTextBox, startX, y);
-    startX += knobSize + margin;
-    placeKnob(feedbackRSlider, feedbackRTextBox, startX, y);
-    startX += knobSize + margin;
-    placeKnob(mixSlider, mixTextBox, startX, y);
+    auto topRow = area.removeFromTop(knobSize + labelHeight + textSpacing + margin);
+    auto bottomRow = area.removeFromTop(knobSize + labelHeight + textSpacing);
 
-    startX = margin;
-    y += knobSize + labelHeight + margin;
-    placeKnob(modDepthSlider, modDepthTextBox, startX, y);
-    startX += knobSize + margin;
-    placeKnob(modRateSlider, modRateTextBox, startX, y);
+    auto colWidth = knobSize + margin;
 
-    modulationTypeComboBox.setBounds(startX, y, knobSize, labelHeight);
-    modulationTypeTextBox.setBounds(startX, y + labelHeight, knobSize, labelHeight);
+    auto knobArea = topRow.removeFromLeft(colWidth);
+    placeKnob(knobArea, delayTimeSlider, delayTimeTextBox);
 
-    syncToggle.setBounds(startX + knobSize + margin, y + (labelHeight / 2), knobSize / 2, labelHeight);
+    knobArea = topRow.removeFromLeft(colWidth);
+    placeKnob(knobArea, feedbackLSlider, feedbackLTextBox);
+
+    knobArea = topRow.removeFromLeft(colWidth);
+    placeKnob(knobArea, feedbackRSlider, feedbackRTextBox);
+
+    knobArea = topRow.removeFromLeft(colWidth);
+    placeKnob(knobArea, mixSlider, mixTextBox);
+
+    knobArea = bottomRow.removeFromLeft(colWidth);
+    placeKnob(knobArea, modDepthSlider, modDepthTextBox);
+
+    knobArea = bottomRow.removeFromLeft(colWidth);
+    placeKnob(knobArea, modRateSlider, modRateTextBox);
+
+    auto comboArea = bottomRow.removeFromLeft(knobSize + margin);
+    modulationTypeComboBox.setBounds(comboArea.removeFromTop(labelHeight));
+    modulationTypeTextBox.setBounds(comboArea.removeFromTop(labelHeight));
+
+    syncToggle.setBounds(bottomRow.removeFromLeft(knobSize / 2));
 }
+
 
 void ModDelayComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {

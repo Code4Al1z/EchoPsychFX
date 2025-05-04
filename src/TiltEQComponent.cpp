@@ -26,9 +26,16 @@ TiltEQComponent::~TiltEQComponent()
 
 void TiltEQComponent::resized()
 {
-    tiltSlider.setBounds(210, 100, knobSize, knobSize);
+    auto area = getLocalBounds().reduced(margin);
 
-    tiltTextBox.setBounds(tiltSlider.getX() + tiltSlider.getWidth() / 3, tiltSlider.getY() + 80, 60, 20);
-    tiltTextBox.toFront(false);
+    // Left-aligned knob
+    auto knobArea = area.removeFromLeft(knobSize);
+
+    // Position the slider
+    tiltSlider.setBounds(knobArea.removeFromTop(knobSize));
+
+    // Text label right below the slider
+    auto textBoxHeight = 24;
+    tiltTextBox.setBounds(tiltSlider.getX(), tiltSlider.getBottom() + 6, knobSize, textBoxHeight);
 }
 

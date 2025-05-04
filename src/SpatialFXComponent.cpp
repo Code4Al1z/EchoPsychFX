@@ -80,32 +80,28 @@ SpatialFXComponent::~SpatialFXComponent()
 
 void SpatialFXComponent::resized()
 {
-    int startY = 470; // Example starting Y position
-    int x = margin;
+    auto area = getLocalBounds().reduced(margin); // Get available space
+    int x = area.getX();
+    int y = area.getY();
     int textBoxYOffset = 80;
 
-    phaseOffsetLeftSlider.setBounds(x, startY, knobSize, knobSize);
-    phaseOffsetLeftTextBox.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
-    phaseOffsetLeftTextBox.toFront(false);
+    phaseOffsetLeftSlider.setBounds(x, y, knobSize, knobSize);
+    phaseOffsetLeftTextBox.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
     x += knobSize + margin;
 
-    phaseOffsetRightSlider.setBounds(x, startY, knobSize, knobSize);
-    phaseOffsetRightTextBox.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
-    phaseOffsetRightTextBox.toFront(false);
+    phaseOffsetRightSlider.setBounds(x, y, knobSize, knobSize);
+    phaseOffsetRightTextBox.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
     x += knobSize + margin;
 
-    modulationRateSliderSFX.setBounds(x, startY, knobSize, knobSize);
-    modulationRateTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
-    modulationRateTextBoxSFX.toFront(false);
+    modulationRateSliderSFX.setBounds(x, y, knobSize, knobSize);
+    modulationRateTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
     x += knobSize + margin;
 
-    modulationDepthSliderSFX.setBounds(x, startY, knobSize, knobSize);
-    modulationDepthTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
-    modulationDepthTextBoxSFX.toFront(false);
+    modulationDepthSliderSFX.setBounds(x, y, knobSize, knobSize);
+    modulationDepthTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
     x += knobSize + margin;
 
-    wetDrySliderSFX.setBounds(x, startY, knobSize, knobSize);
-    wetDryTextBoxSFX.setBounds(x + knobSize / 10, startY + textBoxYOffset, 100, 20);
-    wetDryTextBoxSFX.toFront(false);
+    wetDrySliderSFX.setBounds(x, y, knobSize, knobSize);
+    wetDryTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
 }
 

@@ -43,7 +43,7 @@ WidthBalancerComponent::~WidthBalancerComponent()
 void WidthBalancerComponent::resized()
 {
     // Place the widthSlider in the left corner, 200x200 pixels
-    widthSlider.setBounds(0, 0, knobSize, knobSize);
+    widthSlider.setBounds(0, 20, knobSize, knobSize);
 
     // Place the midSideSlider next to it on the right
     midSideSlider.setBounds(210, 40, getWidth() - 220, 20); // 10 pixels gap, 20 pixels high
