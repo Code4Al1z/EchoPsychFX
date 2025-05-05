@@ -11,7 +11,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     microPitchDetuneComponent = std::make_unique<MicroPitchDetuneComponent>(processorRef.parameters);
 
     // Now that the above components are created, it's safe to pass them to the preset manager
-    presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent, *spatialFXComponent);
+    presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent, *spatialFXComponent, *microPitchDetuneComponent);
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
 
     addAndMakeVisible(*widthBalancerComponent);
@@ -44,6 +44,7 @@ void AudioPluginAudioProcessorEditor::updateUIVisibility()
     tiltEQComponent->setVisible(!perceptionMode);
     modDelayComponent->setVisible(!perceptionMode);
     spatialFXComponent->setVisible(!perceptionMode);
+	microPitchDetuneComponent->setVisible(!perceptionMode);
 
     perceptionModeComponent->setVisible(perceptionMode);
 }

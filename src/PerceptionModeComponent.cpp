@@ -15,6 +15,11 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     presetSelector.addItem("Blade Runner", 4);
     presetSelector.addItem("Alien Abduction", 5);
     presetSelector.addItem("Glass Tunnel", 6);
+    presetSelector.addItem("Dream Logic", 7);
+    presetSelector.addItem("Womb Space", 8);
+    presetSelector.addItem("Bipolar Bloom", 9);
+    presetSelector.addItem("Quiet Confidence", 10);
+    presetSelector.addItem("Falling Upwards", 11);
     presetSelector.onChange = [this]() {
         comboBoxChanged(&presetSelector);
         };
