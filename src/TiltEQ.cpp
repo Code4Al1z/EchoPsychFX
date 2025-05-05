@@ -17,8 +17,8 @@ void TiltEQ::updateFilters() {
     auto low = juce::dsp::IIR::Coefficients<float>::makeLowShelf(sampleRate, 200.0f, 0.707f, juce::Decibels::decibelsToGain(gain));
     auto high = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, 4000.0f, 0.707f, juce::Decibels::decibelsToGain(-gain));
 
-    *lowShelf.coefficients = *low;
-    *highShelf.coefficients = *high;
+    *lowShelf.state = *low;
+    *highShelf.state = *high;
 
     needsUpdate = false;
 }

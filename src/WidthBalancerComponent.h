@@ -16,21 +16,26 @@ public:
     void setWidth(float newValue);
     void setMidSideBalance(float newValue);
     void setMono(bool newValue);
+    void setIntensity(float newValue);
 
 private:
 
-    int knobSize = 120;
+    int knobSize = 100;
+    int sliderHeight = 50;
+    int labelHeight = 20;
     int margin = 10;
 
-    juce::Slider widthSlider, midSideSlider;
+    juce::Slider widthSlider, midSideSlider, intensitySlider;
     juce::ToggleButton monoToggle;
 
     juce::TextEditor widthTextBox;
     juce::TextEditor midSideTextBox;
+    juce::TextEditor intensityTextBox;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> midSideAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> monoAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> intensityAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WidthBalancerComponent)
 };

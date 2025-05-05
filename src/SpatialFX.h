@@ -11,11 +11,9 @@ public:
     void prepare(const juce::dsp::ProcessSpec& spec);
     void reset();
 
-    void setPhaseOffsetLeft(float seconds);
-    void setPhaseOffsetRight(float seconds);
-    void setModulationRate(float hz);
-    void setModulationDepth(float seconds);
-    void setWetDryMix(float mix); // 0.0 = dry, 1.0 = wet
+	void setParams(float leftOffset, float rightOffset, float rate, float depth, float mix);
+
+    void setSyncEnabled(bool shouldSync);
 
     void process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead* playHead);
 
@@ -24,6 +22,8 @@ private:
     const float maxDelaySeconds = 0.1f; // 100 ms
     const int maxDelaySamples = static_cast<int>(maxDelaySeconds * 48000);
     const double smoothingTime = 0.05; // 50 ms smoothing
+
+    bool syncEnabled = false;
 
     std::atomic<float>* syncParameter = nullptr;
     std::atomic<float> currentBpm{ 120.0f };

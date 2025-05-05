@@ -13,7 +13,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     ),
     parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
     modDelay(), // Initialize the ModDelay object
-    spatialFX()
+    spatialFX(),
+    microPitchDetune()
 {
     // Optionally set the initial modulation type
     modDelay.setModulationType(ModDelay::ModulationType::Sine);
@@ -112,6 +113,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     tiltEQ.prepare(spec);
     modDelay.prepare(spec);
     spatialFX.prepare(spec);
+    microPitchDetune.prepare(spec);
 
     dryBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
 }
@@ -165,47 +167,54 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     dryBuffer.makeCopyOf(buffer, true); // true = clear extra space if needed
     juce::dsp::AudioBlock<float> dryBlock(dryBuffer);
 
-    // Read parameters from ValueTreeState
+    bool syncEnabled = parameters.getRawParameterValue("sync")->load();
+
+#pragma region Tilt EQ
+    float tilt = *parameters.getRawParameterValue("tiltEQ");
+    tiltEQ.setTilt(tilt);
+    tiltEQ.process(block);
+#pragma endregion
+
+#pragma region WidthBalancer
+    float width = *parameters.getRawParameterValue("width");
+    float balance = *parameters.getRawParameterValue("midSideBalance");
+    bool mono = parameters.getRawParameterValue("mono")->load();
+	float intensity = *parameters.getRawParameterValue("intensity");
+
+    widthBalancer.setWidth(width);
+    widthBalancer.setMidSideBalance(balance);
+    widthBalancer.setMono(mono);
+	widthBalancer.setIntensity(intensity);
+    widthBalancer.process(block);
+#pragma endregion
+
+#pragma region ModDelay
     float delayTime = *parameters.getRawParameterValue("delayTime");
     float depth = *parameters.getRawParameterValue("modDepth");
     float rate = *parameters.getRawParameterValue("modRate");
-
-    bool syncEnabled = parameters.getRawParameterValue("sync")->load(); // assume you add a bool parameter "sync"
-
-    if (syncEnabled)
-    {
-        // Interpret "rate" as a musical value: 1.0 = 1/4 note, 2.0 = 1/2 note, etc.
-        // We'll convert musical note value to Hz
-        double beatsPerSecond = bpm / 60.0;
-        rate = static_cast<float>(beatsPerSecond) / rate;
-    }
-
     float feedbackL = *parameters.getRawParameterValue("feedbackL"); // Get separate feedback values
     float feedbackR = *parameters.getRawParameterValue("feedbackR");
-    float mixValue = *parameters.getRawParameterValue("mix");
     int modulationTypeValue = parameters.state.getProperty("modulationType"); // Get the raw value
-    float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL"); // **[HIGHLIGHT] Get Phase Offset L**
-    float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR"); // **[HIGHLIGHT] Get Phase Offset R**
-    float sfxModRate = *parameters.getRawParameterValue("sfxModRate");   // **[HIGHLIGHT] Get SFX Mod Rate**
-
-    if (syncEnabled)
-    {
-        double beatsPerSecond = bpm / 60.0;
-        sfxModRate = static_cast<float>(beatsPerSecond) / sfxModRate;
-    }
-
-    float sfxModDepth = *parameters.getRawParameterValue("sfxModDepth");  // **[HIGHLIGHT] Get SFX Mod Depth**
-
+	float modMix = *parameters.getRawParameterValue("modMix");
 
     // Convert the raw value to the enum
     ModDelay::ModulationType modulationType = static_cast<ModDelay::ModulationType>(modulationTypeValue);
     modDelay.setModulationType(modulationType);
 
-    // Set delay parameters
-    modDelay.setParams(delayTime, depth, rate, feedbackL, feedbackR, mixValue);
+    modDelay.setTempo(bpm);
+    modDelay.setSyncEnabled(syncEnabled);
+    modDelay.setParams(delayTime, depth, rate, feedbackL, feedbackR, modMix);
 
     // Apply modulated delay effect
     modDelay.process(block);
+#pragma endregion
+
+#pragma region SpatialFX
+    float mixValue = *parameters.getRawParameterValue("sfxWetDryMix");
+    float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL"); // **[HIGHLIGHT] Get Phase Offset L**
+    float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR"); // **[HIGHLIGHT] Get Phase Offset R**
+    float sfxModRate = *parameters.getRawParameterValue("sfxModRate");   // **[HIGHLIGHT] Get SFX Mod Rate**
+    float sfxModDepth = *parameters.getRawParameterValue("sfxModDepth");  // **[HIGHLIGHT] Get SFX Mod Depth**
 
     // Wet/dry mix using the dryBlock
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
@@ -217,30 +226,24 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
             wet[i] = wet[i] * mixValue + dry[i] * (1.0f - mixValue);
     }
 
-    // Apply tilt EQ
-    float tilt = *parameters.getRawParameterValue("tiltEQ");
-    tiltEQ.setTilt(tilt);
-    tiltEQ.process(block);
-
-    // Apply stereo width and mono/stereo processing
-    float width = *parameters.getRawParameterValue("width");
-    float balance = *parameters.getRawParameterValue("midSideBalance");
-    bool mono = parameters.getRawParameterValue("mono")->load();
-
-    widthBalancer.setWidth(width);
-    widthBalancer.setMidSideBalance(balance);
-    widthBalancer.setMono(mono);
-
-    // Final stage
-    widthBalancer.process(block);
-
-    // **[HIGHLIGHT] Apply SpatialFX processing**
-    spatialFX.setPhaseOffsetLeft(phaseOffsetL);
-    spatialFX.setPhaseOffsetRight(phaseOffsetR);
-    spatialFX.setModulationRate(sfxModRate);
-    spatialFX.setModulationDepth(sfxModDepth);
-    spatialFX.setWetDryMix(mixValue);
+	spatialFX.setParams(phaseOffsetL, phaseOffsetR, sfxModRate, sfxModDepth, mixValue);
+	spatialFX.setSyncEnabled(syncEnabled);
     spatialFX.process(block, getPlayHead());
+#pragma endregion
+
+#pragma region MicroPitchDetune
+    float detuneAmount = *parameters.getRawParameterValue("detuneAmount");
+    float lfoRate = *parameters.getRawParameterValue("lfoRate");
+    float lfoDepth = *parameters.getRawParameterValue("lfoDepth");
+    float delayCentre = *parameters.getRawParameterValue("delayCentre");
+    float stereoSeparation = *parameters.getRawParameterValue("stereoSeparation");
+    float mix = *parameters.getRawParameterValue("mix");
+
+	microPitchDetune.setParams(detuneAmount, lfoRate, lfoDepth,
+		delayCentre, stereoSeparation, mix);
+	microPitchDetune.setBpm(bpm);
+	microPitchDetune.process(block);
+#pragma endregion
 }
 
 
@@ -261,7 +264,7 @@ void AudioPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::MemoryOutputStream stream(destData, true);
     parameters.state.writeToStream(stream);
-    stream.writeInt((int)modDelay.modulationType); // Save the modulation type
+    stream.writeInt((int)modDelay.getModulationType()); // Save the modulation type
 }
 
 void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
@@ -276,22 +279,6 @@ void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeIn
             modDelay.setModulationType(static_cast<ModDelay::ModulationType>((int)tree.getProperty("modulationType")));
         }
     }
-}
-
-void AudioPluginAudioProcessor::setPhaseOffsetParameter(float leftOffset, float rightOffset)
-{
-    spatialFX.setPhaseOffsetLeft(leftOffset);
-    spatialFX.setPhaseOffsetRight(rightOffset);
-}
-
-void AudioPluginAudioProcessor::setModulationRateParameter(float rate)
-{
-    spatialFX.setModulationRate(rate);
-}
-
-void AudioPluginAudioProcessor::setModulationDepthParameter(float depth)
-{
-    spatialFX.setModulationDepth(depth);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
@@ -326,6 +313,15 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withValueFromStringFunction(stringToFloat)));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>("mono", "Mono", false));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		juce::ParameterID{ "intensity", 1 },
+		"Intensity",
+		juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+		0.5f,
+		juce::AudioParameterFloatAttributes()
+		.withStringFromValueFunction(floatToString2dp)
+		.withValueFromStringFunction(stringToFloat)));
 
     // TiltEQ
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -367,8 +363,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withValueFromStringFunction(stringToFloat)));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "mix", 1 },
-        "Mix",
+        juce::ParameterID{ "modMix", 1 },
+        "Mod Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f),
         0.5f,
         juce::AudioParameterFloatAttributes()
@@ -447,6 +443,65 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		juce::ParameterID{ "detuneAmount", 1 },
+		"Detune Amount",
+		juce::NormalisableRange<float>(-50.0f, 50.0f, 0.1f),
+		0.0f,
+		juce::AudioParameterFloatAttributes()
+		.withStringFromValueFunction(floatToString2dp)
+		.withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "lfoRate", 1 },
+        "LFO Rate",
+        juce::NormalisableRange<float>(0.01f, 20.0f, 0.01f),
+        0.3f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "lfoDepth", 1 },
+        "LFO Depth",
+        juce::NormalisableRange<float>(0.0f, 0.01f, 0.0001f),
+        0.002f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "delayCentre", 1 },
+        "Delay Centre",
+        juce::NormalisableRange<float>(0.001f, 0.015f, 0.0001f),
+        0.005f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "stereoSeparation", 1 },
+        "Stereo Separation",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "mix", 1 },
+        "Mix",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
 
     return { params.begin(), params.end() };
 }

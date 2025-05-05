@@ -25,10 +25,12 @@ void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
     mix.reset(sampleRate, smoothingTime);
 }
 
-void ModDelay::setParams(float dMs, float depth, float rate, float fbL, float fbR, float m) {
+void ModDelay::setParams(float dMs, float depth, float rate, float fbL, float fbR, float m)
+{
     delayMs.setTargetValue(dMs);
     modDepth.setTargetValue(depth);
-    modRateHz.setTargetValue(rate);
+    rawRate = rate;
+    modRateHz.setTargetValue(getEffectiveRateHz()); // now smart
     feedbackL.setTargetValue(juce::jlimit(0.0f, 0.95f, fbL));
     feedbackR.setTargetValue(juce::jlimit(0.0f, 0.95f, fbR));
     mix.setTargetValue(juce::jlimit(0.0f, 1.0f, m));
@@ -89,6 +91,16 @@ void ModDelay::setModulationType(ModulationType newType)
     modulationType = newType;
 }
 
+void ModDelay::setSyncEnabled(bool shouldSync)
+{
+    syncEnabled = shouldSync;
+}
+
+void ModDelay::setTempo(float newBpm)
+{
+    bpm = newBpm;
+}
+
 float ModDelay::calculateModulation(float rateHz, float depth, float currentPhase)
 {
     switch (modulationType)
@@ -106,4 +118,14 @@ float ModDelay::calculateModulation(float rateHz, float depth, float currentPhas
     default:
         return 0.0f;
     }
+}
+
+float ModDelay::getEffectiveRateHz() const
+{
+    if (syncEnabled && rawRate > 0.0f)
+    {
+        float beatsPerSecond = bpm / 60.0f;
+        return beatsPerSecond / rawRate; // rate interpreted as note division (e.g. 4 = quarter note)
+    }
+    return rawRate; // regular Hz
 }

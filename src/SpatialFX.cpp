@@ -35,25 +35,19 @@ void SpatialFX::reset()
     lfoRight.reset();
 }
 
-void SpatialFX::setPhaseOffsetLeft(float seconds)
+void SpatialFX::setParams(float leftOffset, float rightOffset, float rate, float depth, float mix)
 {
-    phaseOffsetLeft.setTargetValue(seconds);
-}
-
-void SpatialFX::setPhaseOffsetRight(float seconds)
-{
-    phaseOffsetRight.setTargetValue(seconds);
-}
-
-void SpatialFX::setModulationRate(float rateOrNote)
-{
-    targetRateOrNote = rateOrNote;
-    updateLfoFrequencies();
+	phaseOffsetLeft.setTargetValue(leftOffset);
+	phaseOffsetRight.setTargetValue(rightOffset);
+	targetRateOrNote = rate;
+	modulationDepth.setTargetValue(depth);
+	wetDryMix.setTargetValue(juce::jlimit(0.0f, 1.0f, mix));
+	updateLfoFrequencies();
 }
 
 void SpatialFX::updateLfoFrequencies()
 {
-    const bool sync = (syncParameter != nullptr) ? (*syncParameter > 0.5f) : false;
+    const bool sync = syncEnabled || ((syncParameter != nullptr) && (*syncParameter > 0.5f));
 
     if (sync)
     {
@@ -71,14 +65,10 @@ void SpatialFX::updateLfoFrequencies()
     }
 }
 
-void SpatialFX::setModulationDepth(float seconds)
+void SpatialFX::setSyncEnabled(bool shouldSync)
 {
-    modulationDepth.setTargetValue(seconds);
-}
-
-void SpatialFX::setWetDryMix(float mix)
-{
-    wetDryMix.setTargetValue(juce::jlimit(0.0f, 1.0f, mix));
+    syncEnabled = shouldSync;
+    updateLfoFrequencies();
 }
 
 void SpatialFX::process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead* playHead)

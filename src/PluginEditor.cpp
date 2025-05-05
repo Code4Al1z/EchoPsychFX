@@ -8,10 +8,10 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     tiltEQComponent = std::make_unique<TiltEQComponent>(p.parameters);
     modDelayComponent = std::make_unique<ModDelayComponent>(p.parameters);
     spatialFXComponent = std::make_unique<SpatialFXComponent>(p.parameters);
+    microPitchDetuneComponent = std::make_unique<MicroPitchDetuneComponent>(processorRef.parameters);
 
     // Now that the above components are created, it's safe to pass them to the preset manager
     presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent, *spatialFXComponent);
-
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
 
     addAndMakeVisible(*widthBalancerComponent);
@@ -19,6 +19,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     addAndMakeVisible(*modDelayComponent);
     addAndMakeVisible(*spatialFXComponent);
     addAndMakeVisible(*perceptionModeComponent);
+    addAndMakeVisible(*microPitchDetuneComponent);
     
     addAndMakeVisible(modeToggle);
     modeToggle.setButtonText("Show Perception Modes");
@@ -27,7 +28,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
         };
 
     modeToggle.setToggleState(false, juce::dontSendNotification);
-    setSize(900, 600);
+    setSize(1200, 800);
     updateUIVisibility();
 }
 
@@ -100,6 +101,10 @@ void AudioPluginAudioProcessorEditor::resized()
     auto spatialFXHeight = 150;
     auto spatialFXArea = mainUIArea.removeFromTop(spatialFXHeight);
     spatialFXComponent->setBounds(spatialFXArea);
+
+	auto microPitchDetuneHeight = 200;
+	auto microPitchDetuneArea = mainUIArea.removeFromTop(microPitchDetuneHeight);
+	microPitchDetuneComponent->setBounds(microPitchDetuneArea);
 
     // Always set the bounds for the perception mode component
     perceptionModeComponent->setBounds(perceptionModeArea);

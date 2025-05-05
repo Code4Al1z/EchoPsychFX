@@ -7,6 +7,7 @@
 #include "SpatialFXComponent.h"
 #include "PerceptionModeComponent.h"
 #include "PerceptionPresetManager.h"
+#include "MicroPitchDetuneComponent.h"
 #include "ModDelay.h"
 #include "SpatialFX.h"
 
@@ -32,6 +33,7 @@ public:
     std::unique_ptr<SpatialFXComponent> spatialFXComponent;
     std::unique_ptr<PerceptionPresetManager> presetManager;
     std::unique_ptr<PerceptionModeComponent> perceptionModeComponent;
+	std::unique_ptr<MicroPitchDetuneComponent> microPitchDetuneComponent;
 
 private:
     AudioPluginAudioProcessor& processorRef;

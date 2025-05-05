@@ -7,7 +7,7 @@ public:
 
     enum class ModulationType
     {
-        Sine,
+        Sine = 1,
         Triangle,
         Square,
         SawtoothUp,
@@ -20,12 +20,14 @@ public:
     ~ModDelay() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
-    void setParams(float delayMs, float depth, float rateHz, float feedbackL, float feedbackR, float mix);
+    void setParams(float delayMs, float depth, float rateHzOrNoteDiv, float feedbackL, float feedbackR, float mix);
     void process(juce::dsp::AudioBlock<float>& block);
+
     void setModulationType(ModulationType newType);
     ModulationType getModulationType() const { return modulationType; }
 
-	ModulationType modulationType = ModulationType::Sine;
+    void setSyncEnabled(bool shouldSync);
+    void setTempo(float newBpm);
 
 private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayL;
@@ -34,7 +36,9 @@ private:
     float sampleRate = 44100.0f;
     float phase = 0.0f;
 
-    float smoothedModRateHz = 0.0f; // <-- for gentle rate smoothing
+    float bpm = 120.0f;
+    bool syncEnabled = false;
+    float rawRate = 1.0f; // rate param as Hz or note division (depending on sync)
 
     juce::LinearSmoothedValue<float> delayMs;
     juce::LinearSmoothedValue<float> modDepth;
@@ -43,7 +47,10 @@ private:
     juce::LinearSmoothedValue<float> feedbackR;
     juce::LinearSmoothedValue<float> mix;
 
+    ModulationType modulationType = ModulationType::Sine;
+
     float calculateModulation(float rateHz, float depth, float currentPhase);
+    float getEffectiveRateHz() const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelay)
 };

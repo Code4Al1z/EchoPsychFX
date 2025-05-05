@@ -4,6 +4,7 @@
 #include "TiltEQ.h"
 #include "ModDelay.h"
 #include "SpatialFX.h"
+#include "MicroPitchDetune.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
@@ -61,6 +62,7 @@ public:
     TiltEQ tiltEQ;
     ModDelay modDelay;
     SpatialFX spatialFX;
+    MicroPitchDetune microPitchDetune;
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();

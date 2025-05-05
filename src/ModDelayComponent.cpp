@@ -43,9 +43,9 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     addAndMakeVisible(mixSlider);
     mixSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     mixSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
-    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "mix", mixSlider);
+    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "modMix", mixSlider);
 
-    mixTextBox.setText("Mix", false);
+    mixTextBox.setText("Mod Mix", false);
     mixTextBox.setJustification(juce::Justification::centred);
     mixTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
     mixTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
