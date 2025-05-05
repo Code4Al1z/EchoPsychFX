@@ -51,25 +51,25 @@ void SpatialFXComponent::resized()
 
 void SpatialFXComponent::setPhaseOffsetLeft(float newValue)
 {
-    knobs[0]->slider->setValue(newValue, juce::dontSendNotification);
+    knobs[0]->slider->setValue(newValue);
 }
 
 void SpatialFXComponent::setPhaseOffsetRight(float newValue)
 {
-    knobs[1]->slider->setValue(newValue, juce::dontSendNotification);
+    knobs[1]->slider->setValue(newValue);
 }
 
 void SpatialFXComponent::setModulationRate(float newValue)
 {
-    knobs[2]->slider->setValue(newValue, juce::dontSendNotification);
+    knobs[2]->slider->setValue(newValue);
 }
 
 void SpatialFXComponent::setModulationDepth(float newValue)
 {
-    knobs[3]->slider->setValue(newValue, juce::dontSendNotification);
+    knobs[3]->slider->setValue(newValue);
 }
 
 void SpatialFXComponent::setWetDryMix(float newValue)
 {
-    knobs[4]->slider->setValue(newValue, juce::dontSendNotification);
+    knobs[4]->slider->setValue(newValue);
 }

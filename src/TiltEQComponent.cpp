@@ -38,6 +38,6 @@ void TiltEQComponent::resized()
 
 void TiltEQComponent::setTilt(float newValue)
 {
-	tiltSlider.setValue(newValue, juce::dontSendNotification);
+	tiltSlider.setValue(newValue);
 }
 

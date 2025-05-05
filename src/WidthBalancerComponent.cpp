@@ -55,20 +55,20 @@ void WidthBalancerComponent::resized()
 
 void WidthBalancerComponent::setWidth(float newValue)
 {
-    widthSlider.setValue(newValue, juce::dontSendNotification);
+    widthSlider.setValue(newValue);
 }
 
 void WidthBalancerComponent::setMidSideBalance(float newValue)
 {
-    midSideSlider.setValue(newValue, juce::dontSendNotification);
+    midSideSlider.setValue(newValue);
 }
 
 void WidthBalancerComponent::setMono(bool newValue)
 {
-    monoToggle.setToggleState(newValue, juce::dontSendNotification);
+    monoToggle.setToggleState(newValue, juce::sendNotification);
 }
 
 void WidthBalancerComponent::setIntensity(float newValue)
 {
-    intensitySlider.setValue(newValue, juce::dontSendNotification);
+    intensitySlider.setValue(newValue);
 }

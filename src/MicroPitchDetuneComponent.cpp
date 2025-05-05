@@ -60,9 +60,9 @@ void MicroPitchDetuneComponent::resized()
     }
 }
 
-void MicroPitchDetuneComponent::setMix(float newValue) { mix.slider.setValue(newValue, juce::dontSendNotification); }
-void MicroPitchDetuneComponent::setLfoRate(float newValue) { lfoRate.slider.setValue(newValue, juce::dontSendNotification); }
-void MicroPitchDetuneComponent::setLfoDepth(float newValue) { lfoDepth.slider.setValue(newValue, juce::dontSendNotification); }
-void MicroPitchDetuneComponent::setDelayCentre(float newValue) { delayCentre.slider.setValue(newValue, juce::dontSendNotification); }
-void MicroPitchDetuneComponent::setDetuneAmount(float newValue) { detuneAmount.slider.setValue(newValue, juce::dontSendNotification); }
-void MicroPitchDetuneComponent::setStereoSeparation(float newValue) { stereoSeparation.slider.setValue(newValue, juce::dontSendNotification); }
+void MicroPitchDetuneComponent::setMix(float newValue) { mix.slider.setValue(newValue); }
+void MicroPitchDetuneComponent::setLfoRate(float newValue) { lfoRate.slider.setValue(newValue); }
+void MicroPitchDetuneComponent::setLfoDepth(float newValue) { lfoDepth.slider.setValue(newValue); }
+void MicroPitchDetuneComponent::setDelayCentre(float newValue) { delayCentre.slider.setValue(newValue); }
+void MicroPitchDetuneComponent::setDetuneAmount(float newValue) { detuneAmount.slider.setValue(newValue); }
+void MicroPitchDetuneComponent::setStereoSeparation(float newValue) { stereoSeparation.slider.setValue(newValue); }
