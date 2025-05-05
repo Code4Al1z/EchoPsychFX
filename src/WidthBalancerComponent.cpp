@@ -3,73 +3,54 @@
 
 WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeState& state)
 {
-    widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    addAndMakeVisible(widthSlider);
+    configureSlider(widthSlider, juce::Slider::RotaryHorizontalVerticalDrag);
+    configureSlider(midSideSlider, juce::Slider::LinearBar);
+    configureSlider(intensitySlider, juce::Slider::RotaryHorizontalVerticalDrag);
+    intensitySlider.setSkewFactorFromMidPoint(0.2f);
 
-    midSideSlider.setSliderStyle(juce::Slider::LinearBar);
-    midSideSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    addAndMakeVisible(midSideSlider);
+    configureLabel(widthLabel, "Width");
+    configureLabel(midSideLabel, "Mid-Side");
+    configureLabel(intensityLabel, "Intensity");
 
     monoToggle.setButtonText("Mono");
     addAndMakeVisible(monoToggle);
 
-    intensitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    intensitySlider.setSkewFactorFromMidPoint(0.2f); // Feel: more control in lower values
-    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    addAndMakeVisible(intensitySlider);
-
-    widthTextBox.setText("Width");
-    widthTextBox.setReadOnly(true); // Prevent the user from editing the text
-    widthTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    widthTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-    widthTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black); // Set the text color
-    widthTextBox.setJustification(juce::Justification::centred); // Center text
-    addAndMakeVisible(widthTextBox);
-
-    midSideTextBox.setText("Mid-Side");
-    midSideTextBox.setReadOnly(true);
-    midSideTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    midSideTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-    midSideTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    addAndMakeVisible(midSideTextBox);
-
-    intensityTextBox.setText("Intensity");
-    intensityTextBox.setReadOnly(true);
-    intensityTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    intensityTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    intensityTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    intensityTextBox.setJustification(juce::Justification::centred);
-    addAndMakeVisible(intensityTextBox);
-
     widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "width", widthSlider);
     midSideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "midSideBalance", midSideSlider);
-    monoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(state, "mono", monoToggle);
     intensityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "intensity", intensitySlider);
+    monoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(state, "mono", monoToggle);
 }
 
-WidthBalancerComponent::~WidthBalancerComponent()
+void WidthBalancerComponent::configureSlider(juce::Slider& slider, juce::Slider::SliderStyle style)
 {
+    slider.setSliderStyle(style);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible(slider);
+}
+
+void WidthBalancerComponent::configureLabel(juce::Label& label, const juce::String& text)
+{
+    label.setText(text, juce::dontSendNotification);
+    label.setJustificationType(juce::Justification::centred);
+    label.setColour(juce::Label::textColourId, juce::Colours::white);
+    addAndMakeVisible(label);
 }
 
 void WidthBalancerComponent::resized()
 {
+    const int knobSize = 100;
+    const int margin = 10;
+
     widthSlider.setBounds(0, 20, knobSize, knobSize);
-    widthTextBox.setBounds(widthSlider.getX() + widthSlider.getWidth() / 3, widthSlider.getY() + 80, 60, 20);
-
-    midSideSlider.setBounds(210, 40, getWidth() - 220, 20);
-    midSideTextBox.setBounds(midSideSlider.getX(), midSideSlider.getY() - 20, 80, 20);
-
-    monoToggle.setBounds(210, 70, getWidth() - 220, 50);
+    widthLabel.setBounds(widthSlider.getX(), 0, knobSize, 20);
 
     intensitySlider.setBounds(knobSize + margin * 2, 20, knobSize, knobSize);
-    intensityTextBox.setBounds(intensitySlider.getX() + intensitySlider.getWidth() / 3,
-        intensitySlider.getY() + 80, 60, 20);
+    intensityLabel.setBounds(intensitySlider.getX(), 0, knobSize, 20);
 
-    // Make sure the text boxes are in front of the sliders.
-    widthTextBox.toFront(false);
-    midSideTextBox.toFront(false);
-    intensityTextBox.toFront(false);
+    midSideLabel.setBounds(210, 20, 80, 20);
+    midSideSlider.setBounds(210, 40, getWidth() - 220, 20);
+
+    monoToggle.setBounds(210, 70, getWidth() - 220, 40);
 }
 
 void WidthBalancerComponent::setWidth(float newValue)
@@ -89,6 +70,5 @@ void WidthBalancerComponent::setMono(bool newValue)
 
 void WidthBalancerComponent::setIntensity(float newValue)
 {
-	intensitySlider.setValue(newValue, juce::dontSendNotification);
+    intensitySlider.setValue(newValue, juce::dontSendNotification);
 }
-

@@ -3,130 +3,73 @@
 
 SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state)
 {
-    // Phase Offset Left
-    phaseOffsetLeftSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    phaseOffsetLeftSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    addAndMakeVisible(phaseOffsetLeftSlider);
-    phaseOffsetLeftTextBox.setText("Phase L Offset");
-    phaseOffsetLeftTextBox.setReadOnly(true);
-    phaseOffsetLeftTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    phaseOffsetLeftTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    phaseOffsetLeftTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    phaseOffsetLeftTextBox.setJustification(juce::Justification::centred);
-    addAndMakeVisible(phaseOffsetLeftTextBox);
-    phaseOffsetLeftAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "phaseOffsetL", phaseOffsetLeftSlider);
-
-    // Phase Offset Right
-    phaseOffsetRightSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    phaseOffsetRightSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    addAndMakeVisible(phaseOffsetRightSlider);
-    phaseOffsetRightTextBox.setText("Phase R Offset");
-    phaseOffsetRightTextBox.setReadOnly(true);
-    phaseOffsetRightTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    phaseOffsetRightTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    phaseOffsetRightTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    phaseOffsetRightTextBox.setJustification(juce::Justification::centred);
-    addAndMakeVisible(phaseOffsetRightTextBox);
-    phaseOffsetRightAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "phaseOffsetR", phaseOffsetRightSlider);
-
-    // Modulation Rate (SFX)
-    modulationRateSliderSFX.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    modulationRateSliderSFX.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    modulationRateSliderSFX.setRange(0.0f, 10.0f, 0.01f); // Example range
-    addAndMakeVisible(modulationRateSliderSFX);
-    modulationRateTextBoxSFX.setText("SFX Rate");
-    modulationRateTextBoxSFX.setReadOnly(true);
-    modulationRateTextBoxSFX.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    modulationRateTextBoxSFX.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    modulationRateTextBoxSFX.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    modulationRateTextBoxSFX.setJustification(juce::Justification::centred);
-    addAndMakeVisible(modulationRateTextBoxSFX);
-    modulationRateAttachmentSFX = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "sfxModRate", modulationRateSliderSFX);
-
-    // Modulation Depth (SFX)
-    modulationDepthSliderSFX.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    modulationDepthSliderSFX.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    modulationDepthSliderSFX.setRange(0.0f, 1.0f, 0.01f); // Example range
-    addAndMakeVisible(modulationDepthSliderSFX);
-    modulationDepthTextBoxSFX.setText("SFX Depth");
-    modulationDepthTextBoxSFX.setReadOnly(true);
-    modulationDepthTextBoxSFX.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    modulationDepthTextBoxSFX.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    modulationDepthTextBoxSFX.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    modulationDepthTextBoxSFX.setJustification(juce::Justification::centred);
-    addAndMakeVisible(modulationDepthTextBoxSFX);
-    modulationDepthAttachmentSFX = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "sfxModDepth", modulationDepthSliderSFX);
-
-    // Wet/Dry Mix (SFX)
-    wetDrySliderSFX.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    wetDrySliderSFX.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    wetDrySliderSFX.setRange(0.0f, 1.0f, 0.01f);
-    addAndMakeVisible(wetDrySliderSFX);
-
-    wetDryTextBoxSFX.setText("SFX Wet/Dry");
-    wetDryTextBoxSFX.setReadOnly(true);
-    wetDryTextBoxSFX.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    wetDryTextBoxSFX.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    wetDryTextBoxSFX.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    wetDryTextBoxSFX.setJustification(juce::Justification::centred);
-    addAndMakeVisible(wetDryTextBoxSFX);
-
-    wetDryAttachmentSFX = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "sfxWetDryMix", wetDrySliderSFX);
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetL", "Phase L Offset", -180.0f, 180.0f, 1.0f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetR", "Phase R Offset", -180.0f, 180.0f, 1.0f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModRate", "SFX Rate", 0.0f, 10.0f, 0.01f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModDepth", "SFX Depth")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxWetDryMix", "SFX Wet/Dry")));
 }
 
-SpatialFXComponent::~SpatialFXComponent()
+SpatialFXComponent::KnobWithLabel SpatialFXComponent::createKnob(juce::AudioProcessorValueTreeState& state,
+    const juce::String& paramID,
+    const juce::String& labelText,
+    float min, float max, float step)
 {
+    KnobWithLabel control;
+    control.slider = std::make_unique<juce::Slider>();
+    control.slider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    control.slider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    control.slider->setRange(min, max, step);
+    addAndMakeVisible(*control.slider);
+
+    control.label = std::make_unique<juce::Label>();
+    control.label->setText(labelText, juce::dontSendNotification);
+    control.label->setJustificationType(juce::Justification::centred);
+    control.label->setColour(juce::Label::backgroundColourId, juce::Colours::transparentWhite);
+    control.label->setColour(juce::Label::textColourId, juce::Colours::white);
+    addAndMakeVisible(*control.label);
+
+    control.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        state, paramID, *control.slider);
+
+    return control;
 }
 
 void SpatialFXComponent::resized()
 {
-    auto area = getLocalBounds().reduced(margin); // Get available space
+    auto area = getLocalBounds().reduced(margin);
     int x = area.getX();
     int y = area.getY();
-    int textBoxYOffset = 80;
-
-    phaseOffsetLeftSlider.setBounds(x, y, knobSize, knobSize);
-    phaseOffsetLeftTextBox.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
-    x += knobSize + margin;
-
-    phaseOffsetRightSlider.setBounds(x, y, knobSize, knobSize);
-    phaseOffsetRightTextBox.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
-    x += knobSize + margin;
-
-    modulationRateSliderSFX.setBounds(x, y, knobSize, knobSize);
-    modulationRateTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
-    x += knobSize + margin;
-
-    modulationDepthSliderSFX.setBounds(x, y, knobSize, knobSize);
-    modulationDepthTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
-    x += knobSize + margin;
-
-    wetDrySliderSFX.setBounds(x, y, knobSize, knobSize);
-    wetDryTextBoxSFX.setBounds(x + knobSize / 10, y + textBoxYOffset, 100, 20);
+    
+    for (auto& control : knobs)
+    {
+        control->slider->setBounds(x, y, knobSize, knobSize);
+        control->label->setBounds(x + knobSize / 10, -5, 100, 20);
+        x += knobSize + margin;
+    }
 }
 
 void SpatialFXComponent::setPhaseOffsetLeft(float newValue)
 {
-	phaseOffsetLeftSlider.setValue(newValue, juce::dontSendNotification);
+    knobs[0]->slider->setValue(newValue, juce::dontSendNotification);
 }
 
 void SpatialFXComponent::setPhaseOffsetRight(float newValue)
 {
-    phaseOffsetRightSlider.setValue(newValue, juce::dontSendNotification);
+    knobs[1]->slider->setValue(newValue, juce::dontSendNotification);
 }
 
 void SpatialFXComponent::setModulationRate(float newValue)
 {
-	modulationRateSliderSFX.setValue(newValue, juce::dontSendNotification);
+    knobs[2]->slider->setValue(newValue, juce::dontSendNotification);
 }
 
 void SpatialFXComponent::setModulationDepth(float newValue)
 {
-	modulationDepthSliderSFX.setValue(newValue, juce::dontSendNotification);
+    knobs[3]->slider->setValue(newValue, juce::dontSendNotification);
 }
 
 void SpatialFXComponent::setWetDryMix(float newValue)
 {
-	wetDrySliderSFX.setValue(newValue, juce::dontSendNotification);
+    knobs[4]->slider->setValue(newValue, juce::dontSendNotification);
 }
-

@@ -34,13 +34,14 @@ void MicroPitchDetuneComponent::configureKnob(KnobWithLabel& kwl, const juce::St
 void MicroPitchDetuneComponent::resized()
 {
     auto area = getLocalBounds().reduced(margin);
-    int columns = 3;
+    int numKnobs = 6;
     int spacing = 20;
-    int labelSpacing = 6;
 
-    auto knobArea = juce::Rectangle<int>(0, 0, knobSize, knobSize + labelHeight + labelSpacing);
+    int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
+    int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
+    int y = area.getY();
 
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < numKnobs; ++i)
     {
         KnobWithLabel* kwl = nullptr;
         switch (i)
@@ -53,12 +54,9 @@ void MicroPitchDetuneComponent::resized()
         case 5: kwl = &stereoSeparation; break;
         }
 
-        int x = (i % columns) * (knobSize + spacing);
-        int y = (i / columns) * (knobSize + labelHeight + spacing);
-        auto base = area.withPosition(area.getX() + x, area.getY() + y);
-
-        kwl->slider.setBounds(base.removeFromTop(knobSize));
-        kwl->label.setBounds(kwl->slider.getX(), kwl->slider.getBottom() + labelSpacing, knobSize, labelHeight);
+        int x = startX + i * (knobSize + spacing);
+        kwl->slider.setBounds(x, y, knobSize, knobSize);
+        kwl->label.setBounds(x, -5, knobSize, labelHeight);
     }
 }
 

@@ -23,7 +23,7 @@ private:
     juce::Slider tiltSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tiltAttachment;
 
-    juce::TextEditor tiltTextBox;
+    juce::Label tiltLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TiltEQComponent)
 };

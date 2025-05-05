@@ -9,13 +9,10 @@ TiltEQComponent::TiltEQComponent(juce::AudioProcessorValueTreeState& state)
     tiltSlider.setSkewFactorFromMidPoint(0.0); // "Flat" in the center
     addAndMakeVisible(tiltSlider);
 
-    tiltTextBox.setText("Tilt");
-    tiltTextBox.setReadOnly(true);
-    tiltTextBox.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    tiltTextBox.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite); // Remove the outline
-    tiltTextBox.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    tiltTextBox.setJustification(juce::Justification::centred); // Center text
-    addAndMakeVisible(tiltTextBox);
+    tiltLabel.setText("Tilt", juce::dontSendNotification);
+    tiltLabel.setJustificationType(juce::Justification::centred);
+    tiltLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    addAndMakeVisible(tiltLabel);
 
     tiltAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "tiltEQ", tiltSlider);
 }
@@ -36,7 +33,7 @@ void TiltEQComponent::resized()
 
     // Text label right below the slider
     auto textBoxHeight = 24;
-    tiltTextBox.setBounds(tiltSlider.getX(), tiltSlider.getBottom() + 6, knobSize, textBoxHeight);
+    tiltLabel.setBounds(tiltSlider.getX(), -5, knobSize, textBoxHeight);
 }
 
 void TiltEQComponent::setTilt(float newValue)

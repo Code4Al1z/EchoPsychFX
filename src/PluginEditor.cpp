@@ -102,7 +102,9 @@ void AudioPluginAudioProcessorEditor::resized()
     auto spatialFXArea = mainUIArea.removeFromTop(spatialFXHeight);
     spatialFXComponent->setBounds(spatialFXArea);
 
-	auto microPitchDetuneHeight = 200;
+    mainUIArea.removeFromTop(spacing);
+
+	auto microPitchDetuneHeight = 150;
 	auto microPitchDetuneArea = mainUIArea.removeFromTop(microPitchDetuneHeight);
 	microPitchDetuneComponent->setBounds(microPitchDetuneArea);
 
