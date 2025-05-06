@@ -102,8 +102,8 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead
         const float lfoValueLeft = lfoLeft.processSample(0.0f);
         const float lfoValueRight = lfoRight.processSample(0.0f);
 
-        const float modulatedDelayL = juce::jlimit(0.0f, maxDelaySeconds, phaseL + depth * lfoValueLeft) * sampleRate;
-        const float modulatedDelayR = juce::jlimit(0.0f, maxDelaySeconds, phaseR + depth * lfoValueRight) * sampleRate;
+        const float modulatedDelayL = juce::jlimit(minDelaySamples, maxDelaySeconds, phaseL + maxModDepthSeconds * depth * lfoValueLeft) * sampleRate;
+        const float modulatedDelayR = juce::jlimit(minDelaySamples, maxDelaySeconds, phaseR + maxModDepthSeconds * depth * lfoValueRight) * sampleRate;
 
         const float dryL = leftChannel[i];
         const float delayedL = delayLineLeft.popSample(0, modulatedDelayL);

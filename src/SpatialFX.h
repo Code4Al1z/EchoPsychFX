@@ -20,6 +20,8 @@ public:
 private:
     double sampleRate = 44100.0;
     const float maxDelaySeconds = 0.1f; // 100 ms
+    const float maxModDepthSeconds = 0.01f; // 10 ms
+    const float minDelaySamples = 1.0f;
     const int maxDelaySamples = static_cast<int>(maxDelaySeconds * 48000);
     const double smoothingTime = 0.05; // 50 ms smoothing
 
@@ -31,8 +33,8 @@ private:
 
     void updateLfoFrequencies();
 
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineLeft{ maxDelaySamples };
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineRight{ maxDelaySamples };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft{ maxDelaySamples };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight{ maxDelaySamples };
 
     juce::dsp::Oscillator<float> lfoLeft;
     juce::dsp::Oscillator<float> lfoRight;
