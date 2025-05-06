@@ -1,7 +1,4 @@
 #include "MicroPitchDetune.h"
-#include "MicroPitchDetune.h"
-#include "MicroPitchDetune.h"
-#include "MicroPitchDetune.h"
 #include <cmath>
 #include <algorithm>
 
@@ -24,6 +21,9 @@ void MicroPitchDetune::prepare(const juce::dsp::ProcessSpec& spec)
     delayL.setDelay(delayCentre * sampleRate);
     delayR.setDelay(delayCentre * sampleRate);
 
+    smoothedDelayL.reset(sampleRate, 0.02);  // 20ms ramp time
+    smoothedDelayR.reset(sampleRate, 0.02);
+
     lfoPhaseOffset = randomDistribution(randomEngine) * juce::MathConstants<float>::twoPi;
     modPhase = 0.0f;
 }
@@ -35,19 +35,12 @@ void MicroPitchDetune::setParams(float detuneCentsIn, float lfoRateIn, float lfo
 
     // Detune affects lfoDepth internally
     lfoDepth = juce::jlimit(0.0f, 0.01f, std::abs(detuneCentsIn) / 1000.0f * 0.005f);
+    lfoDepth = juce::jlimit(0.0f, 0.01f, lfoDepthIn); // Override with explicit lfoDepth if provided
 
-    // Override with explicit lfoDepth if provided
-    lfoDepth = juce::jlimit(0.0f, 0.01f, lfoDepthIn);
-
-    lfoRate = juce::jlimit(0.01f, 20.0f, lfoRateIn);
+    lfoRate = juce::jlimit(0.01f, 10.0f, lfoRateIn);
 
     delayCentre = juce::jlimit(0.001f, maxDelayTime * 0.8f, delayCentreIn);
-    if (sampleRate > 0.0f)
-    {
-        delayL.setDelay(delayCentre * sampleRate);
-        delayR.setDelay(delayCentre * sampleRate);
-    }
-
+    
     stereoSeparation = juce::jlimit(0.0f, 1.0f, stereoSeparationIn);
     mix = juce::jlimit(0.0f, 1.0f, mixIn);
 }
@@ -72,16 +65,24 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
     auto numSamples = block.getNumSamples();
     auto numChannels = block.getNumChannels();
 
+    // Calculate modulation frequency
+    float rate = lfoRate;
+    if (syncEnabled && lfoRate > 0.0f)
+        rate = (bpm / 60.0f) / lfoRate;
+
     for (size_t i = 0; i < numSamples; ++i)
     {
-        float lfoValueL = lfo(modPhase);
-        float lfoValueR = lfo(modPhase + stereoSeparation * juce::MathConstants<float>::pi);
+        float lfoValueL = lfo(modPhase + lfoPhaseOffset);
+        float lfoValueR = lfo(modPhase + lfoPhaseOffset + stereoSeparation);
 
         float delayTimeL = delayCentre + lfoValueL * lfoDepth;
         float delayTimeR = delayCentre + lfoValueR * lfoDepth;
 
-        delayL.setDelay(delayTimeL * sampleRate);
-        delayR.setDelay(delayTimeR * sampleRate);
+        smoothedDelayL.setTargetValue(delayTimeL * sampleRate);
+        smoothedDelayR.setTargetValue(delayTimeR * sampleRate);
+
+        delayL.setDelay(smoothedDelayL.getNextValue());
+        delayR.setDelay(smoothedDelayR.getNextValue());
 
         for (size_t ch = 0; ch < numChannels; ++ch)
         {
@@ -100,7 +101,6 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
             }
             else
             {
-                // Fallback: dry signal if more than 2 channels
                 wetSample = inSample;
             }
 
@@ -108,9 +108,7 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
             block.setSample(ch, i, finalSample);
         }
 
-        float rate = syncEnabled ? (bpm / 60.0f / lfoRate) : lfoRate;
         modPhase += rate / sampleRate;
-
         if (modPhase >= 1.0f)
             modPhase -= 1.0f;
     }

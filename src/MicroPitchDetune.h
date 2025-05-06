@@ -22,6 +22,9 @@ private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayL;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayR;
 
+    juce::SmoothedValue<float> smoothedDelayL;
+    juce::SmoothedValue<float> smoothedDelayR;
+
     float sampleRate = 44100.0f;
 
     float detuneCents = 5.0f;
