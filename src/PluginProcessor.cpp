@@ -14,7 +14,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
     modDelay(), // Initialize the ModDelay object
     spatialFX(),
-    microPitchDetune()
+    microPitchDetune(),
+	exciterSaturation()
 {
     // Optionally set the initial modulation type
     modDelay.setModulationType(ModDelay::ModulationType::Sine);
@@ -114,6 +115,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     modDelay.prepare(spec);
     spatialFX.prepare(spec);
     microPitchDetune.prepare(spec);
+	exciterSaturation.prepare(spec);
 
     dryBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
 }
@@ -243,6 +245,16 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 		delayCentre, stereoSeparation, mix);
 	microPitchDetune.setBpm(bpm);
 	microPitchDetune.process(block);
+#pragma endregion
+
+#pragma region ExciterSaturation
+	float drive = *parameters.getRawParameterValue("exciterDrive");
+	float exciterMix = *parameters.getRawParameterValue("exciterMix");
+	float highpassFreq = *parameters.getRawParameterValue("exciterHighpass");
+	exciterSaturation.setDrive(drive);
+	exciterSaturation.setMix(exciterMix);
+	exciterSaturation.setHighpass(highpassFreq);
+	exciterSaturation.process(block);
 #pragma endregion
 }
 
@@ -498,6 +510,37 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    // ExciterSaturation
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "exciterDrive", 1 },
+        "Drive",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "exciterMix", 1 },
+        "Exciter Mix",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "exciterHighpass", 1 },
+        "Highpass Freq",
+        juce::NormalisableRange<float>(100.0f, 8000.0f, 1.0f),
+        1000.0f,
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)

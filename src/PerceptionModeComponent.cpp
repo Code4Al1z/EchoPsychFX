@@ -20,6 +20,13 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     presetSelector.addItem("Bipolar Bloom", 9);
     presetSelector.addItem("Quiet Confidence", 10);
     presetSelector.addItem("Falling Upwards", 11);
+    presetSelector.addItem("Molten Light", 12);
+    presetSelector.addItem("Ethereal Echo", 13);
+    presetSelector.addItem("Lush Dreamscape", 14);
+    presetSelector.addItem("Skin Contact", 15);
+    presetSelector.addItem("Sonic Embrace", 16);
+    presetSelector.addItem("Strobe Heaven", 17);
+    presetSelector.addItem("Glass Flame", 18);
     presetSelector.onChange = [this]() {
         comboBoxChanged(&presetSelector);
         };

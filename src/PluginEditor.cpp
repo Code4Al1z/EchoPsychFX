@@ -8,10 +8,11 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     tiltEQComponent = std::make_unique<TiltEQComponent>(p.parameters);
     modDelayComponent = std::make_unique<ModDelayComponent>(p.parameters);
     spatialFXComponent = std::make_unique<SpatialFXComponent>(p.parameters);
-    microPitchDetuneComponent = std::make_unique<MicroPitchDetuneComponent>(processorRef.parameters);
+    microPitchDetuneComponent = std::make_unique<MicroPitchDetuneComponent>(p.parameters);
+	exciterSaturationComponent = std::make_unique<ExciterSaturationComponent>(p.parameters);
 
     // Now that the above components are created, it's safe to pass them to the preset manager
-    presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent, *spatialFXComponent, *microPitchDetuneComponent);
+    presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent, *spatialFXComponent, *microPitchDetuneComponent, *exciterSaturationComponent);
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
 
     addAndMakeVisible(*widthBalancerComponent);
@@ -20,6 +21,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     addAndMakeVisible(*spatialFXComponent);
     addAndMakeVisible(*perceptionModeComponent);
     addAndMakeVisible(*microPitchDetuneComponent);
+	addAndMakeVisible(*exciterSaturationComponent);
     
     addAndMakeVisible(modeToggle);
     modeToggle.setButtonText("Show Perception Modes");
@@ -45,6 +47,7 @@ void AudioPluginAudioProcessorEditor::updateUIVisibility()
     modDelayComponent->setVisible(!perceptionMode);
     spatialFXComponent->setVisible(!perceptionMode);
 	microPitchDetuneComponent->setVisible(!perceptionMode);
+	exciterSaturationComponent->setVisible(!perceptionMode);
 
     perceptionModeComponent->setVisible(perceptionMode);
 }
@@ -108,6 +111,12 @@ void AudioPluginAudioProcessorEditor::resized()
 	auto microPitchDetuneHeight = 150;
 	auto microPitchDetuneArea = mainUIArea.removeFromTop(microPitchDetuneHeight);
 	microPitchDetuneComponent->setBounds(microPitchDetuneArea);
+
+	mainUIArea.removeFromTop(spacing);
+
+	auto exciterSaturationHeight = 150;
+	auto exciterSaturationArea = mainUIArea.removeFromTop(exciterSaturationHeight);
+	exciterSaturationComponent->setBounds(exciterSaturationArea);
 
     // Always set the bounds for the perception mode component
     perceptionModeComponent->setBounds(perceptionModeArea);

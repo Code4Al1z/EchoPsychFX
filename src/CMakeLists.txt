@@ -19,6 +19,8 @@ juce_add_plugin(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME}
     PRIVATE
+        ExciterSaturationComponent.cpp
+        ExciterSaturation.cpp
         MicroPitchDetuneComponent.cpp
         MicroPitchDetune.cpp
         PerceptionPresetManager.cpp
