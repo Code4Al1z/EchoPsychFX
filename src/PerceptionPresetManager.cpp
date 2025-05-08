@@ -5,8 +5,10 @@ PerceptionPresetManager::PerceptionPresetManager(TiltEQComponent& tiltEQ,
     ModDelayComponent& delay,
     SpatialFXComponent& spatial,
     MicroPitchDetuneComponent& microPitch,
-    ExciterSaturationComponent& exciterSaturation)
-	: tiltEQComponent(tiltEQ), widthComponent(width), delayComponent(delay), spatialFXComponent(spatial), microPitchComponent(microPitch), exciterSaturationComponent(exciterSaturation)
+    ExciterSaturationComponent& exciterSaturation,
+    SimpleVerbWithPredelayComponent& simpleVerb)
+	: tiltEQComponent(tiltEQ), widthComponent(width), delayComponent(delay), spatialFXComponent(spatial),
+	microPitchComponent(microPitch), exciterSaturationComponent(exciterSaturation), simpleVerbComponent(simpleVerb)
 {
     initializePresets();
 }

@@ -9,6 +9,7 @@
 #include "SpatialFXComponent.h"
 #include "MicroPitchDetuneComponent.h"
 #include "ExciterSaturationComponent.h"
+#include "SimpleVerbWithPredelayComponent.h"
 
 class PerceptionPresetManager
 {
@@ -18,7 +19,8 @@ public:
         ModDelayComponent& delay,
         SpatialFXComponent& spatial,
         MicroPitchDetuneComponent& microPitch,
-	    ExciterSaturationComponent& exciterSaturation);
+	    ExciterSaturationComponent& exciterSaturation,
+        SimpleVerbWithPredelayComponent& simpleVerb);
 
     void applyPreset(const juce::String& presetName);
 
@@ -29,6 +31,7 @@ private:
     SpatialFXComponent& spatialFXComponent;
 	MicroPitchDetuneComponent& microPitchComponent;
 	ExciterSaturationComponent& exciterSaturationComponent;
+	SimpleVerbWithPredelayComponent& simpleVerbComponent;
 
     std::map<juce::String, std::function<void()>> presets;
     void initializePresets();

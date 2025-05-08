@@ -12,10 +12,14 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #endif
     ),
     parameters(*this, nullptr, "PARAMETERS", createParameterLayout()),
-    modDelay(), // Initialize the ModDelay object
+    widthBalancer(),
+	tiltEQ(),
+    modDelay(),
     spatialFX(),
     microPitchDetune(),
-	exciterSaturation()
+	exciterSaturation(),
+	simpleVerbWithPredelay(),
+	bpm(120.0f)
 {
     // Optionally set the initial modulation type
     modDelay.setModulationType(ModDelay::ModulationType::Sine);
@@ -116,6 +120,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     spatialFX.prepare(spec);
     microPitchDetune.prepare(spec);
 	exciterSaturation.prepare(spec);
+	simpleVerbWithPredelay.prepare(spec);
 
     dryBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
 }
@@ -255,6 +260,15 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 	exciterSaturation.setMix(exciterMix);
 	exciterSaturation.setHighpass(highpassFreq);
 	exciterSaturation.process(block);
+#pragma endregion
+
+#pragma region SimpleVerbWithPredelay
+	float predelayMs = *parameters.getRawParameterValue("predelayMs");
+	float size = *parameters.getRawParameterValue("size");
+	float damping = *parameters.getRawParameterValue("damping");
+	float wet = *parameters.getRawParameterValue("wet");
+	simpleVerbWithPredelay.setParams(predelayMs, size, damping, wet);
+	simpleVerbWithPredelay.process(block);
 #pragma endregion
 }
 
@@ -545,6 +559,48 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)
     ));
+
+	// SimpleVerbWithPredelay
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "predelayMs", 1 },
+        "Pre-delay (ms)",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
+        20.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "size", 1 },
+        "Reverb Size",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "damping", 1 },
+        "Damping",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.3f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "wet", 1 },
+        "Wet Level",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
 
     return { params.begin(), params.end() };
 }

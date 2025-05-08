@@ -10,9 +10,11 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     spatialFXComponent = std::make_unique<SpatialFXComponent>(p.parameters);
     microPitchDetuneComponent = std::make_unique<MicroPitchDetuneComponent>(p.parameters);
 	exciterSaturationComponent = std::make_unique<ExciterSaturationComponent>(p.parameters);
+	simpleVerbWithPredelayComponent = std::make_unique<SimpleVerbWithPredelayComponent>(p.parameters);
 
     // Now that the above components are created, it's safe to pass them to the preset manager
-    presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent, *spatialFXComponent, *microPitchDetuneComponent, *exciterSaturationComponent);
+    presetManager = std::make_unique<PerceptionPresetManager>(*tiltEQComponent, *widthBalancerComponent, *modDelayComponent,
+                *spatialFXComponent, *microPitchDetuneComponent, *exciterSaturationComponent, *simpleVerbWithPredelayComponent);
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
 
     addAndMakeVisible(*widthBalancerComponent);
@@ -22,6 +24,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     addAndMakeVisible(*perceptionModeComponent);
     addAndMakeVisible(*microPitchDetuneComponent);
 	addAndMakeVisible(*exciterSaturationComponent);
+	addAndMakeVisible(*simpleVerbWithPredelayComponent);
     
     addAndMakeVisible(modeToggle);
     modeToggle.setButtonText("Show Perception Modes");
@@ -30,7 +33,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
         };
 
     modeToggle.setToggleState(false, juce::dontSendNotification);
-    setSize(1200, 800);
+    setSize(1200, 1000);
     updateUIVisibility();
 }
 
@@ -48,6 +51,7 @@ void AudioPluginAudioProcessorEditor::updateUIVisibility()
     spatialFXComponent->setVisible(!perceptionMode);
 	microPitchDetuneComponent->setVisible(!perceptionMode);
 	exciterSaturationComponent->setVisible(!perceptionMode);
+	simpleVerbWithPredelayComponent->setVisible(!perceptionMode);
 
     perceptionModeComponent->setVisible(perceptionMode);
 }
@@ -117,6 +121,12 @@ void AudioPluginAudioProcessorEditor::resized()
 	auto exciterSaturationHeight = 150;
 	auto exciterSaturationArea = mainUIArea.removeFromTop(exciterSaturationHeight);
 	exciterSaturationComponent->setBounds(exciterSaturationArea);
+
+	mainUIArea.removeFromTop(spacing);
+
+	auto simpleVerbWithPredelayHeight = 150;
+	auto simpleVerbWithPredelayArea = mainUIArea.removeFromTop(simpleVerbWithPredelayHeight);
+	simpleVerbWithPredelayComponent->setBounds(simpleVerbWithPredelayArea);
 
     // Always set the bounds for the perception mode component
     perceptionModeComponent->setBounds(perceptionModeArea);

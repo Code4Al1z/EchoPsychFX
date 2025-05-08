@@ -6,6 +6,7 @@
 #include "SpatialFX.h"
 #include "MicroPitchDetune.h"
 #include "ExciterSaturation.h"
+#include "SimpleVerbWithPredelay.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
@@ -60,6 +61,13 @@ public:
     SpatialFX spatialFX;
     MicroPitchDetune microPitchDetune;
 	ExciterSaturation exciterSaturation;
+	SimpleVerbWithPredelay simpleVerbWithPredelay;
+	
+	// For tempo sync
+	void setBpm(double newBpm) { bpm = newBpm; }
+	double getBpm() const { return bpm; }
+	// For tempo sync in modDelay
+	void setTempo(float newTempo) { modDelay.setTempo(newTempo); }
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();

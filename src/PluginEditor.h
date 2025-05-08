@@ -9,6 +9,7 @@
 #include "PerceptionPresetManager.h"
 #include "MicroPitchDetuneComponent.h"
 #include "ExciterSaturationComponent.h"
+#include "SimpleVerbWithPredelayComponent.h"
 #include "ModDelay.h"
 #include "SpatialFX.h"
 
@@ -36,6 +37,7 @@ public:
     std::unique_ptr<PerceptionModeComponent> perceptionModeComponent;
 	std::unique_ptr<MicroPitchDetuneComponent> microPitchDetuneComponent;
 	std::unique_ptr<ExciterSaturationComponent> exciterSaturationComponent;
+	std::unique_ptr<SimpleVerbWithPredelayComponent> simpleVerbWithPredelayComponent;
 
 private:
     AudioPluginAudioProcessor& processorRef;
