@@ -27,6 +27,18 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     presetSelector.addItem("Sonic Embrace", 16);
     presetSelector.addItem("Strobe Heaven", 17);
     presetSelector.addItem("Glass Flame", 18);
+    presetSelector.addItem("Celestial Vault", 19);
+    presetSelector.addItem("Deep Illusion", 20);
+    presetSelector.addItem("Ego Dissolve", 21);
+    presetSelector.addItem("Memory Dust", 22);
+    presetSelector.addItem("Gentle Slap", 23);
+    presetSelector.addItem("Moon Dance", 24);
+    presetSelector.addItem("Biting Lips", 25);
+    presetSelector.addItem("Stormy Day", 26);
+    presetSelector.addItem("Summer Sunset", 27);
+    presetSelector.addItem("Ocean Waves", 28);
+    presetSelector.addItem("Crystal Clear", 29);
+    presetSelector.addItem("Sweetest Memory", 30);
     presetSelector.onChange = [this]() {
         comboBoxChanged(&presetSelector);
         };

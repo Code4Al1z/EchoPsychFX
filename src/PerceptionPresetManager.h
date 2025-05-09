@@ -40,6 +40,7 @@ private:
         float width, float intensity, float midSideBalance, bool mono, float tiltEQ,
         float phaseOffsetL, float phaseOffsetR, float modulationRate, float modulationDepth, float wetDryMix,
         float detuneAmount, float lfoRate, float lfoDepth, float delayCentre, float stereoSeparation, float mix,
-        float drive, float exciterMix, float highpass);
+        float drive, float exciterMix, float highpass,
+        float predelay, float size, float damping, float wet);
 
 };
