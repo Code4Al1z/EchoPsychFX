@@ -16,7 +16,7 @@ public:
     };
 
 
-    ModDelay() : modulationType(ModulationType::Sine) {}
+	ModDelay() = default;
     ~ModDelay() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
@@ -30,8 +30,8 @@ public:
     void setTempo(float newBpm);
 
 private:
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayL;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayR;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayL;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayR;
 
     float sampleRate = 44100.0f;
     float phase = 0.0f;
@@ -49,8 +49,10 @@ private:
 
     ModulationType modulationType = ModulationType::Sine;
 
-    float calculateModulation(float rateHz, float depth, float currentPhase);
+    float calculateModulation(float phaseNorm, float depth);
     float getEffectiveRateHz() const;
+
+    void updateEffectiveRate();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelay)
 };

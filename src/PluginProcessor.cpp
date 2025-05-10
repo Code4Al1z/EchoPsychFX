@@ -222,7 +222,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR"); // **[HIGHLIGHT] Get Phase Offset R**
     float sfxModRate = *parameters.getRawParameterValue("sfxModRate");   // **[HIGHLIGHT] Get SFX Mod Rate**
     float sfxModDepth = *parameters.getRawParameterValue("sfxModDepth");  // **[HIGHLIGHT] Get SFX Mod Depth**
-
+	float sfxFeedback = *parameters.getRawParameterValue("sfxFeedback");
+	int modulationShapeValue = parameters.state.getProperty("modulationShape");
+	SpatialFX::ModShape modulationShape = static_cast<SpatialFX::ModShape>(modulationShapeValue);
+    float phaseOffsetRadians = *parameters.getRawParameterValue("phaseOffsetRadians");
+    
     // Wet/dry mix using the dryBlock
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
     {
@@ -233,8 +237,10 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
             wet[i] = wet[i] * mixValue + dry[i] * (1.0f - mixValue);
     }
 
-	spatialFX.setParams(phaseOffsetL, phaseOffsetR, sfxModRate, sfxModDepth, mixValue);
+	spatialFX.setParams(phaseOffsetL, phaseOffsetR, sfxModRate, sfxModDepth, mixValue, modulationShape);
 	spatialFX.setSyncEnabled(syncEnabled);
+    spatialFX.setFeedback(sfxFeedback);
+    spatialFX.setLfoPhaseOffset(phaseOffsetRadians);
     spatialFX.process(block, getPlayHead());
 #pragma endregion
 
@@ -416,15 +422,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)));
 
-    params.push_back(std::make_unique<juce::AudioParameterInt>(
-        "modulationType", "Modulation Type",
-        (int)ModDelay::ModulationType::Sine,
-        (int)ModDelay::ModulationType::SawtoothDown,
-        (int)ModDelay::ModulationType::Sine));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        "modulationType",
+        "Modulation Type",
+        juce::StringArray{ "Sine", "Triangle", "Square", "Sawtooth Up", "Sawtooth Down" },
+        1  // Default index: 1 = "Sine"
+    ));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>("sync", "Sync", false));
 
-    // **[HIGHLIGHT] SpatialFX Parameters**
+    // SpatialFX Parameters**
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "phaseOffsetL", 1 },
         "Phase L Offset",
@@ -524,6 +531,33 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxFeedback", 1 },
+        "Feedback",
+        juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        "modulationShape",
+        "Modulation Shape",
+        juce::StringArray{ "Sine", "Triangle", "Noise" },
+        1
+    ));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "phaseOffsetRadians", 1 },
+        "LFO Phase Offset",
+        juce::NormalisableRange<float>(0.0f, juce::MathConstants<float>::twoPi, 0.01f),
+        juce::MathConstants<float>::halfPi,
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)

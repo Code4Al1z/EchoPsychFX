@@ -86,12 +86,12 @@ void ModDelayComponent::resized()
 // Parameter setters
 void ModDelayComponent::setModulationType(ModDelay::ModulationType type)
 {
-    modulationTypeComboBox.setSelectedId(static_cast<int>(type), juce::dontSendNotification);
+    modulationTypeComboBox.setSelectedId(static_cast<int>(type));
 }
 
-void ModDelayComponent::setDelayTime(float v) { delayTime.slider.setValue(v, juce::dontSendNotification); }
-void ModDelayComponent::setFeedbackLeft(float v) { feedbackL.slider.setValue(v, juce::dontSendNotification); }
-void ModDelayComponent::setFeedbackRight(float v) { feedbackR.slider.setValue(v, juce::dontSendNotification); }
-void ModDelayComponent::setMix(float v) { mix.slider.setValue(v, juce::dontSendNotification); }
-void ModDelayComponent::setModDepth(float v) { modDepth.slider.setValue(v, juce::dontSendNotification); }
-void ModDelayComponent::setModRate(float v) { modRate.slider.setValue(v, juce::dontSendNotification); }
+void ModDelayComponent::setDelayTime(float v) { delayTime.slider.setValue(v); }
+void ModDelayComponent::setFeedbackLeft(float v) { feedbackL.slider.setValue(v); }
+void ModDelayComponent::setFeedbackRight(float v) { feedbackR.slider.setValue(v); }
+void ModDelayComponent::setMix(float v) { mix.slider.setValue(v); }
+void ModDelayComponent::setModDepth(float v) { modDepth.slider.setValue(v); }
+void ModDelayComponent::setModRate(float v) { modRate.slider.setValue(v); }
