@@ -3,28 +3,29 @@
 
 SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state)
 {
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetL", "Phase L Offset", -180.0f, 180.0f, 1.0f)));
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetR", "Phase R Offset", -180.0f, 180.0f, 1.0f)));
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModRate", "SFX Rate", 0.0f, 10.0f, 0.01f)));
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModDepth", "SFX Depth")));
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxWetDryMix", "SFX Wet/Dry")));
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxFeedback", "Feedback")));
-    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxLfoPhaseOffset", "LFO Phase Offset", 0.0f, 6.2832f, 0.01f))); // up to 2pi
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetL", "Phase L", -180.0f, 180.0f, 1.0f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetR", "Phase R", -180.0f, 180.0f, 1.0f)));
 
-    // Sync Toggle
-    syncToggle = std::make_unique<ToggleWithLabel>();
-    syncToggle->toggle = std::make_unique<juce::ToggleButton>();
-    syncToggle->toggle->setButtonText("Sync");
-    syncToggle->attachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-        state, "sfxSync", *syncToggle->toggle);
-    addAndMakeVisible(*syncToggle->toggle);
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModRateL", "Rate L", 0.0f, 10.0f, 0.01f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModRateR", "Rate R", 0.0f, 10.0f, 0.01f)));
+
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModDepthL", "Depth L")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxModDepthR", "Depth R")));
+
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxWetDryMix", "Wet/Dry")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxLfoPhaseOffset", "LFO Phase", 0.0f, 6.2832f, 0.01f)));
+
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "sfxAllpassFreq", "Allpass Freq", 20.0f, 20000.0f, 1.0f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "haasDelayL", "Haas L", 0.0f, 40.0f, 0.1f)));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "haasDelayR", "Haas R", 0.0f, 40.0f, 0.1f)));
 
     // Mod Shape ComboBox
     modShapeSelector = std::make_unique<ComboBoxWithLabel>();
     modShapeSelector->comboBox = std::make_unique<juce::ComboBox>();
     modShapeSelector->comboBox->addItem("Sine", 1);
     modShapeSelector->comboBox->addItem("Triangle", 2);
-    modShapeSelector->comboBox->addItem("Noise", 3);
+    modShapeSelector->comboBox->addItem("Square", 3);
+    modShapeSelector->comboBox->addItem("Random", 4);
     modShapeSelector->attachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         state, "modulationShape", *modShapeSelector->comboBox);
     addAndMakeVisible(*modShapeSelector->comboBox);
@@ -68,31 +69,30 @@ void SpatialFXComponent::resized()
         x += knobSize + margin;
     }
 
-    // Place sync toggle and mod shape selector
-    if (syncToggle) {
-        syncToggle->toggle->setBounds(x, y + 20, 80, 30);
-        x += 90;
-    }
-
     if (modShapeSelector) {
         modShapeSelector->comboBox->setBounds(x, y + 20, 100, 30);
     }
 }
 
-// Individual value setters
+// Individual setters for programmatic updates
 void SpatialFXComponent::setPhaseOffsetLeft(float newValue) { knobs[0]->slider->setValue(newValue); }
 void SpatialFXComponent::setPhaseOffsetRight(float newValue) { knobs[1]->slider->setValue(newValue); }
-void SpatialFXComponent::setModulationRate(float newValue) { knobs[2]->slider->setValue(newValue); }
-void SpatialFXComponent::setModulationDepth(float newValue) { knobs[3]->slider->setValue(newValue); }
-void SpatialFXComponent::setWetDryMix(float newValue) { knobs[4]->slider->setValue(newValue); }
-void SpatialFXComponent::setFeedback(float newValue) { knobs[5]->slider->setValue(newValue); }
-void SpatialFXComponent::setLfoPhaseOffset(float newValue) { knobs[6]->slider->setValue(newValue); }
-void SpatialFXComponent::setSyncEnabled(bool enabled) { if (syncToggle) syncToggle->toggle->setToggleState(enabled, juce::sendNotification); }
-void SpatialFXComponent::setModShape(SpatialFX::ModShape modShape)
-{
-	if (modShapeSelector)
-	{
-		int shapeIndex = static_cast<int>(modShape);
-		modShapeSelector->comboBox->setSelectedId(shapeIndex);
-	}
+void SpatialFXComponent::setModulationRate(float left, float right) {
+    knobs[2]->slider->setValue(left);
+    knobs[3]->slider->setValue(right);
+}
+void SpatialFXComponent::setModulationDepth(float left, float right) {
+    knobs[4]->slider->setValue(left);
+    knobs[5]->slider->setValue(right);
+}
+void SpatialFXComponent::setWetDryMix(float newValue) { knobs[6]->slider->setValue(newValue); }
+void SpatialFXComponent::setLfoPhaseOffset(float newValue) { knobs[7]->slider->setValue(newValue); }
+void SpatialFXComponent::setAllpassFrequency(float newValue) { knobs[8]->slider->setValue(newValue); }
+void SpatialFXComponent::setHaasDelayMs(float leftMs, float rightMs) {
+    knobs[9]->slider->setValue(leftMs);
+    knobs[10]->slider->setValue(rightMs);
+}
+void SpatialFXComponent::setModShape(SpatialFX::LfoWaveform waveform) {
+    if (modShapeSelector)
+        modShapeSelector->comboBox->setSelectedId(static_cast<int>(waveform));
 }

@@ -217,31 +217,30 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 #pragma endregion
 
 #pragma region SpatialFX
+    float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL");
+    float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR");
+    float sfxModRateL = *parameters.getRawParameterValue("sfxModRateL");
+    float sfxModRateR = *parameters.getRawParameterValue("sfxModRateR");
+    float sfxModDepthL = *parameters.getRawParameterValue("sfxModDepthL");
+    float sfxModDepthR = *parameters.getRawParameterValue("sfxModDepthR");
     float mixValue = *parameters.getRawParameterValue("sfxWetDryMix");
-    float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL"); // **[HIGHLIGHT] Get Phase Offset L**
-    float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR"); // **[HIGHLIGHT] Get Phase Offset R**
-    float sfxModRate = *parameters.getRawParameterValue("sfxModRate");   // **[HIGHLIGHT] Get SFX Mod Rate**
-    float sfxModDepth = *parameters.getRawParameterValue("sfxModDepth");  // **[HIGHLIGHT] Get SFX Mod Depth**
-	float sfxFeedback = *parameters.getRawParameterValue("sfxFeedback");
-	int modulationShapeValue = parameters.state.getProperty("modulationShape");
-	SpatialFX::ModShape modulationShape = static_cast<SpatialFX::ModShape>(modulationShapeValue);
-    float phaseOffsetRadians = *parameters.getRawParameterValue("phaseOffsetRadians");
-    
-    // Wet/dry mix using the dryBlock
-    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-    {
-        auto* dry = dryBlock.getChannelPointer(ch);
-        auto* wet = block.getChannelPointer(ch);
+    float sfxLfoPhaseOffset = *parameters.getRawParameterValue("sfxLfoPhaseOffset");
+    float allpassFreq = *parameters.getRawParameterValue("sfxAllpassFreq");
+    float haasDelayL = *parameters.getRawParameterValue("haasDelayL");
+    float haasDelayR = *parameters.getRawParameterValue("haasDelayR");
 
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
-            wet[i] = wet[i] * mixValue + dry[i] * (1.0f - mixValue);
-    }
+    int modulationShapeValue = parameters.state.getProperty("modulationShape");
+    SpatialFX::LfoWaveform modulationShape = static_cast<SpatialFX::LfoWaveform>(modulationShapeValue);
 
-	spatialFX.setParams(phaseOffsetL, phaseOffsetR, sfxModRate, sfxModDepth, mixValue, modulationShape);
-	spatialFX.setSyncEnabled(syncEnabled);
-    spatialFX.setFeedback(sfxFeedback);
-    spatialFX.setLfoPhaseOffset(phaseOffsetRadians);
-    spatialFX.process(block, getPlayHead());
+    spatialFX.setPhaseAmount(phaseOffsetL, phaseOffsetR);
+    spatialFX.setLfoRate(sfxModRateL, sfxModRateR);
+    spatialFX.setLfoDepth(sfxModDepthL, sfxModDepthR);
+    spatialFX.setWetDry(mixValue);
+    spatialFX.setLfoPhaseOffset(sfxLfoPhaseOffset);
+	spatialFX.setAllpassFrequency(allpassFreq);
+	spatialFX.setHaasDelayMs(haasDelayL, haasDelayR);
+    spatialFX.setLfoWaveform(modulationShape);
+    spatialFX.process(block);
 #pragma endregion
 
 #pragma region MicroPitchDetune
@@ -451,22 +450,32 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withValueFromStringFunction(stringToFloat)));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxModRate", 1 },
-        "SFX Rate",
+        juce::ParameterID{ "sfxModRateL", 1 },
+        "SFX Rate L",
         juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
         0.1f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(floatToString2dp).withValueFromStringFunction(stringToFloat)));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxModDepth", 1 },
-        "SFX Depth",
+        juce::ParameterID{ "sfxModRateR", 1 },
+        "SFX Rate R",
+        juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
+        0.1f,
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(floatToString2dp).withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxModDepthL", 1 },
+        "SFX Depth L",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        0.5f,
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(floatToString2dp).withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxModDepthR", 1 },
+        "SFX Depth R",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(floatToString2dp).withValueFromStringFunction(stringToFloat)));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxWetDryMix", 1 },
@@ -477,14 +486,62 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)));
 
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "sfxLfoPhaseOffset", 1 },
+        "LFO Phase",
+        juce::NormalisableRange<float>(0.0f, juce::MathConstants<float>::twoPi, 0.01f),
+        juce::MathConstants<float>::halfPi,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)
+    ));
+
 	params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		juce::ParameterID{ "detuneAmount", 1 },
-		"Detune Amount",
-		juce::NormalisableRange<float>(-50.0f, 50.0f, 0.1f),
+		juce::ParameterID{ "sfxAllpassFreq", 1 },
+		"Allpass Freq",
+		juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f),
+		1000.0f,
+		juce::AudioParameterFloatAttributes()
+		.withStringFromValueFunction(floatToString2dp)
+		.withValueFromStringFunction(stringToFloat)
+	));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		juce::ParameterID{ "haasDelayL", 1 },
+		"Haas Delay L",
+		juce::NormalisableRange<float>(0.0f, 40.0f, 0.1f),
 		0.0f,
 		juce::AudioParameterFloatAttributes()
 		.withStringFromValueFunction(floatToString2dp)
-		.withValueFromStringFunction(stringToFloat)));
+		.withValueFromStringFunction(stringToFloat)
+	));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		juce::ParameterID{ "haasDelayR", 1 },
+		"Haas Delay R",
+		juce::NormalisableRange<float>(0.0f, 40.0f, 0.1f),
+		0.0f,
+		juce::AudioParameterFloatAttributes()
+		.withStringFromValueFunction(floatToString2dp)
+		.withValueFromStringFunction(stringToFloat)
+	));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        "modulationShape",
+        "Modulation Shape",
+        juce::StringArray{ "Sine", "Triangle", "Square", "Random" },
+        1
+    ));
+
+	// MicroPitchDetune
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "detuneAmount", 1 },
+        "Detune Amount",
+        juce::NormalisableRange<float>(-50.0f, 50.0f, 0.1f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "lfoRate", 1 },
@@ -531,33 +588,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)
-    ));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxFeedback", 1 },
-        "Feedback",
-        juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)
-    ));
-
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(
-        "modulationShape",
-        "Modulation Shape",
-        juce::StringArray{ "Sine", "Triangle", "Noise" },
-        1
-    ));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "phaseOffsetRadians", 1 },
-        "LFO Phase Offset",
-        juce::NormalisableRange<float>(0.0f, juce::MathConstants<float>::twoPi, 0.01f),
-        juce::MathConstants<float>::halfPi,
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)

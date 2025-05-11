@@ -5,60 +5,54 @@
 
 class SpatialFX {
 public:
-    enum class ModShape { Sine = 1, Triangle, Noise };
+public:
+    enum class LfoWaveform { Sine = 1, Triangle, Square, Random };
 
     SpatialFX();
-    ~SpatialFX() = default;
-
     void prepare(const juce::dsp::ProcessSpec& spec);
     void reset();
 
-    void setParams(float leftOffset, float rightOffset, float rate, float depth, float mix, ModShape modShape);
-    void setSyncEnabled(bool shouldSync);
-    void setFeedback(float fb);
-    void setLfoPhaseOffset(float radians);
+    void setPhaseAmount(float leftPhase, float rightPhase); // in radians
+    void setLfoDepth(float depthL, float depthR);
+    void setLfoRate(float rateL, float rateR);
+    void setLfoWaveform(LfoWaveform waveform);
+    void setLfoPhaseOffset(float offset); // 0 to 2*pi
+    void setWetDry(float newWetDry);
+    void setAllpassFrequency(float frequency);
+    void setHaasDelayMs(float leftMs, float rightMs);
 
-    void process(juce::dsp::AudioBlock<float>& block, juce::AudioPlayHead* playHead);
-
-    float getEffectiveRateHz() const;
+    void process(juce::dsp::AudioBlock<float>& block);
 
 private:
-    void updateLfoFrequencies();
-    void updateLfoWaveforms();
-
     float sampleRate = 44100.0f;
-    const float maxDelaySeconds = 0.1f; // 100 ms
-    const float minDelaySeconds = 0.001f;
-    const float maxModDepthSeconds = maxDelaySeconds - minDelaySeconds;
-    const float smoothingTime = 0.05f;
 
-    int maxDelaySamples = static_cast<int>(maxDelaySeconds * 48000.0f);
-    const float minDelaySamples = minDelaySeconds * 48000.0f;
+    juce::SmoothedValue<float> targetPhaseL;
+    juce::SmoothedValue<float> targetPhaseR;
 
-    std::atomic<float> currentBpm{ 120.0f };
-    std::atomic<float> feedbackAmount{ 0.0f };
+    juce::SmoothedValue<float> wetDry;
+    juce::SmoothedValue<float> lfoDepthL;
+    juce::SmoothedValue<float> lfoDepthR;
+    juce::SmoothedValue<float> lfoRateL;
+    juce::SmoothedValue<float> lfoRateR;
+    juce::SmoothedValue<float> allpassFrequency;
+    juce::SmoothedValue<float> haasMsL;
+    juce::SmoothedValue<float> haasMsR;
 
-    float targetRateOrNote = 1.0f;
-    bool syncEnabled = false;
-    std::atomic<float>* syncParameter = nullptr;
-    float lfoPhaseOffsetRadians = juce::MathConstants<float>::halfPi;
+    float lfoPhaseL = 0.0f;
+    float lfoPhaseR = 0.0f;
+    float lfoPhaseOffset = 0.0f;
 
-    ModShape modulationShape = ModShape::Sine;
+    LfoWaveform waveform = LfoWaveform::Sine;
 
-    juce::SmoothedValue<float> phaseOffsetLeft{ 0.0f };
-    juce::SmoothedValue<float> phaseOffsetRight{ 0.0f };
-    juce::SmoothedValue<float> modulationDepth{ 0.5f };
-    juce::SmoothedValue<float> wetDryMix{ 0.5f };
+    juce::dsp::IIR::Filter<float> allpassL;
+    juce::dsp::IIR::Filter<float> allpassR;
 
-    juce::SmoothedValue<float> smoothedNoiseLeft{ 0.05f };
-    juce::SmoothedValue<float> smoothedNoiseRight{ 0.05f };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> haasDelayL{ 4410 };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> haasDelayR{ 4410 };
 
-    juce::dsp::Oscillator<float> lfoLeft;
-    juce::dsp::Oscillator<float> lfoRight;
-
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineLeft;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayLineRight;
-
+    void updateFilters();
+    void updateLfo();
+    float getLfoValue(float phase);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpatialFX)
 };

@@ -16,13 +16,13 @@ public:
 
     void setPhaseOffsetLeft(float newValue);
     void setPhaseOffsetRight(float newValue);
-    void setModulationRate(float newValue);
-    void setModulationDepth(float newValue);
+    void setModulationRate(float left, float right);
+    void setModulationDepth(float left, float right);
     void setWetDryMix(float newValue);
-    void setFeedback(float newValue);
     void setLfoPhaseOffset(float newValue);
-    void setSyncEnabled(bool enabled);
-    void setModShape(SpatialFX::ModShape modShape);
+    void setAllpassFrequency(float newValue);
+    void setHaasDelayMs(float leftMs, float rightMs);
+    void setModShape(SpatialFX::LfoWaveform waveform);
 
 private:
     struct KnobWithLabel {
@@ -37,18 +37,11 @@ private:
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> attachment;
     };
 
-    struct ToggleWithLabel {
-        std::unique_ptr<juce::ToggleButton> toggle;
-        std::unique_ptr<juce::Label> label;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> attachment;
-    };
-
     KnobWithLabel createKnob(juce::AudioProcessorValueTreeState& state, const juce::String& paramID, const juce::String& labelText,
         float min = 0.0f, float max = 1.0f, float step = 0.01f);
 
     std::vector<std::unique_ptr<KnobWithLabel>> knobs;
     std::unique_ptr<ComboBoxWithLabel> modShapeSelector;
-    std::unique_ptr<ToggleWithLabel> syncToggle;
 
     int knobSize = 120;
     int margin = 10;
