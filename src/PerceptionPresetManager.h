@@ -38,8 +38,8 @@ private:
     void usePreset(ModDelay::ModulationType type, float delayTime, float feedbackLeft, float feedbackRight,
         float modMix, float delayModDepth, float delayModRate,
         float width, float intensity, float midSideBalance, bool mono, float tiltEQ,
-        float phaseOffsetL, float phaseOffsetR, float modulationRate, float modulationDepth, float wetDryMix,
-        float spatialFeedback, float lfoPhaseOffset, bool sync, SpatialFX::ModShape modShape,
+        float phaseOffsetL, float phaseOffsetR, float modulationRateL, float modulationRateR, float modulationDepthL, float modulationDepthR,
+        float wetDryMix, float lfoPhaseOffset, float allpassFrequency, float leftHaasMs, float rightHaasMs, SpatialFX::LfoWaveform modShape,
         float detuneAmount, float lfoRate, float lfoDepth, float delayCentre, float stereoSeparation, float mix,
         float drive, float exciterMix, float highpass,
         float predelay, float size, float damping, float wet);
