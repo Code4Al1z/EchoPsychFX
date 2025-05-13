@@ -11,11 +11,13 @@ public:
     TiltEQComponent(juce::AudioProcessorValueTreeState& state);
     ~TiltEQComponent() override;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setTilt(float newValue);
 
 private:
+    juce::GroupComponent group{ "tiltEQGroup", "TiltEQ" };
 
     int knobSize = 120;
     int margin = 10;

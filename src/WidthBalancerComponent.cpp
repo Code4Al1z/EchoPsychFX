@@ -3,6 +3,10 @@
 
 WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeState& state)
 {
+    addAndMakeVisible(group);
+    group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
+    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+    
     configureSlider(widthSlider, juce::Slider::RotaryHorizontalVerticalDrag);
     configureSlider(midSideSlider, juce::Slider::LinearBar);
     configureSlider(intensitySlider, juce::Slider::RotaryHorizontalVerticalDrag);
@@ -25,6 +29,14 @@ void WidthBalancerComponent::configureSlider(juce::Slider& slider, juce::Slider:
 {
     slider.setSliderStyle(style);
     slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+
+    // Colour the knob (thumb), filled track, and background
+    slider.setColour(juce::Slider::thumbColourId, juce::Colour (255, 111, 41));                   // knob
+    slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
+    slider.setColour(juce::Slider::backgroundColourId, juce::Colour (123, 0, 70));       // background track
+    slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
+    slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+
     addAndMakeVisible(slider);
 }
 
@@ -36,8 +48,15 @@ void WidthBalancerComponent::configureLabel(juce::Label& label, const juce::Stri
     addAndMakeVisible(label);
 }
 
+void WidthBalancerComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour(31, 31, 31));
+}
+
 void WidthBalancerComponent::resized()
 {
+    group.setBounds(getLocalBounds());
+
     const int knobSize = 100;
     const int margin = 10;
 

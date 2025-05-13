@@ -10,6 +10,7 @@ public:
     MicroPitchDetuneComponent(juce::AudioProcessorValueTreeState& state);
     ~MicroPitchDetuneComponent() override;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setMix(float newValue);
@@ -20,6 +21,8 @@ public:
     void setStereoSeparation(float newValue);
 
 private:
+    juce::GroupComponent group{ "microPitchDetuneGroup", "Micro-Pitch Detune" };
+
     static constexpr int knobSize = 100;
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;

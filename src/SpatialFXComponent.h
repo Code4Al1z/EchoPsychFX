@@ -12,6 +12,7 @@ public:
     SpatialFXComponent(juce::AudioProcessorValueTreeState& state);
     ~SpatialFXComponent() override = default;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setPhaseOffsetLeft(float newValue);
@@ -25,6 +26,8 @@ public:
     void setModShape(SpatialFX::LfoWaveform waveform);
 
 private:
+    juce::GroupComponent group{ "spatialFXGroup", "SpatialFX" };
+
     struct KnobWithLabel {
         std::unique_ptr<juce::Slider> slider;
         std::unique_ptr<juce::Label> label;
@@ -43,7 +46,7 @@ private:
     std::vector<std::unique_ptr<KnobWithLabel>> knobs;
     std::unique_ptr<ComboBoxWithLabel> modShapeSelector;
 
-    int knobSize = 120;
+    int knobSize = 100;
     int margin = 10;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpatialFXComponent)

@@ -2,6 +2,10 @@
 
 ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 {
+    addAndMakeVisible(group);
+    group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
+    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+
     configureKnob(delayTime, "delayTime", "Delay", state);
     configureKnob(feedbackL, "feedbackL", "FB Left", state);
     configureKnob(feedbackR, "feedbackR", "FB Right", state);
@@ -36,6 +40,14 @@ void ModDelayComponent::configureKnob(KnobWithLabel& kwl, const juce::String& pa
 {
     kwl.slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     kwl.slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+
+    // Colour the knob (thumb), filled track, and background
+    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
+    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
+    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
+    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
+    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+
     addAndMakeVisible(kwl.slider);
 
     kwl.label.setText(labelText);
@@ -49,15 +61,23 @@ void ModDelayComponent::configureKnob(KnobWithLabel& kwl, const juce::String& pa
     kwl.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, paramID, kwl.slider);
 }
 
+void ModDelayComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour(31, 31, 31));
+}
+
 void ModDelayComponent::resized()
 {
+    group.setBounds(getLocalBounds());
+
     auto area = getLocalBounds().reduced(margin);
     int numKnobs = 6;
 
     int textSpacing = 6;
 
     int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
-    int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
+    //int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
+    int startX = knobSize + spacing * 2;
     int y = area.getY() + 40; // Leave top for combo/sync
 
     // --- Stack syncToggle and combo box vertically on the left ---

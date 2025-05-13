@@ -12,6 +12,7 @@
 #include "SimpleVerbWithPredelayComponent.h"
 #include "ModDelay.h"
 #include "SpatialFX.h"
+#include "PluginLookAndFeel.h"
 
 //==============================================================================
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
@@ -41,6 +42,8 @@ public:
 
 private:
     AudioPluginAudioProcessor& processorRef;
+
+    PluginLookAndFeel pluginLookAndFeel;
 
     juce::ToggleButton modeToggle;
     juce::ComboBox modulationTypeComboBox;

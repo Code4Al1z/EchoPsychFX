@@ -11,6 +11,7 @@ public:
     ModDelayComponent(juce::AudioProcessorValueTreeState& state);
     ~ModDelayComponent() override = default;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setModulationType(ModDelay::ModulationType type);
@@ -22,6 +23,8 @@ public:
     void setModRate(float);
 
 private:
+    juce::GroupComponent group{ "modDelayGroup", "Mod Delay" };
+
     static constexpr int knobSize = 100;
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;

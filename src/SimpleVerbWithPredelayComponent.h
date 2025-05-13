@@ -10,6 +10,7 @@ public:
     SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state);
     ~SimpleVerbWithPredelayComponent() override;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setPredelay(float newValue);
@@ -18,6 +19,8 @@ public:
     void setWet(float newValue);
 
 private:
+    juce::GroupComponent group{ "simpleVerbWithPredelayGroup", "Simple Verb With Predelay" };
+
     static constexpr int knobSize = 100;
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;

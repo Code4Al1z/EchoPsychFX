@@ -10,6 +10,7 @@ public:
     ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state);
     ~ExciterSaturationComponent() override;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setDrive(float newValue);
@@ -17,6 +18,8 @@ public:
     void setHighpass(float newValue);
 
 private:
+    juce::GroupComponent group{ "exciterSaturationGroup", "Exciter Saturation" };
+
     static constexpr int knobSize = 100;
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;

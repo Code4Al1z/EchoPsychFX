@@ -3,6 +3,10 @@
 
 SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state)
 {
+    addAndMakeVisible(group);
+    group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
+    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+
     knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetL", "Phase L", -180.0f, 180.0f, 1.0f)));
     knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "phaseOffsetR", "Phase R", -180.0f, 180.0f, 1.0f)));
 
@@ -42,6 +46,14 @@ SpatialFXComponent::KnobWithLabel SpatialFXComponent::createKnob(
     control.slider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     control.slider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     control.slider->setRange(min, max, step);
+
+    // Colour the knob (thumb), filled track, and background
+    control.slider->setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
+    control.slider->setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
+    control.slider->setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
+    control.slider->setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
+    control.slider->setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+
     addAndMakeVisible(*control.slider);
 
     control.label = std::make_unique<juce::Label>();
@@ -56,21 +68,44 @@ SpatialFXComponent::KnobWithLabel SpatialFXComponent::createKnob(
     return control;
 }
 
+void SpatialFXComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour(31, 31, 31));
+}
+
 void SpatialFXComponent::resized()
 {
+    group.setBounds(getLocalBounds());
+
     auto area = getLocalBounds().reduced(margin);
+    const int numPerRow = 6;
+    const int rowHeight = knobSize + 30; // Extra space for labels
+
     int x = area.getX();
     int y = area.getY();
 
-    for (auto& control : knobs)
+    for (size_t i = 0; i < knobs.size(); ++i)
     {
-        control->slider->setBounds(x, y, knobSize, knobSize);
-        control->label->setBounds(x, y - 20, knobSize, 20);
-        x += knobSize + margin;
+        const int row = static_cast<int>(i) / numPerRow;
+        const int col = static_cast<int>(i) % numPerRow;
+
+        int knobX = area.getX() + col * (knobSize + margin);
+        int knobY = area.getY() + row * rowHeight;
+
+        knobs[i]->slider->setBounds(knobX, knobY + 20, knobSize, knobSize);
+        knobs[i]->label->setBounds(knobX, knobY, knobSize, 20);
     }
 
-    if (modShapeSelector) {
-        modShapeSelector->comboBox->setBounds(x, y + 20, 100, 30);
+    if (modShapeSelector)
+    {
+        const int totalKnobs = static_cast<int>(knobs.size());
+        const int modRow = totalKnobs / numPerRow;
+        const int modCol = totalKnobs % numPerRow;
+
+        int modX = area.getX() + modCol * (knobSize + margin);
+        int modY = area.getY() + modRow * rowHeight;
+
+        modShapeSelector->comboBox->setBounds(modX, modY + 20, 100, 30);
     }
 }
 

@@ -10,6 +10,7 @@ public:
     explicit WidthBalancerComponent(juce::AudioProcessorValueTreeState& state);
     ~WidthBalancerComponent() override = default;
 
+    void paint(juce::Graphics& g) override;
     void resized() override;
 
     void setWidth(float newValue);
@@ -18,6 +19,8 @@ public:
     void setIntensity(float newValue);
 
 private:
+    juce::GroupComponent group{ "widthGroup", "Width Balancer" };
+
     void configureSlider(juce::Slider& slider, juce::Slider::SliderStyle style);
     void configureLabel(juce::Label& label, const juce::String& text);
 

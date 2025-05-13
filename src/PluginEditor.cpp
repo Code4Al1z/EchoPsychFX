@@ -17,6 +17,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
                 *spatialFXComponent, *microPitchDetuneComponent, *exciterSaturationComponent, *simpleVerbWithPredelayComponent);
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
 
+    setLookAndFeel(&pluginLookAndFeel);
+
     addAndMakeVisible(*widthBalancerComponent);
     addAndMakeVisible(*tiltEQComponent);
     addAndMakeVisible(*modDelayComponent);
@@ -33,12 +35,13 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
         };
 
     modeToggle.setToggleState(false, juce::dontSendNotification);
-    setSize(1200, 1000);
+    setSize(900, 1000);
     updateUIVisibility();
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 {
+    setLookAndFeel(nullptr); // Important to avoid dangling reference
 }
 
 void AudioPluginAudioProcessorEditor::updateUIVisibility()
@@ -106,7 +109,7 @@ void AudioPluginAudioProcessorEditor::resized()
 
     mainUIArea.removeFromTop(spacing);
 
-    auto spatialFXHeight = 150;
+    auto spatialFXHeight = 300;
     auto spatialFXArea = mainUIArea.removeFromTop(spatialFXHeight);
     spatialFXComponent->setBounds(spatialFXArea);
 
@@ -118,15 +121,14 @@ void AudioPluginAudioProcessorEditor::resized()
 
 	mainUIArea.removeFromTop(spacing);
 
-	auto exciterSaturationHeight = 150;
-	auto exciterSaturationArea = mainUIArea.removeFromTop(exciterSaturationHeight);
-	exciterSaturationComponent->setBounds(exciterSaturationArea);
+    auto bottomRowHeight = 150;
+    auto bottomRow = mainUIArea.removeFromTop(bottomRowHeight);
 
-	mainUIArea.removeFromTop(spacing);
+    auto leftComponentArea = bottomRow.removeFromLeft(bottomRow.getWidth() / 2).reduced(5);
+    auto rightComponentArea = bottomRow.reduced(5); // remaining right half
 
-	auto simpleVerbWithPredelayHeight = 150;
-	auto simpleVerbWithPredelayArea = mainUIArea.removeFromTop(simpleVerbWithPredelayHeight);
-	simpleVerbWithPredelayComponent->setBounds(simpleVerbWithPredelayArea);
+    exciterSaturationComponent->setBounds(leftComponentArea);
+    simpleVerbWithPredelayComponent->setBounds(rightComponentArea);
 
     // Always set the bounds for the perception mode component
     perceptionModeComponent->setBounds(perceptionModeArea);

@@ -2,6 +2,10 @@
 
 SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state)
 {
+    addAndMakeVisible(group);
+    group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
+    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+
     configureKnob(predelay, "predelayMs", "Predelay", state);
     configureKnob(size, "size", "Size", state);
     configureKnob(damping, "damping", "Damping", state);
@@ -14,6 +18,14 @@ void SimpleVerbWithPredelayComponent::configureKnob(KnobWithLabel& kwl, const ju
 {
     kwl.slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     kwl.slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+
+    // Colour the knob (thumb), filled track, and background
+    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
+    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
+    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
+    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
+    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+
     addAndMakeVisible(kwl.slider);
 
     kwl.label.setText(labelText);
@@ -27,8 +39,15 @@ void SimpleVerbWithPredelayComponent::configureKnob(KnobWithLabel& kwl, const ju
     kwl.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, paramID, kwl.slider);
 }
 
+void SimpleVerbWithPredelayComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour(31, 31, 31));
+}
+
 void SimpleVerbWithPredelayComponent::resized()
 {
+    group.setBounds(getLocalBounds());
+
     auto area = getLocalBounds().reduced(margin);
     int numKnobs = 4;
     int spacing = 20;

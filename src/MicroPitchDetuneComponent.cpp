@@ -2,6 +2,10 @@
 
 MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTreeState& state)
 {
+    addAndMakeVisible(group);
+    group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
+    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+
     configureKnob(mix, "mix", "Mix", state);
     configureKnob(lfoRate, "lfoRate", "LFO Rate", state);
     configureKnob(lfoDepth, "lfoDepth", "LFO Depth", state);
@@ -18,6 +22,14 @@ void MicroPitchDetuneComponent::configureKnob(KnobWithLabel& kwl, const juce::St
 {
     kwl.slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     kwl.slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+
+    // Colour the knob (thumb), filled track, and background
+    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
+    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
+    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
+    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
+    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+
     addAndMakeVisible(kwl.slider);
 
     kwl.label.setText(labelText);
@@ -31,8 +43,15 @@ void MicroPitchDetuneComponent::configureKnob(KnobWithLabel& kwl, const juce::St
     kwl.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, paramID, kwl.slider);
 }
 
+void MicroPitchDetuneComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour(31, 31, 31));
+}
+
 void MicroPitchDetuneComponent::resized()
 {
+    group.setBounds(getLocalBounds());
+
     auto area = getLocalBounds().reduced(margin);
     int numKnobs = 6;
     int spacing = 20;
