@@ -77,7 +77,6 @@ void SpatialFX::setWetDry(float newWetDry)
 void SpatialFX::setAllpassFrequency(float frequency)
 {
     allpassFrequency.setTargetValue(frequency);
-    updateFilters();
 }
 
 void SpatialFX::setHaasDelayMs(float leftMs, float rightMs)
@@ -121,10 +120,10 @@ float SpatialFX::getLfoValue(float phase)
 {
     switch (waveform)
     {
-    case LfoWaveform::Sine:     return std::sin(phase);
+    case LfoWaveform::Sine:      return std::sin(phase);
     case LfoWaveform::Triangle: return 2.0f * std::abs(2.0f * (phase / juce::MathConstants<float>::twoPi) - 1.0f) - 1.0f;
-    case LfoWaveform::Square:   return std::sin(phase) >= 0.0f ? 1.0f : -1.0f;
-    case LfoWaveform::Random:   return juce::Random::getSystemRandom().nextFloat() * 2.0f - 1.0f;
+    case LfoWaveform::Square:    return std::sin(phase) >= 0.0f ? 1.0f : -1.0f;
+    case LfoWaveform::Random:    return juce::Random::getSystemRandom().nextFloat() * 2.0f - 1.0f;
     default: return 0.0f;
     }
 }
@@ -141,21 +140,22 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         float dryL = leftData[i];
         float dryR = rightData[i];
 
-        // Smooth values
+        // Get the next smoothed values for all parameters
         float smoothedPhaseL = targetPhaseL.getNextValue();
         float smoothedPhaseR = targetPhaseR.getNextValue();
         float smoothedDepthL = lfoDepthL.getNextValue();
         float smoothedDepthR = lfoDepthR.getNextValue();
         float smoothedWetDry = wetDry.getNextValue();
-
         float haasTimeL = haasMsL.getNextValue();
         float haasTimeR = haasMsR.getNextValue();
+        float currentAllpassFreq = allpassFrequency.getNextValue(); // Get the smoothed allpass frequency
+
         haasDelayL.setDelay(haasTimeL * sampleRate * 0.001f);
         haasDelayR.setDelay(haasTimeR * sampleRate * 0.001f);
 
         // Modulated phase shift
-        float phaseL = smoothedPhaseL + smoothedDepthL * std::sin(lfoPhaseL);
-        float phaseR = smoothedPhaseR + smoothedDepthR * std::sin(lfoPhaseR);
+        float phaseL = smoothedPhaseL + smoothedDepthL * getLfoValue(lfoPhaseL); // Use getLfoValue
+        float phaseR = smoothedPhaseR + smoothedDepthR * getLfoValue(lfoPhaseR);
 
         float shiftedL = dryL * std::cos(phaseL) - dryR * std::sin(phaseL);
         float shiftedR = dryR * std::cos(phaseR) + dryL * std::sin(phaseR);
@@ -165,6 +165,20 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         float delayedR = haasDelayR.popSample(0);
         haasDelayL.pushSample(0, shiftedL);
         haasDelayR.pushSample(0, shiftedR);
+
+        // Update allpass filter coefficients for each sample
+        auto omega = juce::MathConstants<float>::twoPi * currentAllpassFreq / sampleRate;
+        float alpha = std::sin(omega);
+        juce::dsp::IIR::Coefficients<float>::Ptr coefs = new juce::dsp::IIR::Coefficients<float>(
+            (1.0f - alpha) / 2.0f,
+            0.0f,
+            (alpha - 1.0f) / 2.0f,
+            1.0f,
+            0.0f,
+            -1.0f
+        );
+        allpassL.coefficients = coefs;
+        allpassR.coefficients = coefs;
 
         // Allpass filter on delayed signal
         float wetL = allpassL.processSample(delayedL);

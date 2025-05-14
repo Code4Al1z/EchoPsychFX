@@ -14,26 +14,41 @@ void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
     delayR.prepare(spec);
 
     phase = 0.0f;
+    currentModulationType = ModulationType::Sine;
+    targetModulationType = ModulationType::Sine;
+    modulationTypeCrossfade.reset(sampleRate, 0.02); // Short smoothing for modulation type
+    modulationTypeCrossfade.setCurrentAndTargetValue(0.0f);
 
-    constexpr double smoothingTime = 0.05;
+    constexpr double smoothingTime = 0.05; // Adjust as needed
 
-    delayMs.reset(sampleRate, smoothingTime);
-    modDepth.reset(sampleRate, smoothingTime);
-    modRateHz.reset(sampleRate, smoothingTime);
-    feedbackL.reset(sampleRate, smoothingTime);
-    feedbackR.reset(sampleRate, smoothingTime);
-    mix.reset(sampleRate, smoothingTime);
+    targetDelayMs.reset(sampleRate, smoothingTime);
+    currentDelayMs.reset(sampleRate, smoothingTime);
+    currentDelayMs.setCurrentAndTargetValue(0.0f); // Initial value
+    targetModDepth.reset(sampleRate, smoothingTime);
+    currentModDepth.reset(sampleRate, smoothingTime);
+    currentModDepth.setCurrentAndTargetValue(0.0f); // Initial value
+    targetModRateHz.reset(sampleRate, smoothingTime);
+    currentModRateHz.reset(sampleRate, smoothingTime);
+    currentModRateHz.setCurrentAndTargetValue(0.0f); // Initial value
+    targetFeedbackL.reset(sampleRate, smoothingTime);
+    currentFeedbackL.reset(sampleRate, smoothingTime);
+    currentFeedbackL.setCurrentAndTargetValue(0.0f); // Initial value
+    targetFeedbackR.reset(sampleRate, smoothingTime);
+    currentFeedbackR.reset(sampleRate, smoothingTime);
+    currentFeedbackR.setCurrentAndTargetValue(0.0f); // Initial value
+    targetMix.reset(sampleRate, smoothingTime);
+    currentMix.reset(sampleRate, smoothingTime);
+    currentMix.setCurrentAndTargetValue(0.0f); // Initial value
 }
 
 void ModDelay::setParams(float dMs, float depth, float rate, float fbL, float fbR, float m) {
-    delayMs.setTargetValue(dMs);
-    modDepth.setTargetValue(depth);
+    targetDelayMs.setTargetValue(dMs);
+    targetModDepth.setTargetValue(depth);
     rawRate = rate;
     updateEffectiveRate();
-
-    feedbackL.setTargetValue(juce::jlimit(0.0f, 0.95f, fbL));
-    feedbackR.setTargetValue(juce::jlimit(0.0f, 0.95f, fbR));
-    mix.setTargetValue(juce::jlimit(0.0f, 1.0f, m));
+    targetFeedbackL.setTargetValue(juce::jlimit(0.0f, 0.95f, fbL));
+    targetFeedbackR.setTargetValue(juce::jlimit(0.0f, 0.95f, fbR));
+    targetMix.setTargetValue(juce::jlimit(0.0f, 1.0f, m));
 }
 
 void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
@@ -41,23 +56,29 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
     auto* right = block.getChannelPointer(1);
     const int numSamples = static_cast<int>(block.getNumSamples());
 
-    float rateHz = modRateHz.getNextValue();
     float invSampleRate = 1.0f / sampleRate;
 
     for (int i = 0; i < numSamples; ++i) {
-        if (i % 32 == 0)
-            rateHz = modRateHz.getNextValue();
+        currentModRateHz.getNextValue(); // Advance smoothing
+        currentDelayMs.getNextValue();
+        currentModDepth.getNextValue();
+        currentFeedbackL.getNextValue();
+        currentFeedbackR.getNextValue();
+        currentMix.getNextValue();
+        modulationTypeCrossfade.getNextValue();
 
-        float dMs = delayMs.getNextValue();
-        float depth = modDepth.getNextValue();
-        float fbL = feedbackL.getNextValue();
-        float fbR = feedbackR.getNextValue();
-        float wetMix = mix.getNextValue();
+        float dMs = std::max(currentDelayMs.getCurrentValue(), 5.0f);
+        float depth = currentModDepth.getCurrentValue();
+        float fbL = currentFeedbackL.getCurrentValue();
+        float fbR = currentFeedbackR.getCurrentValue();
+        float wetMix = currentMix.getCurrentValue();
+        float rateHz = currentModRateHz.getCurrentValue();
 
-        dMs = std::max(dMs, 5.0f);
         float safeDepth = std::min({ depth, dMs - 5.0f, dMs * 0.4f });
 
-        float mod = calculateModulation(phase, safeDepth);
+        float mod1 = calculateModulation(phase, safeDepth, currentModulationType);
+        float mod2 = calculateModulation(phase, safeDepth, targetModulationType);
+        float mod = juce::jmap(modulationTypeCrossfade.getCurrentValue(), 0.0f, 1.0f, mod1, mod2);
 
         float delayLInSamples = (dMs + mod) * 0.001f * sampleRate;
         float delayRInSamples = (dMs - mod) * 0.001f * sampleRate;
@@ -78,10 +99,17 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
         if (phase >= 1.0f)
             phase -= 1.0f;
     }
+    if (modulationTypeCrossfade.getTargetValue() == 1.0f && modulationTypeCrossfade.getCurrentValue() >= 1.0f) {
+        currentModulationType = targetModulationType;
+        modulationTypeCrossfade.setTargetValue(0.0f); // Reset for future changes
+    }
 }
 
 void ModDelay::setModulationType(ModulationType newType) {
-    modulationType = newType;
+    if (newType != targetModulationType) {
+        targetModulationType = newType;
+        modulationTypeCrossfade.setTargetValue(1.0f);
+    }
 }
 
 void ModDelay::setSyncEnabled(bool shouldSync) {
@@ -94,10 +122,10 @@ void ModDelay::setTempo(float newBpm) {
     updateEffectiveRate();
 }
 
-float ModDelay::calculateModulation(float currentPhase, float depth) {
+float ModDelay::calculateModulation(float currentPhase, float depth, ModulationType type) {
     float phaseWrapped = currentPhase - std::floor(currentPhase);
 
-    switch (modulationType) {
+    switch (type) {
     case ModulationType::Sine:
         return std::sin(juce::MathConstants<float>::twoPi * phaseWrapped) * depth;
     case ModulationType::Triangle:
@@ -121,5 +149,5 @@ float ModDelay::getEffectiveRateHz() const {
 }
 
 void ModDelay::updateEffectiveRate() {
-    modRateHz.setTargetValue(getEffectiveRateHz());
+    targetModRateHz.setTargetValue(getEffectiveRateHz());
 }

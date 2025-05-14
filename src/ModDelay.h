@@ -16,7 +16,7 @@ public:
     };
 
 
-	ModDelay() = default;
+    ModDelay() = default;
     ~ModDelay() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
@@ -24,7 +24,7 @@ public:
     void process(juce::dsp::AudioBlock<float>& block);
 
     void setModulationType(ModulationType newType);
-    ModulationType getModulationType() const { return modulationType; }
+    ModulationType getModulationType() const { return currentModulationType; }
 
     void setSyncEnabled(bool shouldSync);
     void setTempo(float newBpm);
@@ -35,23 +35,29 @@ private:
 
     float sampleRate = 44100.0f;
     float phase = 0.0f;
+    ModulationType currentModulationType = ModulationType::Sine;
+    ModulationType targetModulationType = ModulationType::Sine;
+    juce::LinearSmoothedValue<float> modulationTypeCrossfade; // For smoother waveform transitions
 
     float bpm = 120.0f;
     bool syncEnabled = false;
     float rawRate = 1.0f; // rate param as Hz or note division (depending on sync)
 
-    juce::LinearSmoothedValue<float> delayMs;
-    juce::LinearSmoothedValue<float> modDepth;
-    juce::LinearSmoothedValue<float> modRateHz;
-    juce::LinearSmoothedValue<float> feedbackL;
-    juce::LinearSmoothedValue<float> feedbackR;
-    juce::LinearSmoothedValue<float> mix;
+    juce::LinearSmoothedValue<float> targetDelayMs;
+    juce::LinearSmoothedValue<float> currentDelayMs;
+    juce::LinearSmoothedValue<float> targetModDepth;
+    juce::LinearSmoothedValue<float> currentModDepth;
+    juce::LinearSmoothedValue<float> targetModRateHz;
+    juce::LinearSmoothedValue<float> currentModRateHz;
+    juce::LinearSmoothedValue<float> targetFeedbackL;
+    juce::LinearSmoothedValue<float> currentFeedbackL;
+    juce::LinearSmoothedValue<float> targetFeedbackR;
+    juce::LinearSmoothedValue<float> currentFeedbackR;
+    juce::LinearSmoothedValue<float> targetMix;
+    juce::LinearSmoothedValue<float> currentMix;
 
-    ModulationType modulationType = ModulationType::Sine;
-
-    float calculateModulation(float phaseNorm, float depth);
+    float calculateModulation(float phaseNorm, float depth, ModulationType type);
     float getEffectiveRateHz() const;
-
     void updateEffectiveRate();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelay)

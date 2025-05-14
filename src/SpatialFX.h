@@ -1,10 +1,10 @@
+// SpatialFX.h
 #pragma once
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_dsp/juce_dsp.h>
 
 class SpatialFX {
-public:
 public:
     enum class LfoWaveform { Sine = 1, Triangle, Square, Random };
 
