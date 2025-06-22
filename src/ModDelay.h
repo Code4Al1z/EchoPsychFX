@@ -4,22 +4,19 @@
 
 class ModDelay {
 public:
-
-    enum class ModulationType
-    {
+    enum class ModulationType {
         Sine = 1,
         Triangle,
         Square,
         SawtoothUp,
         SawtoothDown
-        // Add more waveforms as needed
     };
-
 
     ModDelay() = default;
     ~ModDelay() = default;
 
     void prepare(const juce::dsp::ProcessSpec& spec);
+    void resetState();
     void setParams(float delayMs, float depth, float rateHzOrNoteDiv, float feedbackL, float feedbackR, float mix);
     void process(juce::dsp::AudioBlock<float>& block);
 
@@ -30,6 +27,22 @@ public:
     void setTempo(float newBpm);
 
 private:
+    struct ModDelayParameters {
+        juce::LinearSmoothedValue<float> delayMs;
+        juce::LinearSmoothedValue<float> modDepth;
+        juce::LinearSmoothedValue<float> modRateHz;
+        juce::LinearSmoothedValue<float> feedbackL;
+        juce::LinearSmoothedValue<float> feedbackR;
+        juce::LinearSmoothedValue<float> mix;
+
+        void reset(double sampleRate, double smoothingTime) {
+            for (auto* p : { &delayMs, &modDepth, &modRateHz, &feedbackL, &feedbackR, &mix }) {
+                p->reset(sampleRate, smoothingTime);
+                p->setCurrentAndTargetValue(0.0f);
+            }
+        }
+    };
+
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayL;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayR;
 
@@ -37,24 +50,13 @@ private:
     float phase = 0.0f;
     ModulationType currentModulationType = ModulationType::Sine;
     ModulationType targetModulationType = ModulationType::Sine;
-    juce::LinearSmoothedValue<float> modulationTypeCrossfade; // For smoother waveform transitions
+    juce::LinearSmoothedValue<float> modulationTypeCrossfade;
 
     float bpm = 120.0f;
     bool syncEnabled = false;
-    float rawRate = 1.0f; // rate param as Hz or note division (depending on sync)
+    float rawRate = 1.0f;
 
-    juce::LinearSmoothedValue<float> targetDelayMs;
-    juce::LinearSmoothedValue<float> currentDelayMs;
-    juce::LinearSmoothedValue<float> targetModDepth;
-    juce::LinearSmoothedValue<float> currentModDepth;
-    juce::LinearSmoothedValue<float> targetModRateHz;
-    juce::LinearSmoothedValue<float> currentModRateHz;
-    juce::LinearSmoothedValue<float> targetFeedbackL;
-    juce::LinearSmoothedValue<float> currentFeedbackL;
-    juce::LinearSmoothedValue<float> targetFeedbackR;
-    juce::LinearSmoothedValue<float> currentFeedbackR;
-    juce::LinearSmoothedValue<float> targetMix;
-    juce::LinearSmoothedValue<float> currentMix;
+    ModDelayParameters params;
 
     float calculateModulation(float phaseNorm, float depth, ModulationType type);
     float getEffectiveRateHz() const;

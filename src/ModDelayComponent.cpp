@@ -13,40 +13,51 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     configureKnob(modDepth, "modDepth", "Depth", state);
     configureKnob(modRate, "modRate", "Rate", state);
 
-    // Modulation Type ComboBox
-    modulationTypeComboBox.addItem("Sine", static_cast<int>(ModDelay::ModulationType::Sine));
-    modulationTypeComboBox.addItem("Triangle", static_cast<int>(ModDelay::ModulationType::Triangle));
-    modulationTypeComboBox.addItem("Square", static_cast<int>(ModDelay::ModulationType::Square));
-    modulationTypeComboBox.addItem("Saw Up", static_cast<int>(ModDelay::ModulationType::SawtoothUp));
-    modulationTypeComboBox.addItem("Saw Down", static_cast<int>(ModDelay::ModulationType::SawtoothDown));
-    modulationTypeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state, "modulationType", modulationTypeComboBox);
-    addAndMakeVisible(modulationTypeComboBox);
+    // --- Waveform buttons ---
+    const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
+        { "Sine", ModDelay::ModulationType::Sine },
+        { "Tri", ModDelay::ModulationType::Triangle },
+        { "Sq", ModDelay::ModulationType::Square },
+        { "Saw+", ModDelay::ModulationType::SawtoothUp },
+        { "Saw-", ModDelay::ModulationType::SawtoothDown }
+    };
 
-    modTypeLabel.setText("Mod Type");
-    modTypeLabel.setReadOnly(true);
-    modTypeLabel.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    modTypeLabel.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    modTypeLabel.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    modTypeLabel.setJustification(juce::Justification::centred);
-    addAndMakeVisible(modTypeLabel);
+    int idx = 0;
+    for (auto& [label, type] : waveformData) {
+        auto* btn = waveformButtons.add(new juce::TextButton(label));
+        btn->onClick = [this, idx] { updateWaveformSelection(idx); };
+        addAndMakeVisible(btn);
+        ++idx;
+    }
 
-    // Sync Toggle
+    // Attach modulation type param invisibly for state save/load
+    auto* hiddenCombo = new juce::ComboBox();
+    modulationTypeAttachment.reset(new juce::AudioProcessorValueTreeState::ComboBoxAttachment(state, "modulationType", *hiddenCombo));
+    hiddenCombo->setComponentID("modTypeCombo");
+    hiddenCombo->setVisible(false);
+    addAndMakeVisible(hiddenCombo);
+
+    // Sync toggle in advanced section
     syncToggle.setButtonText("Sync");
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(state, "sync", syncToggle);
-    addAndMakeVisible(syncToggle);
+    advancedSection.addAndMakeVisible(syncToggle);
+
+    advancedSection.addAndMakeVisible(feedbackL.slider);
+    advancedSection.addAndMakeVisible(feedbackR.slider);
+    advancedSection.addAndMakeVisible(feedbackL.label);
+    advancedSection.addAndMakeVisible(feedbackR.label);
+    addAndMakeVisible(advancedSection);
 }
 
 void ModDelayComponent::configureKnob(KnobWithLabel& kwl, const juce::String& paramID, const juce::String& labelText, juce::AudioProcessorValueTreeState& state)
 {
     kwl.slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     kwl.slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
-
-    // Colour the knob (thumb), filled track, and background
-    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
-    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
-    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
-    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
-    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));
+    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);
+    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));
+    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);
+    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));
 
     addAndMakeVisible(kwl.slider);
 
@@ -70,43 +81,64 @@ void ModDelayComponent::resized()
 {
     group.setBounds(getLocalBounds());
 
-    auto area = getLocalBounds().reduced(margin);
-    int numKnobs = 6;
+	int knobsAmount = 4; // Number of knobs in the main section
 
+    auto area = getLocalBounds().reduced(margin);
     int textSpacing = 6;
 
-    int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
-    //int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
-    int startX = knobSize + spacing * 2;
-    int y = area.getY() + 40; // Leave top for combo/sync
+    int y = area.getY() + 5;
+    int x = area.getX();
 
-    // --- Stack syncToggle and combo box vertically on the left ---
-    auto controlColumn = area.removeFromLeft(knobSize);
-
-    // Sync toggle on top
-    syncToggle.setBounds(controlColumn.removeFromTop(30));
-    controlColumn.removeFromTop(textSpacing);
-
-    // Combo box under it
-    modulationTypeComboBox.setBounds(controlColumn.removeFromTop(30)); // dropdown height ~30
-    controlColumn.removeFromTop(textSpacing);
-    modTypeLabel.setBounds(controlColumn.removeFromTop(labelHeight));
-    area.removeFromLeft(margin); // spacing before knobs
-
-    KnobWithLabel* knobs[] = { &delayTime, &feedbackL, &feedbackR, &mix, &modDepth, &modRate };
-
-    for (int i = 0; i < numKnobs; ++i)
+    // --- Waveform buttons ---
+    int waveX = x;
+    for (auto* btn : waveformButtons)
     {
-        int x = startX + i * (knobSize + spacing);
-        knobs[i]->slider.setBounds(x, y, knobSize, knobSize);
-        knobs[i]->label.setBounds(x, y - labelHeight, knobSize, labelHeight);
+        btn->setBounds(waveX, y, 60, 24);
+        waveX += 65;
     }
+    y += 15;
+
+    // --- Knobs ---
+    KnobWithLabel* knobs[] = { &delayTime, &modDepth, &modRate, &mix };
+    for (int i = 0; i < knobsAmount; ++i) {
+        knobs[i]->slider.setBounds(x + i * (knobSize + spacing), y, knobSize, knobSize);
+        knobs[i]->label.setBounds(x + i * (knobSize + spacing), y - labelHeight, knobSize, labelHeight);
+    }
+
+    // --- Advanced section ---
+    int advX = y + x + knobsAmount * (knobSize + spacing);
+    advancedSection.setBounds(advX, y, getWidth(), 100);
+    syncToggle.setBounds(0, 0, 60, 30);
+    feedbackL.slider.setBounds(80, 0, knobSize, knobSize);
+    feedbackL.label.setBounds(80, -labelHeight, knobSize, labelHeight);
+    feedbackR.slider.setBounds(200, 0, knobSize, knobSize);
+    feedbackR.label.setBounds(200, -labelHeight, knobSize, labelHeight);
 }
 
-// Parameter setters
+void ModDelayComponent::updateWaveformSelection(int index)
+{
+    if (index < 0 || index >= waveformButtons.size())
+        return;
+
+    selectedWaveform = index;
+    for (int i = 0; i < waveformButtons.size(); ++i)
+        waveformButtons[i]->setColour(juce::TextButton::buttonColourId,
+            i == index ? juce::Colours::deeppink : juce::Colours::darkgrey);
+
+    // Do NOT call setModulationType here.
+    // Instead, set the invisible ComboBox that owns the state:
+    if (auto* comp = findChildWithID("modTypeCombo"))
+        if (auto* combo = dynamic_cast<juce::ComboBox*>(comp))
+            combo->setSelectedId(index + 1, juce::NotificationType::sendNotification);
+}
+
 void ModDelayComponent::setModulationType(ModDelay::ModulationType type)
 {
-    modulationTypeComboBox.setSelectedId(static_cast<int>(type));
+    int index = static_cast<int>(type) - 1;
+    if (index == selectedWaveform)
+        return; // No change
+
+    updateWaveformSelection(index);
 }
 
 void ModDelayComponent::setDelayTime(float v) { delayTime.slider.setValue(v); }

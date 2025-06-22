@@ -23,7 +23,7 @@ public:
     void setModRate(float);
 
 private:
-    juce::GroupComponent group{ "modDelayGroup", "Mod Delay" };
+    juce::GroupComponent group{ "modDelayGroup", "Motion Shifter" }; // renamed from Mod Delay
 
     static constexpr int knobSize = 100;
     static constexpr int margin = 10;
@@ -38,14 +38,17 @@ private:
 
     KnobWithLabel delayTime, feedbackL, feedbackR, mix, modDepth, modRate;
 
-    juce::ComboBox modulationTypeComboBox;
-    juce::TextEditor modTypeLabel;
-    juce::ToggleButton syncToggle;
+    // Waveform icon buttons
+    juce::OwnedArray<juce::TextButton> waveformButtons;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment; // kept for state, hidden
+    int selectedWaveform = 0;
 
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment;
+    juce::ToggleButton syncToggle;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
+    juce::Component advancedSection;
 
     void configureKnob(KnobWithLabel& kwl, const juce::String& paramID, const juce::String& labelText, juce::AudioProcessorValueTreeState& state);
+    void updateWaveformSelection(int index);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelayComponent)
 };
