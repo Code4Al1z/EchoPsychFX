@@ -1,17 +1,22 @@
-#ifndef ECHOPSYCHFX_PERCEPTIONCOMPONENT_H_INCLUDED
-#define ECHOPSYCHFX_PERCEPTIONCOMPONENT_H_INCLUDED
+#ifndef ECHOPSYCHFX_PERCEPTIONMODECOMPONENT_H_INCLUDED
+#define ECHOPSYCHFX_PERCEPTIONMODECOMPONENT_H_INCLUDED
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "PerceptionPresetManager.h"
 
+/**
+ * @brief UI component for selecting psychoacoustic perception presets
+ *
+ * Provides a dropdown menu for choosing from various pre-configured
+ * psychoacoustic effect combinations
+ */
 class PerceptionModeComponent : public juce::Component,
     private juce::ComboBox::Listener
 {
 public:
-    PerceptionModeComponent(PerceptionPresetManager& presetManager);
+    explicit PerceptionModeComponent(PerceptionPresetManager& presetManager);
     ~PerceptionModeComponent() override;
 
-    //void paint(juce::Graphics& g) override;
     void resized() override;
 
 private:
@@ -25,4 +30,4 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PerceptionModeComponent)
 };
 
-#endif // ECHOPSYCHFX_PERCEPTIONCOMPONENT_H_INCLUDED
+#endif // ECHOPSYCHFX_PERCEPTIONMODECOMPONENT_H_INCLUDED

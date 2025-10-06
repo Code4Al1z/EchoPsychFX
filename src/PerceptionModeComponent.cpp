@@ -6,42 +6,28 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     titleLabel.setText("Perception Mode", juce::dontSendNotification);
     titleLabel.setFont(juce::Font(20.0f, juce::Font::bold));
     titleLabel.setJustificationType(juce::Justification::centred);
+    titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(titleLabel);
 
-    //presetSelector.addItem("Select a Mode...", 1);  // ID 1 (just a placeholder)
-    presetSelector.addItem("Head Trip", 1);
-    presetSelector.addItem("Panic Room", 2);
-    presetSelector.addItem("Intimacy", 3);
-    presetSelector.addItem("Blade Runner", 4);
-    presetSelector.addItem("Alien Abduction", 5);
-    presetSelector.addItem("Glass Tunnel", 6);
-    presetSelector.addItem("Dream Logic", 7);
-    presetSelector.addItem("Womb Space", 8);
-    presetSelector.addItem("Bipolar Bloom", 9);
-    presetSelector.addItem("Quiet Confidence", 10);
-    presetSelector.addItem("Falling Upwards", 11);
-    presetSelector.addItem("Molten Light", 12);
-    presetSelector.addItem("Ethereal Echo", 13);
-    presetSelector.addItem("Lush Dreamscape", 14);
-    presetSelector.addItem("Skin Contact", 15);
-    presetSelector.addItem("Sonic Embrace", 16);
-    presetSelector.addItem("Strobe Heaven", 17);
-    presetSelector.addItem("Glass Flame", 18);
-    presetSelector.addItem("Celestial Vault", 19);
-    presetSelector.addItem("Deep Illusion", 20);
-    presetSelector.addItem("Ego Dissolve", 21);
-    presetSelector.addItem("Memory Dust", 22);
-    presetSelector.addItem("Gentle Slap", 23);
-    presetSelector.addItem("Moon Dance", 24);
-    presetSelector.addItem("Biting Lips", 25);
-    presetSelector.addItem("Stormy Day", 26);
-    presetSelector.addItem("Summer Sunset", 27);
-    presetSelector.addItem("Ocean Waves", 28);
-    presetSelector.addItem("Crystal Clear", 29);
-    presetSelector.addItem("Sweetest Memory", 30);
-    presetSelector.onChange = [this]() {
-        comboBoxChanged(&presetSelector);
-        };
+    // Add all preset names
+    const juce::StringArray presetNames = {
+        "Head Trip", "Panic Room", "Intimacy", "Blade Runner", "Alien Abduction",
+        "Glass Tunnel", "Dream Logic", "Womb Space", "Bipolar Bloom", "Quiet Confidence",
+        "Falling Upwards", "Molten Light", "Ethereal Echo", "Lush Dreamscape", "Skin Contact",
+        "Sonic Embrace", "Strobe Heaven", "Glass Flame", "Celestial Vault", "Deep Illusion",
+        "Ego Dissolve", "Memory Dust", "Gentle Slap", "Moon Dance", "Biting Lips",
+        "Stormy Day", "Summer Sunset", "Ocean Waves", "Crystal Clear", "Sweetest Memory"
+    };
+
+    for (int i = 0; i < presetNames.size(); ++i)
+        presetSelector.addItem(presetNames[i], i + 1);
+
+    presetSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour(31, 31, 31));
+    presetSelector.setColour(juce::ComboBox::textColourId, juce::Colours::white);
+    presetSelector.setColour(juce::ComboBox::outlineColourId, juce::Colours::white.withAlpha(0.4f));
+    presetSelector.setColour(juce::ComboBox::arrowColourId, juce::Colours::deeppink);
+
+    presetSelector.onChange = [this]() { comboBoxChanged(&presetSelector); };
     addAndMakeVisible(presetSelector);
 }
 
@@ -49,18 +35,14 @@ PerceptionModeComponent::~PerceptionModeComponent()
 {
 }
 
-//void PerceptionModeComponent::paint(juce::Graphics& g)
-//{
-//    g.fillAll(juce::Colours::darkslategrey);
-//    g.setColour(juce::Colours::white);
-//    g.setFont(14.0f);
-//    g.drawFittedText("This is the Perception Mode UI area.", getLocalBounds().reduced(10), juce::Justification::centred, 3);
-//}
-
 void PerceptionModeComponent::resized()
 {
-    titleLabel.setBounds(10, 10, getWidth() - 20, 30);
-    presetSelector.setBounds(10, 50, getWidth() - 20, 30);
+    auto area = getLocalBounds().reduced(10);
+
+    titleLabel.setBounds(area.removeFromTop(30));
+    area.removeFromTop(10); // spacing
+
+    presetSelector.setBounds(area.removeFromTop(30));
 }
 
 void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -68,8 +50,7 @@ void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasCha
     if (comboBoxThatHasChanged == &presetSelector)
     {
         const auto selectedName = presetSelector.getText();
-        DBG("Selected preset name: " + selectedName);
-        //if (selectedName != "Select a Mode...")
-            presetManagerRef.applyPreset(selectedName);
+        DBG("Selected preset: " + selectedName);
+        presetManagerRef.applyPreset(selectedName);
     }
 }

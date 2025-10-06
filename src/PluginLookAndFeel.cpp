@@ -2,7 +2,7 @@
 
 PluginLookAndFeel::PluginLookAndFeel()
 {
-    // You can set global colours here
+    // Set global UI colors
     setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.5f));
     setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 }
@@ -17,15 +17,13 @@ void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, 
     auto font = juce::Font(textHeight * 0.8f, juce::Font::bold);
     g.setFont(font);
 
-    auto textWidth = font.getStringWidth(text) + 2 * textPadding;
-
-    g.setColour(component.findColour(juce::GroupComponent::outlineColourId));
+    auto textWidth = static_cast<int>(font.getStringWidth(text) + 2.0f * textPadding);
 
     // Draw border
-    g.drawRect(0.f, 0.f, (float)width, (float)height, 1.0f);
+    g.setColour(component.findColour(juce::GroupComponent::outlineColourId));
+    g.drawRect(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 1.0f);
 
-
-    // Draw text background and label
+    // Draw text label at bottom
     g.setColour(component.findColour(juce::GroupComponent::textColourId));
     g.drawFittedText(text, 10, height - 25, textWidth, textHeight, justification, 1);
 }
