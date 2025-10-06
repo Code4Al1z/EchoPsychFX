@@ -5,13 +5,13 @@ namespace UIHelpers
     // Color definitions
     namespace Colors
     {
-        const juce::Colour background{ 31, 31, 31 };
-        const juce::Colour knobThumb{ 255, 111, 41 };
-        const juce::Colour track{ juce::Colours::deeppink };
+        const juce::Colour background{ 27, 17, 31 };
+        const juce::Colour knobThumb{ 255, 107, 0 }; // Blaze Orange #FF6B00
+        const juce::Colour track{ 255, 46, 136 }; // Electric Pink #FF2E88
         const juce::Colour knobBackground{ 123, 0, 70 };
-        const juce::Colour knobFill{ juce::Colours::deeppink };
+        const juce::Colour knobFill{ 255, 46, 136 }; // Electric Pink #FF2E88
         const juce::Colour knobOutline{ 90, 0, 50 };
-        const juce::Colour labelText{ juce::Colours::white };
+        const juce::Colour labelText{ 232, 232, 240 }; // Bright Gray #E8E8F0
         const juce::Colour groupOutline = juce::Colours::white.withAlpha(0.4f);
     }
 

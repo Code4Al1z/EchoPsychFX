@@ -42,7 +42,12 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     modeToggle.onClick = [this]() { updateUIVisibility(); };
     modeToggle.setToggleState(false, juce::dontSendNotification);
 
-    setSize(900, 1000);
+    // Enable resizing with constraints
+    setResizable(true, true);
+    setResizeLimits(800, 700, 1600, 1400); // min and max width/height
+
+    // Set default size
+    setSize(1000, 900);
     updateUIVisibility();
 }
 
@@ -69,6 +74,9 @@ void AudioPluginAudioProcessorEditor::updateUIVisibility()
 
     // Update toggle button text
     modeToggle.setButtonText(perceptionMode ? "Show Manual Controls" : "Show Perception Modes");
+
+    // Trigger layout update
+    resized();
 }
 
 void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
@@ -78,56 +86,71 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-    auto bounds = getLocalBounds().reduced(10);
+    auto bounds = getLocalBounds();
+    const int margin = 15;
+    const int spacing = 12;
+    const int toggleHeight = 35;
+
+    bounds.reduce(margin, margin);
 
     // Mode toggle at top
-    static constexpr int toggleHeight = 30;
-    static constexpr int spacing = 10;
-    static constexpr int knobSize = 120;
-
     modeToggle.setBounds(bounds.removeFromTop(toggleHeight));
     bounds.removeFromTop(spacing);
 
-    // Manual mode layout
-    auto manualArea = bounds;
-    auto perceptionArea = bounds;
+    const bool perceptionMode = modeToggle.getToggleState();
 
-    // Top row: WidthBalancer (60%) and TiltEQ (40%)
-    auto topRowHeight = 150;
-    auto topRow = manualArea.removeFromTop(topRowHeight);
+    if (perceptionMode)
+    {
+        // Perception mode uses full available space
+        perceptionModeComponent->setBounds(bounds);
+    }
+    else
+    {
+        // Manual mode layout - responsive grid system
+        const int totalWidth = bounds.getWidth();
+        const int totalHeight = bounds.getHeight();
 
-    auto widthBalancerWidth = static_cast<int>(getWidth() * 0.6f);
-    widthBalancerComponent->setBounds(topRow.removeFromLeft(widthBalancerWidth));
-    topRow.removeFromLeft(spacing);
-    tiltEQComponent->setBounds(topRow);
+        // Calculate proportional heights based on available space
+        const float row1Ratio = 0.18f;  // Width Balancer & Tilt EQ
+        const float row2Ratio = 0.16f;  // Mod Delay
+        const float row3Ratio = 0.28f;  // Spatial FX (needs more space)
+        const float row4Ratio = 0.16f;  // Micro Pitch Detune
+        const float row5Ratio = 0.22f;  // Exciter & Reverb
 
-    manualArea.removeFromTop(spacing);
+        int row1Height = juce::jmax(120, static_cast<int>(totalHeight * row1Ratio));
+        int row2Height = juce::jmax(100, static_cast<int>(totalHeight * row2Ratio));
+        int row3Height = juce::jmax(180, static_cast<int>(totalHeight * row3Ratio));
+        int row4Height = juce::jmax(100, static_cast<int>(totalHeight * row4Ratio));
+        int row5Height = juce::jmax(120, static_cast<int>(totalHeight * row5Ratio));
 
-    // ModDelay row
-    auto modDelayHeight = knobSize + 24 + spacing * 2;
-    modDelayComponent->setBounds(manualArea.removeFromTop(modDelayHeight));
-    manualArea.removeFromTop(spacing);
+        // Row 1: Width Balancer (60%) and Tilt EQ (40%)
+        auto row1 = bounds.removeFromTop(row1Height);
+        const int widthBalancerWidth = static_cast<int>(totalWidth * 0.58f);
+        widthBalancerComponent->setBounds(row1.removeFromLeft(widthBalancerWidth).reduced(2));
+        row1.removeFromLeft(spacing);
+        tiltEQComponent->setBounds(row1.reduced(2));
+        bounds.removeFromTop(spacing);
 
-    // SpatialFX row
-    auto spatialFXHeight = 300;
-    spatialFXComponent->setBounds(manualArea.removeFromTop(spatialFXHeight));
-    manualArea.removeFromTop(spacing);
+        // Row 2: Mod Delay (full width)
+        auto row2 = bounds.removeFromTop(row2Height);
+        modDelayComponent->setBounds(row2.reduced(2));
+        bounds.removeFromTop(spacing);
 
-    // MicroPitchDetune row
-    auto microPitchHeight = 150;
-    microPitchDetuneComponent->setBounds(manualArea.removeFromTop(microPitchHeight));
-    manualArea.removeFromTop(spacing);
+        // Row 3: Spatial FX (full width - needs more vertical space)
+        auto row3 = bounds.removeFromTop(row3Height);
+        spatialFXComponent->setBounds(row3.reduced(2));
+        bounds.removeFromTop(spacing);
 
-    // Bottom row: ExciterSaturation (50%) and SimpleVerb (50%)
-    auto bottomRowHeight = 150;
-    auto bottomRow = manualArea.removeFromTop(bottomRowHeight);
+        // Row 4: Micro Pitch Detune (full width)
+        auto row4 = bounds.removeFromTop(row4Height);
+        microPitchDetuneComponent->setBounds(row4.reduced(2));
+        bounds.removeFromTop(spacing);
 
-    auto leftComponentArea = bottomRow.removeFromLeft(bottomRow.getWidth() / 2).reduced(5);
-    auto rightComponentArea = bottomRow.reduced(5);
-
-    exciterSaturationComponent->setBounds(leftComponentArea);
-    simpleVerbWithPredelayComponent->setBounds(rightComponentArea);
-
-    // Perception mode layout (uses full area)
-    perceptionModeComponent->setBounds(perceptionArea);
+        // Row 5: Exciter Saturation (50%) and Simple Reverb (50%)
+        auto row5 = bounds.removeFromTop(row5Height);
+        const int halfWidth = row5.getWidth() / 2;
+        exciterSaturationComponent->setBounds(row5.removeFromLeft(halfWidth - spacing / 2).reduced(2));
+        row5.removeFromLeft(spacing);
+        simpleVerbWithPredelayComponent->setBounds(row5.reduced(2));
+    }
 }
