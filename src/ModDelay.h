@@ -19,10 +19,8 @@ public:
     void resetState();
     void setParams(float delayMs, float depth, float rateHzOrNoteDiv, float feedbackL, float feedbackR, float mix);
     void process(juce::dsp::AudioBlock<float>& block);
-
     void setModulationType(ModulationType newType);
     ModulationType getModulationType() const { return currentModulationType; }
-
     void setSyncEnabled(bool shouldSync);
     void setTempo(float newBpm);
 
@@ -61,6 +59,7 @@ private:
     float calculateModulation(float phaseNorm, float depth, ModulationType type);
     float getEffectiveRateHz() const;
     void updateEffectiveRate();
+    bool isValidModulationType(ModulationType type) const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelay)
 };
