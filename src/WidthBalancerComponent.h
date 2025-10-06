@@ -3,6 +3,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "UIHelpers.h"
 #include <memory>
 
 class WidthBalancerComponent : public juce::Component
@@ -22,15 +23,14 @@ public:
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };
 
-    static constexpr int knobSize = 100;
-    static constexpr int margin = 10;
-
-    void configureSlider(juce::Slider& slider, juce::Slider::SliderStyle style);
-    void configureLabel(juce::Label& label, const juce::String& text);
-
-    juce::Slider widthSlider, midSideSlider, intensitySlider;
+    juce::Slider widthSlider;
+    juce::Slider midSideSlider;
+    juce::Slider intensitySlider;
     juce::ToggleButton monoToggle;
-    juce::Label widthLabel, midSideLabel, intensityLabel;
+
+    juce::Label widthLabel;
+    juce::Label midSideLabel;
+    juce::Label intensityLabel;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> midSideAttachment;
@@ -40,4 +40,4 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WidthBalancerComponent)
 };
 
-#endif // ECHOPSYCHFX_WIDTHBALANCERCOMPONENT_H_INCLUDED
+#endif

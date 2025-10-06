@@ -3,7 +3,10 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "UIHelpers.h"
 #include "ModDelay.h"
+#include <memory>
+#include <vector>
 
 class ModDelayComponent : public juce::Component
 {
@@ -15,42 +18,37 @@ public:
     void resized() override;
 
     void setModulationType(ModDelay::ModulationType type);
-    void setDelayTime(float);
-    void setFeedbackLeft(float);
-    void setFeedbackRight(float);
-    void setMix(float);
-    void setModDepth(float);
-    void setModRate(float);
+    void setDelayTime(float value);
+    void setFeedbackLeft(float value);
+    void setFeedbackRight(float value);
+    void setMix(float value);
+    void setModDepth(float value);
+    void setModRate(float value);
 
 private:
-    juce::GroupComponent group{ "modDelayGroup", "Motion Shifter" }; // renamed from Mod Delay
+    juce::GroupComponent group{ "modDelayGroup", "Motion Shifter" };
 
-    static constexpr int knobSize = 100;
-    static constexpr int margin = 10;
-    static constexpr int labelHeight = 20;
-    static constexpr int spacing = 20;
+    // Main knobs
+    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
 
-    struct KnobWithLabel {
-        juce::Slider slider;
-        juce::TextEditor label;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
-    };
+    // Advanced section knobs
+    std::unique_ptr<UIHelpers::KnobWithLabel> feedbackLKnob;
+    std::unique_ptr<UIHelpers::KnobWithLabel> feedbackRKnob;
 
-    KnobWithLabel delayTime, feedbackL, feedbackR, mix, modDepth, modRate;
-
-    // Waveform icon buttons
+    // Waveform buttons
     juce::OwnedArray<juce::TextButton> waveformButtons;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment; // kept for state, hidden
+    std::unique_ptr<juce::ComboBox> hiddenCombo;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment;
     int selectedWaveform = 0;
 
+    // Sync toggle
     juce::ToggleButton syncToggle;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
     juce::Component advancedSection;
 
-    void configureKnob(KnobWithLabel& kwl, const juce::String& paramID, const juce::String& labelText, juce::AudioProcessorValueTreeState& state);
     void updateWaveformSelection(int index);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelayComponent)
 };
 
-#endif // ECHOPSYCHFX_MODDELAYCOMPONENT_H_INCLUDED
+#endif

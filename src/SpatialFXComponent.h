@@ -1,11 +1,12 @@
 #ifndef ECHOPSYCHFX_SPATIALFXCOMPONENT_H_INCLUDED
 #define ECHOPSYCHFX_SPATIALFXCOMPONENT_H_INCLUDED
 
-#include <memory>
-#include <vector>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "UIHelpers.h"
 #include "SpatialFX.h"
+#include <memory>
+#include <vector>
 
 class SpatialFXComponent : public juce::Component
 {
@@ -28,31 +29,13 @@ public:
 
 private:
     juce::GroupComponent group{ "spatialFXGroup", "SpatialFX" };
+    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
 
-    static constexpr int knobSize = 100;
-    static constexpr int margin = 10;
-
-    struct KnobWithLabel {
-        std::unique_ptr<juce::Slider> slider;
-        std::unique_ptr<juce::Label> label;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
-    };
-
-    struct ComboBoxWithLabel {
-        std::unique_ptr<juce::ComboBox> comboBox;
-        std::unique_ptr<juce::Label> label;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> attachment;
-    };
-
-    KnobWithLabel createKnob(juce::AudioProcessorValueTreeState& state,
-        const juce::String& paramID,
-        const juce::String& labelText,
-        float min = 0.0f, float max = 1.0f, float step = 0.01f);
-
-    std::vector<std::unique_ptr<KnobWithLabel>> knobs;
-    std::unique_ptr<ComboBoxWithLabel> modShapeSelector;
+    std::unique_ptr<juce::ComboBox> modShapeSelector;
+    std::unique_ptr<juce::Label> modShapeLabel;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modShapeAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpatialFXComponent)
 };
 
-#endif // ECHOPSYCHFX_SPATIALFXCOMPONENT_H_INCLUDED
+#endif

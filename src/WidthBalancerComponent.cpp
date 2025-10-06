@@ -1,24 +1,58 @@
-#include "PluginProcessor.h"
 #include "WidthBalancerComponent.h"
 
 WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeState& state)
 {
+    using namespace UIHelpers;
+
     addAndMakeVisible(group);
-    group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
-    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+    configureGroup(group);
 
-    configureSlider(widthSlider, juce::Slider::RotaryHorizontalVerticalDrag);
-    configureSlider(midSideSlider, juce::Slider::LinearBar);
-    configureSlider(intensitySlider, juce::Slider::RotaryHorizontalVerticalDrag);
+    // Width knob
+    widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    widthSlider.setColour(juce::Slider::thumbColourId, Colors::knobThumb);
+    widthSlider.setColour(juce::Slider::trackColourId, Colors::track);
+    widthSlider.setColour(juce::Slider::backgroundColourId, Colors::knobBackground);
+    widthSlider.setColour(juce::Slider::rotarySliderFillColourId, Colors::knobFill);
+    widthSlider.setColour(juce::Slider::rotarySliderOutlineColourId, Colors::knobOutline);
+    addAndMakeVisible(widthSlider);
+
+    // Mid-side slider (linear bar)
+    midSideSlider.setSliderStyle(juce::Slider::LinearBar);
+    midSideSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    midSideSlider.setColour(juce::Slider::thumbColourId, Colors::knobThumb);
+    midSideSlider.setColour(juce::Slider::trackColourId, Colors::track);
+    midSideSlider.setColour(juce::Slider::backgroundColourId, Colors::knobBackground);
+    addAndMakeVisible(midSideSlider);
+
+    // Intensity knob
+    intensitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     intensitySlider.setSkewFactorFromMidPoint(0.2f);
+    intensitySlider.setColour(juce::Slider::thumbColourId, Colors::knobThumb);
+    intensitySlider.setColour(juce::Slider::trackColourId, Colors::track);
+    intensitySlider.setColour(juce::Slider::backgroundColourId, Colors::knobBackground);
+    intensitySlider.setColour(juce::Slider::rotarySliderFillColourId, Colors::knobFill);
+    intensitySlider.setColour(juce::Slider::rotarySliderOutlineColourId, Colors::knobOutline);
+    addAndMakeVisible(intensitySlider);
 
+    // Labels
     configureLabel(widthLabel, "Width");
-    configureLabel(midSideLabel, "Mid-Side");
-    configureLabel(intensityLabel, "Intensity");
+    addAndMakeVisible(widthLabel);
 
+    configureLabel(midSideLabel, "Mid-Side");
+    addAndMakeVisible(midSideLabel);
+
+    configureLabel(intensityLabel, "Intensity");
+    addAndMakeVisible(intensityLabel);
+
+    // Mono toggle
     monoToggle.setButtonText("Mono");
+    monoToggle.setColour(juce::ToggleButton::textColourId, Colors::labelText);
+    monoToggle.setColour(juce::ToggleButton::tickColourId, Colors::track);
     addAndMakeVisible(monoToggle);
 
+    // Attachments
     widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         state, "width", widthSlider);
     midSideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -29,46 +63,32 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
         state, "mono", monoToggle);
 }
 
-void WidthBalancerComponent::configureSlider(juce::Slider& slider, juce::Slider::SliderStyle style)
-{
-    slider.setSliderStyle(style);
-    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-
-    slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));
-    slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);
-    slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));
-    slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);
-    slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));
-
-    addAndMakeVisible(slider);
-}
-
-void WidthBalancerComponent::configureLabel(juce::Label& label, const juce::String& text)
-{
-    label.setText(text, juce::dontSendNotification);
-    label.setJustificationType(juce::Justification::centred);
-    label.setColour(juce::Label::textColourId, juce::Colours::white);
-    addAndMakeVisible(label);
-}
-
 void WidthBalancerComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(31, 31, 31));
+    g.fillAll(UIHelpers::Colors::background);
 }
 
 void WidthBalancerComponent::resized()
 {
+    using namespace UIHelpers::Dimensions;
+
     group.setBounds(getLocalBounds());
 
-    widthLabel.setBounds(0, 0, knobSize, 20);
-    widthSlider.setBounds(0, 20, knobSize, knobSize);
+    auto area = getLocalBounds().reduced(margin);
 
-    intensityLabel.setBounds(knobSize + margin * 2, 0, knobSize, 20);
-    intensitySlider.setBounds(knobSize + margin * 2, 20, knobSize, knobSize);
+    // Width knob
+    widthLabel.setBounds(margin, 0, knobSize, labelHeight);
+    widthSlider.setBounds(margin, labelHeight, knobSize, knobSize);
 
-    midSideLabel.setBounds(210, 20, 80, 20);
-    midSideSlider.setBounds(210, 40, getWidth() - 220, 20);
-    monoToggle.setBounds(210, 70, getWidth() - 220, 40);
+    // Intensity knob
+    intensityLabel.setBounds(knobSize + margin * 3, 0, knobSize, labelHeight);
+    intensitySlider.setBounds(knobSize + margin * 3, labelHeight, knobSize, knobSize);
+
+    // Mid-side slider and mono toggle
+    const int rightSectionX = 210;
+    midSideLabel.setBounds(rightSectionX, labelHeight, 80, labelHeight);
+    midSideSlider.setBounds(rightSectionX, labelHeight + labelHeight, getWidth() - rightSectionX - margin, labelHeight);
+    monoToggle.setBounds(rightSectionX, labelHeight + labelHeight * 3, getWidth() - rightSectionX - margin, 40);
 }
 
 void WidthBalancerComponent::setWidth(float newValue)
