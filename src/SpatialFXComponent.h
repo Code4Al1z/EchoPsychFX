@@ -2,6 +2,7 @@
 #define ECHOPSYCHFX_SPATIALFXCOMPONENT_H_INCLUDED
 
 #include <memory>
+#include <vector>
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "SpatialFX.h"
@@ -28,6 +29,9 @@ public:
 private:
     juce::GroupComponent group{ "spatialFXGroup", "SpatialFX" };
 
+    static constexpr int knobSize = 100;
+    static constexpr int margin = 10;
+
     struct KnobWithLabel {
         std::unique_ptr<juce::Slider> slider;
         std::unique_ptr<juce::Label> label;
@@ -40,14 +44,13 @@ private:
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> attachment;
     };
 
-    KnobWithLabel createKnob(juce::AudioProcessorValueTreeState& state, const juce::String& paramID, const juce::String& labelText,
+    KnobWithLabel createKnob(juce::AudioProcessorValueTreeState& state,
+        const juce::String& paramID,
+        const juce::String& labelText,
         float min = 0.0f, float max = 1.0f, float step = 0.01f);
 
     std::vector<std::unique_ptr<KnobWithLabel>> knobs;
     std::unique_ptr<ComboBoxWithLabel> modShapeSelector;
-
-    int knobSize = 100;
-    int margin = 10;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpatialFXComponent)
 };

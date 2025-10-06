@@ -6,37 +6,41 @@ SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProc
     group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
     group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 
-    configureKnob(predelay, "predelayMs", "Predelay", state);
-    configureKnob(size, "size", "Size", state);
-    configureKnob(damping, "damping", "Damping", state);
-    configureKnob(wet, "wet", "Wet", state);
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "predelayMs", "Predelay")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "size", "Size")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "damping", "Damping")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "wet", "Wet")));
 }
 
-SimpleVerbWithPredelayComponent::~SimpleVerbWithPredelayComponent() {}
-
-void SimpleVerbWithPredelayComponent::configureKnob(KnobWithLabel& kwl, const juce::String& paramID, const juce::String& labelText, juce::AudioProcessorValueTreeState& state)
+SimpleVerbWithPredelayComponent::KnobWithLabel SimpleVerbWithPredelayComponent::createKnob(
+    juce::AudioProcessorValueTreeState& state,
+    const juce::String& paramID,
+    const juce::String& labelText)
 {
-    kwl.slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    kwl.slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    KnobWithLabel control;
 
-    // Colour the knob (thumb), filled track, and background
-    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
-    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
-    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
-    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
-    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+    control.slider = std::make_unique<juce::Slider>();
+    control.slider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    control.slider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
 
-    addAndMakeVisible(kwl.slider);
+    control.slider->setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));
+    control.slider->setColour(juce::Slider::trackColourId, juce::Colours::deeppink);
+    control.slider->setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));
+    control.slider->setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);
+    control.slider->setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));
 
-    kwl.label.setText(labelText);
-    kwl.label.setReadOnly(true);
-    kwl.label.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    kwl.label.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    kwl.label.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    kwl.label.setJustification(juce::Justification::centred);
-    addAndMakeVisible(kwl.label);
+    addAndMakeVisible(*control.slider);
 
-    kwl.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, paramID, kwl.slider);
+    control.label = std::make_unique<juce::Label>();
+    control.label->setText(labelText, juce::dontSendNotification);
+    control.label->setJustificationType(juce::Justification::centred);
+    control.label->setColour(juce::Label::textColourId, juce::Colours::white);
+    addAndMakeVisible(*control.label);
+
+    control.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        state, paramID, *control.slider);
+
+    return control;
 }
 
 void SimpleVerbWithPredelayComponent::paint(juce::Graphics& g)
@@ -49,31 +53,21 @@ void SimpleVerbWithPredelayComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    int numKnobs = 4;
-    int spacing = 20;
-
-    int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
-    int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
-    int y = area.getY();
+    const int numKnobs = static_cast<int>(knobs.size());
+    const int spacing = 20;
+    const int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
+    const int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
+    const int y = area.getY();
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        KnobWithLabel* kwl = nullptr;
-        switch (i)
-        {
-        case 0: kwl = &predelay; break;
-        case 1: kwl = &size; break;
-        case 2: kwl = &damping; break;
-        case 3: kwl = &wet; break;
-        }
-
-        int x = startX + i * (knobSize + spacing);
-        kwl->slider.setBounds(x, y, knobSize, knobSize);
-        kwl->label.setBounds(x, -5, knobSize, labelHeight);
+        const int x = startX + i * (knobSize + spacing);
+        knobs[i]->label->setBounds(x, y, knobSize, 20);
+        knobs[i]->slider->setBounds(x, y + 20, knobSize, knobSize);
     }
 }
 
-void SimpleVerbWithPredelayComponent::setPredelay(float newValue) { predelay.slider.setValue(newValue); }
-void SimpleVerbWithPredelayComponent::setSize(float newValue) { size.slider.setValue(newValue); }
-void SimpleVerbWithPredelayComponent::setDamping(float newValue) { damping.slider.setValue(newValue); }
-void SimpleVerbWithPredelayComponent::setWet(float newValue) { wet.slider.setValue(newValue); }
+void SimpleVerbWithPredelayComponent::setPredelay(float newValue) { knobs[0]->slider->setValue(newValue); }
+void SimpleVerbWithPredelayComponent::setSize(float newValue) { knobs[1]->slider->setValue(newValue); }
+void SimpleVerbWithPredelayComponent::setDamping(float newValue) { knobs[2]->slider->setValue(newValue); }
+void SimpleVerbWithPredelayComponent::setWet(float newValue) { knobs[3]->slider->setValue(newValue); }

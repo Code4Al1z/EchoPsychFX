@@ -3,6 +3,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <memory>
 
 class WidthBalancerComponent : public juce::Component
 {
@@ -21,12 +22,14 @@ public:
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };
 
+    static constexpr int knobSize = 100;
+    static constexpr int margin = 10;
+
     void configureSlider(juce::Slider& slider, juce::Slider::SliderStyle style);
     void configureLabel(juce::Label& label, const juce::String& text);
 
     juce::Slider widthSlider, midSideSlider, intensitySlider;
     juce::ToggleButton monoToggle;
-
     juce::Label widthLabel, midSideLabel, intensityLabel;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;

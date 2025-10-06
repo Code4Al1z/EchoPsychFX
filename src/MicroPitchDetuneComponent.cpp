@@ -6,41 +6,43 @@ MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTr
     group.setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.4f));
     group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 
-    configureKnob(mix, "mix", "Mix", state);
-    configureKnob(lfoRate, "lfoRate", "LFO Rate", state);
-    configureKnob(lfoDepth, "lfoDepth", "LFO Depth", state);
-    configureKnob(delayCentre, "delayCentre", "Delay Centre", state);
-    configureKnob(detuneAmount, "detuneAmount", "Detune", state);
-    configureKnob(stereoSeparation, "stereoSeparation", "Stereo Sep.", state);
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "mix", "Mix")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "lfoRate", "LFO Rate")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "lfoDepth", "LFO Depth")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "delayCentre", "Delay Centre")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "detuneAmount", "Detune")));
+    knobs.push_back(std::make_unique<KnobWithLabel>(createKnob(state, "stereoSeparation", "Stereo Sep.")));
 }
 
-MicroPitchDetuneComponent::~MicroPitchDetuneComponent()
+MicroPitchDetuneComponent::KnobWithLabel MicroPitchDetuneComponent::createKnob(
+    juce::AudioProcessorValueTreeState& state,
+    const juce::String& paramID,
+    const juce::String& labelText)
 {
-}
+    KnobWithLabel control;
 
-void MicroPitchDetuneComponent::configureKnob(KnobWithLabel& kwl, const juce::String& paramID, const juce::String& labelText, juce::AudioProcessorValueTreeState& state)
-{
-    kwl.slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    kwl.slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    control.slider = std::make_unique<juce::Slider>();
+    control.slider->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    control.slider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
 
-    // Colour the knob (thumb), filled track, and background
-    kwl.slider.setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));                   // knob
-    kwl.slider.setColour(juce::Slider::trackColourId, juce::Colours::deeppink);                 // filled portion
-    kwl.slider.setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));       // background track
-    kwl.slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);      // for rotary fill
-    kwl.slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));      // rotary outline
+    control.slider->setColour(juce::Slider::thumbColourId, juce::Colour(255, 111, 41));
+    control.slider->setColour(juce::Slider::trackColourId, juce::Colours::deeppink);
+    control.slider->setColour(juce::Slider::backgroundColourId, juce::Colour(123, 0, 70));
+    control.slider->setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::deeppink);
+    control.slider->setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(90, 0, 50));
 
-    addAndMakeVisible(kwl.slider);
+    addAndMakeVisible(*control.slider);
 
-    kwl.label.setText(labelText);
-    kwl.label.setReadOnly(true);
-    kwl.label.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentWhite);
-    kwl.label.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentWhite);
-    kwl.label.setColour(juce::TextEditor::textColourId, juce::Colours::black);
-    kwl.label.setJustification(juce::Justification::centred);
-    addAndMakeVisible(kwl.label);
+    control.label = std::make_unique<juce::Label>();
+    control.label->setText(labelText, juce::dontSendNotification);
+    control.label->setJustificationType(juce::Justification::centred);
+    control.label->setColour(juce::Label::textColourId, juce::Colours::white);
+    addAndMakeVisible(*control.label);
 
-    kwl.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, paramID, kwl.slider);
+    control.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        state, paramID, *control.slider);
+
+    return control;
 }
 
 void MicroPitchDetuneComponent::paint(juce::Graphics& g)
@@ -53,35 +55,23 @@ void MicroPitchDetuneComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    int numKnobs = 6;
-    int spacing = 20;
-
-    int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
-    int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
-    int y = area.getY();
+    const int numKnobs = static_cast<int>(knobs.size());
+    const int spacing = 20;
+    const int totalWidth = (knobSize * numKnobs) + (spacing * (numKnobs - 1));
+    const int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
+    const int y = area.getY();
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        KnobWithLabel* kwl = nullptr;
-        switch (i)
-        {
-        case 0: kwl = &mix; break;
-        case 1: kwl = &lfoRate; break;
-        case 2: kwl = &lfoDepth; break;
-        case 3: kwl = &delayCentre; break;
-        case 4: kwl = &detuneAmount; break;
-        case 5: kwl = &stereoSeparation; break;
-        }
-
-        int x = startX + i * (knobSize + spacing);
-        kwl->slider.setBounds(x, y, knobSize, knobSize);
-        kwl->label.setBounds(x, -5, knobSize, labelHeight);
+        const int x = startX + i * (knobSize + spacing);
+        knobs[i]->label->setBounds(x, y, knobSize, 20);
+        knobs[i]->slider->setBounds(x, y + 20, knobSize, knobSize);
     }
 }
 
-void MicroPitchDetuneComponent::setMix(float newValue) { mix.slider.setValue(newValue); }
-void MicroPitchDetuneComponent::setLfoRate(float newValue) { lfoRate.slider.setValue(newValue); }
-void MicroPitchDetuneComponent::setLfoDepth(float newValue) { lfoDepth.slider.setValue(newValue); }
-void MicroPitchDetuneComponent::setDelayCentre(float newValue) { delayCentre.slider.setValue(newValue); }
-void MicroPitchDetuneComponent::setDetuneAmount(float newValue) { detuneAmount.slider.setValue(newValue); }
-void MicroPitchDetuneComponent::setStereoSeparation(float newValue) { stereoSeparation.slider.setValue(newValue); }
+void MicroPitchDetuneComponent::setMix(float newValue) { knobs[0]->slider->setValue(newValue); }
+void MicroPitchDetuneComponent::setLfoRate(float newValue) { knobs[1]->slider->setValue(newValue); }
+void MicroPitchDetuneComponent::setLfoDepth(float newValue) { knobs[2]->slider->setValue(newValue); }
+void MicroPitchDetuneComponent::setDelayCentre(float newValue) { knobs[3]->slider->setValue(newValue); }
+void MicroPitchDetuneComponent::setDetuneAmount(float newValue) { knobs[4]->slider->setValue(newValue); }
+void MicroPitchDetuneComponent::setStereoSeparation(float newValue) { knobs[5]->slider->setValue(newValue); }

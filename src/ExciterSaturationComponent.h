@@ -3,12 +3,14 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <memory>
+#include <vector>
 
 class ExciterSaturationComponent : public juce::Component
 {
 public:
     ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state);
-    ~ExciterSaturationComponent() override;
+    ~ExciterSaturationComponent() override = default;
 
     void paint(juce::Graphics& g) override;
     void resized() override;
@@ -22,17 +24,18 @@ private:
 
     static constexpr int knobSize = 100;
     static constexpr int margin = 10;
-    static constexpr int labelHeight = 20;
 
     struct KnobWithLabel {
-        juce::Slider slider;
-        juce::TextEditor label;
+        std::unique_ptr<juce::Slider> slider;
+        std::unique_ptr<juce::Label> label;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
     };
 
-    KnobWithLabel drive, mix, highpass;
+    std::vector<std::unique_ptr<KnobWithLabel>> knobs;
 
-    void configureKnob(KnobWithLabel& kwl, const juce::String& paramID, const juce::String& labelText, juce::AudioProcessorValueTreeState& state);
+    KnobWithLabel createKnob(juce::AudioProcessorValueTreeState& state,
+        const juce::String& paramID,
+        const juce::String& labelText);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ExciterSaturationComponent)
 };

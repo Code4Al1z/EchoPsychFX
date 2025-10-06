@@ -29,10 +29,6 @@ TiltEQComponent::TiltEQComponent(juce::AudioProcessorValueTreeState& state)
     tiltAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "tiltEQ", tiltSlider);
 }
 
-TiltEQComponent::~TiltEQComponent()
-{
-}
-
 void TiltEQComponent::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour(31, 31, 31));
