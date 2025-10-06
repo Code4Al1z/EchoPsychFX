@@ -1,27 +1,27 @@
 #include "SpatialFX.h"
 
 SpatialFX::SpatialFX()
+    : random(juce::Random(juce::Time::currentTimeMillis()))
 {
-    random = juce::Random(juce::Time::currentTimeMillis());
 }
 
 void SpatialFX::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float>(spec.sampleRate);
 
-    // Initialize all smoothed parameters with appropriate ramp times
-    params.phaseL.reset(sampleRate, 0.02);
-    params.phaseR.reset(sampleRate, 0.02);
+    // Initialize smoothed parameters
+    constexpr double smoothTime = 0.02;
+    params.phaseL.reset(sampleRate, smoothTime);
+    params.phaseR.reset(sampleRate, smoothTime);
     params.wetDry.reset(sampleRate, 0.01);
-    params.lfoDepthL.reset(sampleRate, 0.02);
-    params.lfoDepthR.reset(sampleRate, 0.02);
-    params.lfoRateL.reset(sampleRate, 0.02);
-    params.lfoRateR.reset(sampleRate, 0.02);
-    params.allpassFreq.reset(sampleRate, 0.02);
+    params.lfoDepthL.reset(sampleRate, smoothTime);
+    params.lfoDepthR.reset(sampleRate, smoothTime);
+    params.lfoRateL.reset(sampleRate, smoothTime);
+    params.lfoRateR.reset(sampleRate, smoothTime);
+    params.allpassFreq.reset(sampleRate, smoothTime);
     params.haasDelayL.reset(sampleRate, 0.01);
     params.haasDelayR.reset(sampleRate, 0.01);
 
-    // Prepare DSP components
     allpassL.prepare(spec);
     allpassR.prepare(spec);
     haasDelayL.prepare(spec);
@@ -45,12 +45,9 @@ void SpatialFX::reset()
 
     lfoPhaseL = 0.0f;
     lfoPhaseR = lfoPhaseOffset;
-    randomValueL = 0.0f;
-    randomValueR = 0.0f;
-    randomSampleCounterL = 0.0f;
-    randomSampleCounterR = 0.0f;
-    lastLfoValueL = 0.0f;
-    lastLfoValueR = 0.0f;
+    randomValueL = randomValueR = 0.0f;
+    randomSampleCounterL = randomSampleCounterR = 0.0f;
+    lastLfoValueL = lastLfoValueR = 0.0f;
 
     needsFilterUpdate = true;
     lastAllpassFreq = -1.0f;
@@ -81,11 +78,9 @@ void SpatialFX::setLfoWaveform(LfoWaveform wf)
     if (isValidWaveform(wf))
     {
         waveform = wf;
-        // Reset random counters when switching to random mode
         if (wf == LfoWaveform::Random)
         {
-            randomSampleCounterL = 0.0f;
-            randomSampleCounterR = 0.0f;
+            randomSampleCounterL = randomSampleCounterR = 0.0f;
         }
     }
 }
@@ -122,7 +117,6 @@ void SpatialFX::setHaasDelayMs(float leftMs, float rightMs)
 
 void SpatialFX::initializeDCBlockers()
 {
-    // High-pass at 20Hz to remove any DC offset
     auto dcCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, 20.0f);
     *dcBlockerL.coefficients = *dcCoeffs;
     *dcBlockerR.coefficients = *dcCoeffs;
@@ -130,52 +124,35 @@ void SpatialFX::initializeDCBlockers()
 
 void SpatialFX::updateFilters()
 {
-    float freq = params.allpassFreq.getCurrentValue();
+    const float freq = params.allpassFreq.getCurrentValue();
 
-    // Only update if frequency has changed significantly
     if (std::abs(freq - lastAllpassFreq) < filterUpdateThreshold && !needsFilterUpdate)
         return;
 
     lastAllpassFreq = freq;
     needsFilterUpdate = false;
 
-    // Use JUCE's built-in allpass coefficient generator
     auto coefs = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, freq);
-
     *allpassL.coefficients = *coefs;
     *allpassR.coefficients = *coefs;
 }
 
 void SpatialFX::updateRandomLfo(bool isLeftChannel, float& counter, float& value)
 {
-    float samplesPerUpdate = sampleRate / randomUpdateRateHz;
+    const float samplesPerUpdate = sampleRate / randomUpdateRateHz;
 
-    if (isLeftChannel)
+    if (counter <= 0.0f)
     {
-        if (counter <= 0.0f)
-        {
-            value = random.nextFloat() * 2.0f - 1.0f;
-            counter = samplesPerUpdate;
-        }
-        counter -= 1.0f;
+        value = random.nextFloat() * 2.0f - 1.0f;
+        counter = samplesPerUpdate;
     }
-    else
-    {
-        if (counter <= 0.0f)
-        {
-            value = random.nextFloat() * 2.0f - 1.0f;
-            counter = samplesPerUpdate;
-        }
-        counter -= 1.0f;
-    }
+    counter -= 1.0f;
 }
 
 float SpatialFX::calculateTriangleWave(float phase) const
 {
-    // Normalize phase to 0-1
-    float normalizedPhase = phase / juce::MathConstants<float>::twoPi;
+    const float normalizedPhase = phase / juce::MathConstants<float>::twoPi;
 
-    // Triangle wave: -1 to 1 to -1
     if (normalizedPhase < 0.25f)
         return 4.0f * normalizedPhase;
     else if (normalizedPhase < 0.75f)
@@ -216,12 +193,11 @@ float SpatialFX::getLfoValue(float phase, bool isLeftChannel)
 
 void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
 {
-    // Stereo safety check
     if (block.getNumChannels() < 2)
         return;
 
-    // Early exit if completely dry
-    if (params.wetDry.getTargetValue() <= 0.0f && params.wetDry.getCurrentValue() <= 0.0f)
+    // Early exit if completely dry and stable
+    if (params.wetDry.getTargetValue() <= 0.0f && !params.wetDry.isSmoothing())
         return;
 
     auto* leftData = block.getChannelPointer(0);
@@ -233,11 +209,10 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
 
     for (size_t i = 0; i < numSamples; ++i)
     {
-        // Input
         const float dryL = leftData[i];
         const float dryR = rightData[i];
 
-        // Get all smoothed parameter values
+        // Get smoothed parameters
         const float smoothedPhaseL = params.phaseL.getNextValue();
         const float smoothedPhaseR = params.phaseR.getNextValue();
         const float smoothedDepthL = params.lfoDepthL.getNextValue();
@@ -248,31 +223,22 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         const float rateL = params.lfoRateL.getNextValue();
         const float rateR = params.lfoRateR.getNextValue();
 
-        // Update allpass frequency if needed
-        const float currentAllpassFreq = params.allpassFreq.getNextValue();
-        if (std::abs(currentAllpassFreq - lastAllpassFreq) > filterUpdateThreshold || needsFilterUpdate)
-        {
+        // Update filters only when needed
+        params.allpassFreq.getNextValue(); // Consume the value
+        if (needsFilterUpdate)
             updateFilters();
-        }
 
-        // Update LFO phases (per-sample for smooth modulation)
-        const float lfoIncL = twoPi * rateL * invSampleRate;
-        const float lfoIncR = twoPi * rateR * invSampleRate;
+        // Update LFO phases
+        lfoPhaseL += twoPi * rateL * invSampleRate;
+        lfoPhaseR += twoPi * rateR * invSampleRate;
 
-        lfoPhaseL += lfoIncL;
-        lfoPhaseR += lfoIncR;
-
-        // Efficient phase wrapping
-        if (lfoPhaseL >= twoPi)
-            lfoPhaseL -= twoPi;
-        if (lfoPhaseR >= twoPi)
-            lfoPhaseR -= twoPi;
+        if (lfoPhaseL >= twoPi) lfoPhaseL -= twoPi;
+        if (lfoPhaseR >= twoPi) lfoPhaseR -= twoPi;
 
         // Calculate LFO modulation
         const float lfoModL = getLfoValue(lfoPhaseL, true);
         const float lfoModR = getLfoValue(lfoPhaseR, false);
 
-        // Store for UI feedback
         lastLfoValueL = lfoModL;
         lastLfoValueR = lfoModR;
 
@@ -280,7 +246,7 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         const float phaseL = smoothedPhaseL + smoothedDepthL * lfoModL;
         const float phaseR = smoothedPhaseR + smoothedDepthR * lfoModR;
 
-        // Phase rotation (stereo field manipulation)
+        // Phase rotation
         const float cosL = std::cos(phaseL);
         const float sinL = std::sin(phaseL);
         const float cosR = std::cos(phaseR);
@@ -289,7 +255,7 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         const float shiftedL = dryL * cosL - dryR * sinL;
         const float shiftedR = dryR * cosR + dryL * sinR;
 
-        // Haas effect (precedence effect for spatial widening)
+        // Haas effect
         haasDelayL.setDelay(haasTimeL * sampleRate * 0.001f);
         haasDelayR.setDelay(haasTimeR * sampleRate * 0.001f);
 
@@ -298,15 +264,15 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         haasDelayL.pushSample(0, shiftedL);
         haasDelayR.pushSample(0, shiftedR);
 
-        // Allpass filtering for additional phase coloration
+        // Allpass filtering
         float filteredL = allpassL.processSample(delayedL);
         float filteredR = allpassR.processSample(delayedR);
 
-        // DC blocking for safety
+        // DC blocking
         filteredL = dcBlockerL.processSample(filteredL);
         filteredR = dcBlockerR.processSample(filteredR);
 
-        // Final wet/dry mix with equal-power crossfade
+        // Equal-power crossfade
         const float wetGain = std::sqrt(smoothedWetDry);
         const float dryGain = std::sqrt(1.0f - smoothedWetDry);
 
