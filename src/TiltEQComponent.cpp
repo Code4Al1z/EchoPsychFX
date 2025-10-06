@@ -8,18 +8,13 @@ TiltEQComponent::TiltEQComponent(juce::AudioProcessorValueTreeState& state)
     configureGroup(group);
 
     tiltSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    tiltSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
+    tiltSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     tiltSlider.setRange(-1.0, 1.0, 0.01);
     tiltSlider.setSkewFactorFromMidPoint(0.0);
-
-    tiltSlider.setColour(juce::Slider::thumbColourId, Colors::knobThumb);
-    tiltSlider.setColour(juce::Slider::trackColourId, Colors::track);
-    tiltSlider.setColour(juce::Slider::backgroundColourId, Colors::knobBackground);
-    tiltSlider.setColour(juce::Slider::rotarySliderFillColourId, Colors::knobFill);
-    tiltSlider.setColour(juce::Slider::rotarySliderOutlineColourId, Colors::knobOutline);
+    configureKnob(tiltSlider);
     addAndMakeVisible(tiltSlider);
 
-    configureLabel(tiltLabel, "Tilt");
+    configureLabel(tiltLabel, "Tilt EQ");
     addAndMakeVisible(tiltLabel);
 
     tiltAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -38,10 +33,19 @@ void TiltEQComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    auto knobArea = area.removeFromLeft(120);
+    const int availableWidth = area.getWidth();
+    const int availableHeight = area.getHeight();
 
-    tiltSlider.setBounds(knobArea.removeFromTop(120));
-    tiltLabel.setBounds(tiltSlider.getX(), 0, 120, labelHeight);
+    // Calculate adaptive knob size
+    const int adaptiveKnobSize = juce::jmin(knobSize, availableWidth - margin * 2,
+        availableHeight - labelHeight - margin * 2);
+
+    // Center the knob
+    const int x = area.getX() + (area.getWidth() - adaptiveKnobSize) / 2;
+    const int y = area.getY() + margin;
+
+    tiltLabel.setBounds(x, y, adaptiveKnobSize, labelHeight);
+    tiltSlider.setBounds(x, y + labelHeight, adaptiveKnobSize, adaptiveKnobSize);
 }
 
 void TiltEQComponent::setTilt(float newValue)

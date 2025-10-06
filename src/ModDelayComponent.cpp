@@ -1,4 +1,4 @@
-#include "ModDelayComponent.h"
+﻿#include "ModDelayComponent.h"
 
 ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 {
@@ -11,19 +11,19 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "delayTime", "Delay", *this));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modDepth", "Depth", *this));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modRate", "Rate", *this));
-    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modMix", "Mod Mix", *this));
+    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modMix", "Mix", *this));
 
-    // Advanced section knobs
-    feedbackLKnob = std::make_unique<KnobWithLabel>(state, "feedbackL", "FB Left", advancedSection);
-    feedbackRKnob = std::make_unique<KnobWithLabel>(state, "feedbackR", "FB Right", advancedSection);
+    // Feedback knobs
+    feedbackLKnob = std::make_unique<KnobWithLabel>(state, "feedbackL", "FB L", *this);
+    feedbackRKnob = std::make_unique<KnobWithLabel>(state, "feedbackR", "FB R", *this);
 
-    // Waveform buttons
+    // Waveform buttons with better labels
     const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
-        { "Sine", ModDelay::ModulationType::Sine },
+        { "Sin", ModDelay::ModulationType::Sine },
         { "Tri", ModDelay::ModulationType::Triangle },
-        { "Sq", ModDelay::ModulationType::Square },
-        { "Saw+", ModDelay::ModulationType::SawtoothUp },
-        { "Saw-", ModDelay::ModulationType::SawtoothDown }
+        { "Sqr", ModDelay::ModulationType::Square },
+        { "Sw▲", ModDelay::ModulationType::SawtoothUp },
+        { "Sw▼", ModDelay::ModulationType::SawtoothDown }
     };
 
     int idx = 0;
@@ -32,7 +32,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
         auto* btn = waveformButtons.add(new juce::TextButton(label));
         btn->setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
         btn->setColour(juce::TextButton::textColourOnId, Colors::labelText);
-        btn->setColour(juce::TextButton::textColourOffId, Colors::labelText);
+        btn->setColour(juce::TextButton::textColourOffId, Colors::labelText.withAlpha(0.7f));
         btn->onClick = [this, idx] { updateWaveformSelection(idx); };
         addAndMakeVisible(btn);
         ++idx;
@@ -42,7 +42,6 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     hiddenCombo = std::make_unique<juce::ComboBox>();
     modulationTypeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         state, "modulationType", *hiddenCombo);
-    hiddenCombo->setComponentID("modTypeCombo");
     hiddenCombo->setVisible(false);
     addAndMakeVisible(*hiddenCombo);
 
@@ -52,11 +51,8 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     syncToggle.setColour(juce::ToggleButton::tickColourId, Colors::track);
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         state, "sync", syncToggle);
-    advancedSection.addAndMakeVisible(syncToggle);
+    addAndMakeVisible(syncToggle);
 
-    addAndMakeVisible(advancedSection);
-
-    // Select first waveform by default
     updateWaveformSelection(0);
 }
 
@@ -72,36 +68,80 @@ void ModDelayComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    int y = area.getY() + 5;
-    int x = area.getX();
+    const int availableWidth = area.getWidth();
+    const int availableHeight = area.getHeight();
 
-    // Waveform buttons
-    int waveX = x;
+    // Adaptive knob size
+    const int adaptiveKnobSize = juce::jmin(knobSize, availableHeight - 50, availableWidth / 7);
+    const bool useCompactLayout = availableWidth < 700;
+
+    int y = area.getY() + 5;
+    int x = area.getX() + margin;
+
+    // Waveform buttons at top
+    const int btnWidth = useCompactLayout ? 45 : 55;
+    const int btnHeight = 26;
+
     for (auto* btn : waveformButtons)
     {
-        btn->setBounds(waveX, y, 60, 24);
-        waveX += 65;
+        btn->setBounds(x, y, btnWidth, btnHeight);
+        x += btnWidth + 4;
     }
-    y += 35;
 
-    // Main knobs
-    const int numKnobs = static_cast<int>(knobs.size());
-    for (int i = 0; i < numKnobs; ++i)
+    // Sync toggle next to waveforms
+    syncToggle.setBounds(x + margin, y, 70, btnHeight);
+
+    y += btnHeight + margin + 5;
+    x = area.getX() + margin;
+
+    // Main knobs - adapt to available space
+    const int numMainKnobs = static_cast<int>(knobs.size());
+    const int mainKnobsWidth = (adaptiveKnobSize + spacing) * numMainKnobs - spacing;
+
+    if (useCompactLayout || mainKnobsWidth > availableWidth * 0.7f)
     {
-        knobs[i]->setBounds(x + i * (knobSize + spacing), y, knobSize, knobSize + labelHeight);
+        // Compact: all knobs in one row
+        const int compactSize = juce::jmin(adaptiveKnobSize, (availableWidth - margin * 2) / (numMainKnobs + 2) - spacing);
+
+        for (int i = 0; i < numMainKnobs; ++i)
+        {
+            knobs[i]->setBounds(x, y, compactSize, compactSize + labelHeight);
+            x += compactSize + spacing;
+        }
+
+        // Feedback knobs at end
+        if (feedbackLKnob)
+        {
+            feedbackLKnob->setBounds(x, y, compactSize, compactSize + labelHeight);
+            x += compactSize + spacing;
+        }
+        if (feedbackRKnob)
+        {
+            feedbackRKnob->setBounds(x, y, compactSize, compactSize + labelHeight);
+        }
     }
+    else
+    {
+        // Standard: main knobs, then feedback knobs in a separate section
+        for (int i = 0; i < numMainKnobs; ++i)
+        {
+            knobs[i]->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
+            x += adaptiveKnobSize + spacing;
+        }
 
-    // Advanced section
-    int advX = x + numKnobs * (knobSize + spacing) + spacing;
-    advancedSection.setBounds(advX, y, getWidth() - advX - margin, knobSize + labelHeight);
+        // Add extra space before feedback knobs
+        x += spacing * 2;
 
-    syncToggle.setBounds(0, 0, 60, 30);
-
-    if (feedbackLKnob)
-        feedbackLKnob->setBounds(80, 0, knobSize, knobSize + labelHeight);
-
-    if (feedbackRKnob)
-        feedbackRKnob->setBounds(200, 0, knobSize, knobSize + labelHeight);
+        if (feedbackLKnob)
+        {
+            feedbackLKnob->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
+            x += adaptiveKnobSize + spacing;
+        }
+        if (feedbackRKnob && x + adaptiveKnobSize <= area.getRight())
+        {
+            feedbackRKnob->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
+        }
+    }
 }
 
 void ModDelayComponent::updateWaveformSelection(int index)
@@ -113,11 +153,13 @@ void ModDelayComponent::updateWaveformSelection(int index)
 
     for (int i = 0; i < waveformButtons.size(); ++i)
     {
-        waveformButtons[i]->setColour(juce::TextButton::buttonColourId,
-            i == index ? UIHelpers::Colors::track : juce::Colours::darkgrey);
+        auto* btn = waveformButtons[i];
+        const bool isSelected = (i == index);
+        btn->setColour(juce::TextButton::buttonColourId,
+            isSelected ? UIHelpers::Colors::track : juce::Colours::darkgrey);
+        btn->setAlpha(isSelected ? 1.0f : 0.7f);
     }
 
-    // Update hidden combo for state management
     if (hiddenCombo)
         hiddenCombo->setSelectedId(index + 1, juce::NotificationType::sendNotification);
 }

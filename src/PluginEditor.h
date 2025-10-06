@@ -14,11 +14,13 @@
 #include "PluginLookAndFeel.h"
 
 /**
- * @brief Main plugin editor UI
+ * @brief Main plugin editor UI with intelligent resizing
  *
- * Manages the plugin's graphical user interface with two modes:
- * - Manual Mode: Individual control over all effect parameters
- * - Perception Mode: Quick access to psychoacoustic presets
+ * Features:
+ * - Responsive layout that adapts to window size
+ * - No overlapping elements at any size
+ * - Components intelligently rearrange and resize
+ * - Minimum size constraints to maintain usability
  */
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
 {
@@ -46,7 +48,7 @@ private:
     std::unique_ptr<SpatialFXComponent> spatialFXComponent;
     std::unique_ptr<MicroPitchDetuneComponent> microPitchDetuneComponent;
     std::unique_ptr<ExciterSaturationComponent> exciterSaturationComponent;
-    std::unique_ptr<SimpleVerbWithPredelayComponent> simpleVerbWithPredelayComponent;
+    std::unique_ptr<SimpleVerbWithPredelayComponent> simpleVerbComponent;
 
     // Preset management (perception mode)
     std::unique_ptr<PerceptionPresetManager> presetManager;
@@ -54,6 +56,16 @@ private:
 
     /** Toggle between manual and perception modes */
     void updateUIVisibility();
+
+    /** Calculate optimal layout for current window size */
+    void layoutManualMode(juce::Rectangle<int> area);
+    void layoutPerceptionMode(juce::Rectangle<int> area);
+
+    // Minimum sizes for usability
+    static constexpr int minWidth = 700;
+    static constexpr int minHeight = 500;
+    static constexpr int maxWidth = 2400;
+    static constexpr int maxHeight = 1800;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };

@@ -7,7 +7,7 @@ SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state
     addAndMakeVisible(group);
     configureGroup(group);
 
-    // Create all knobs - note some have custom ranges
+    // Create all knobs with custom ranges where needed
     auto createCustomKnob = [&](const juce::String& paramID, const juce::String& label,
         float min, float max, float step) -> std::unique_ptr<KnobWithLabel>
         {
@@ -27,19 +27,20 @@ SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state
             return knob;
         };
 
+    // Create knobs with appropriate labels
     knobs.push_back(createCustomKnob("phaseOffsetL", "Phase L", -180.0f, 180.0f, 1.0f));
     knobs.push_back(createCustomKnob("phaseOffsetR", "Phase R", -180.0f, 180.0f, 1.0f));
     knobs.push_back(createCustomKnob("sfxModRateL", "Rate L", 0.0f, 10.0f, 0.01f));
     knobs.push_back(createCustomKnob("sfxModRateR", "Rate R", 0.0f, 10.0f, 0.01f));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "sfxModDepthL", "Depth L", *this));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "sfxModDepthR", "Depth R", *this));
-    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "sfxWetDryMix", "Wet/Dry", *this));
-    knobs.push_back(createCustomKnob("sfxLfoPhaseOffset", "LFO Phase", 0.0f, 6.2832f, 0.01f));
-    knobs.push_back(createCustomKnob("sfxAllpassFreq", "Allpass Freq", 20.0f, 20000.0f, 1.0f));
+    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "sfxWetDryMix", "Mix", *this));
+    knobs.push_back(createCustomKnob("sfxLfoPhaseOffset", "LFO Ø", 0.0f, 6.2832f, 0.01f));
+    knobs.push_back(createCustomKnob("sfxAllpassFreq", "Allpass", 20.0f, 20000.0f, 1.0f));
     knobs.push_back(createCustomKnob("haasDelayL", "Haas L", 0.0f, 40.0f, 0.1f));
     knobs.push_back(createCustomKnob("haasDelayR", "Haas R", 0.0f, 40.0f, 0.1f));
 
-    // Mod Shape ComboBox
+    // Mod Shape selector
     modShapeSelector = std::make_unique<juce::ComboBox>();
     modShapeSelector->addItem("Sine", 1);
     modShapeSelector->addItem("Triangle", 2);
@@ -70,34 +71,76 @@ void SpatialFXComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    const int numPerRow = 6;
-    const int rowHeight = knobSize + labelHeight + margin;
+    const int availableWidth = area.getWidth();
+    const int availableHeight = area.getHeight();
 
-    // Layout knobs in grid
-    for (size_t i = 0; i < knobs.size(); ++i)
+    // Calculate adaptive knob size and grid layout
+    const int totalKnobs = static_cast<int>(knobs.size()) + 1; // +1 for mod shape selector
+
+    // Determine optimal grid layout based on available space
+    int cols, rows;
+    const int adaptiveKnobSize = juce::jmin(knobSize, availableHeight / 3 - spacing);
+
+    if (availableWidth < 750)
     {
-        const int row = static_cast<int>(i) / numPerRow;
-        const int col = static_cast<int>(i) % numPerRow;
-
-        const int knobX = area.getX() + col * (knobSize + margin);
-        const int knobY = area.getY() + row * rowHeight;
-
-        knobs[i]->setBounds(knobX, knobY, knobSize, knobSize + labelHeight);
+        // Narrow: 4 columns
+        cols = 4;
+    }
+    else if (availableWidth < 1000)
+    {
+        // Medium: 5 columns
+        cols = 5;
+    }
+    else if (availableWidth < 1300)
+    {
+        // Wide: 6 columns
+        cols = 6;
+    }
+    else
+    {
+        // Very wide: try to fit all in 2 rows
+        cols = (totalKnobs + 1) / 2;
     }
 
-    // Mod shape selector
-    const int totalKnobs = static_cast<int>(knobs.size());
-    const int modRow = totalKnobs / numPerRow;
-    const int modCol = totalKnobs % numPerRow;
+    rows = (totalKnobs + cols - 1) / cols; // Ceiling division
 
-    const int modX = area.getX() + modCol * (knobSize + margin);
-    const int modY = area.getY() + modRow * rowHeight;
+    // Calculate actual knob size based on grid
+    const int maxKnobWidth = (availableWidth - margin * (cols + 1)) / cols;
+    const int maxKnobHeight = (availableHeight - margin * (rows + 1) - labelHeight * rows) / rows;
+    const int finalKnobSize = juce::jmin(adaptiveKnobSize, maxKnobWidth, maxKnobHeight);
+    const int itemHeight = finalKnobSize + labelHeight;
+
+    // Layout knobs in grid
+    int x = area.getX() + margin;
+    int y = area.getY() + margin;
+
+    for (size_t i = 0; i < knobs.size(); ++i)
+    {
+        const int col = static_cast<int>(i) % cols;
+        const int row = static_cast<int>(i) / cols;
+
+        const int knobX = area.getX() + margin + col * (finalKnobSize + spacing);
+        const int knobY = area.getY() + margin + row * (itemHeight + spacing);
+
+        knobs[i]->setBounds(knobX, knobY, finalKnobSize, itemHeight);
+    }
+
+    // Mod shape selector in next grid position
+    const size_t modIndex = knobs.size();
+    const int modCol = static_cast<int>(modIndex) % cols;
+    const int modRow = static_cast<int>(modIndex) / cols;
+
+    const int modX = area.getX() + margin + modCol * (finalKnobSize + spacing);
+    const int modY = area.getY() + margin + modRow * (itemHeight + spacing);
 
     if (modShapeLabel)
-        modShapeLabel->setBounds(modX, modY, knobSize, labelHeight);
+        modShapeLabel->setBounds(modX, modY, finalKnobSize, labelHeight);
 
     if (modShapeSelector)
-        modShapeSelector->setBounds(modX, modY + labelHeight, knobSize, 30);
+    {
+        const int comboHeight = juce::jmin(30, finalKnobSize / 3);
+        modShapeSelector->setBounds(modX, modY + labelHeight + 5, finalKnobSize, comboHeight);
+    }
 }
 
 void SpatialFXComponent::setPhaseOffsetLeft(float newValue)
