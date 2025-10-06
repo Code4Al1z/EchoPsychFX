@@ -28,6 +28,7 @@ void WidthBalancer::reset()
 
     // Reset cached gains
     updateBalanceGains(targetBalance.load(std::memory_order_relaxed));
+    cache.paramsStable = false;
 }
 
 void WidthBalancer::setWidth(float width)
@@ -35,6 +36,7 @@ void WidthBalancer::setWidth(float width)
     const float clampedWidth = juce::jlimit(0.0f, 2.0f, width);
     targetWidth.store(clampedWidth, std::memory_order_relaxed);
     widthSmoothed.setTargetValue(clampedWidth);
+    cache.paramsStable = false;
 }
 
 void WidthBalancer::setMidSideBalance(float balance)
@@ -42,6 +44,7 @@ void WidthBalancer::setMidSideBalance(float balance)
     const float clampedBalance = juce::jlimit(-1.0f, 1.0f, balance);
     targetBalance.store(clampedBalance, std::memory_order_relaxed);
     balanceSmoothed.setTargetValue(clampedBalance);
+    cache.paramsStable = false;
 }
 
 void WidthBalancer::setIntensity(float intensity)
@@ -49,6 +52,7 @@ void WidthBalancer::setIntensity(float intensity)
     const float clampedIntensity = juce::jlimit(0.0f, 1.0f, intensity);
     targetIntensity.store(clampedIntensity, std::memory_order_relaxed);
     intensitySmoothed.setTargetValue(clampedIntensity);
+    cache.paramsStable = false;
 }
 
 void WidthBalancer::setMono(bool shouldBeMono)
@@ -90,6 +94,21 @@ void WidthBalancer::updateBalanceGains(float balance)
     lastBalanceForCache = balance;
 }
 
+void WidthBalancer::updateProcessCache()
+{
+    cache.width = widthSmoothed.getCurrentValue();
+    cache.balance = balanceSmoothed.getCurrentValue();
+    cache.intensity = intensitySmoothed.getCurrentValue();
+
+    if (std::abs(cache.balance - lastBalanceForCache) > 0.001f)
+        updateBalanceGains(cache.balance);
+
+    cache.effectiveWidth = 1.0f + (cache.width - 1.0f) * cache.intensity;
+    cache.effectiveMidGain = 1.0f + (cachedMidGain - 1.0f) * cache.intensity;
+    cache.effectiveSideGain = cachedSideGain * cache.intensity;
+    cache.paramsStable = true;
+}
+
 void WidthBalancer::updateCorrelation(const float* left, const float* right, size_t numSamples)
 {
     // Accumulate correlation metrics
@@ -102,10 +121,7 @@ void WidthBalancer::updateCorrelation(const float* left, const float* right, siz
         sumRR += r * r;
         sumLR += l * r;
 
-        ++correlationSampleCount;
-
-        // Calculate and reset when window is full
-        if (correlationSampleCount >= correlationWindowSize)
+        if (++correlationSampleCount >= correlationWindowSize)
         {
             const float denominator = std::sqrt(sumLL * sumRR);
 
@@ -120,10 +136,7 @@ void WidthBalancer::updateCorrelation(const float* left, const float* right, siz
                 currentCorrelation.store(0.0f, std::memory_order_relaxed);
             }
 
-            // Reset accumulators
-            sumLL = 0.0f;
-            sumRR = 0.0f;
-            sumLR = 0.0f;
+            sumLL = sumRR = sumLR = 0.0f;
             correlationSampleCount = 0;
         }
     }
@@ -139,42 +152,33 @@ void WidthBalancer::process(juce::dsp::AudioBlock<float>& block)
     float* right = block.getChannelPointer(1);
     const size_t numSamples = block.getNumSamples();
 
-    // Check if we're in mono mode
-    const bool monoMode = mono.load(std::memory_order_relaxed);
-
-    if (monoMode)
+    if (mono.load(std::memory_order_relaxed))
     {
         // Fast mono collapse
         for (size_t i = 0; i < numSamples; ++i)
         {
-            const float mono = (left[i] + right[i]) * 0.5f;
-            left[i] = mono;
-            right[i] = mono;
+            const float monoSample = (left[i] + right[i]) * 0.5f;
+            left[i] = right[i] = monoSample;
         }
-
         currentCorrelation.store(1.0f, std::memory_order_relaxed);
         return;
     }
 
-    // Check if any parameters are smoothing
     const bool isSmoothing = widthSmoothed.isSmoothing() ||
         balanceSmoothed.isSmoothing() ||
         intensitySmoothed.isSmoothing();
 
     if (isSmoothing)
     {
-        // Per-sample processing with smoothing
         for (size_t i = 0; i < numSamples; ++i)
         {
             const float currentWidth = widthSmoothed.getNextValue();
             const float currentBalance = balanceSmoothed.getNextValue();
             const float currentIntensity = intensitySmoothed.getNextValue();
 
-            // Update balance gains if changed significantly
             if (std::abs(currentBalance - lastBalanceForCache) > 0.001f)
                 updateBalanceGains(currentBalance);
 
-            // Apply intensity scaling
             const float effectiveWidth = 1.0f + (currentWidth - 1.0f) * currentIntensity;
             const float effectiveMidGain = 1.0f + (cachedMidGain - 1.0f) * currentIntensity;
             const float effectiveSideGain = cachedSideGain * currentIntensity;
@@ -182,60 +186,29 @@ void WidthBalancer::process(juce::dsp::AudioBlock<float>& block)
             // Mid-side encoding
             const float l = left[i];
             const float r = right[i];
-            float mid = (l + r) * 0.5f;
-            float side = (l - r) * 0.5f;
+            const float mid = (l + r) * 0.5f * effectiveMidGain;
+            const float side = (l - r) * 0.5f * effectiveWidth * effectiveSideGain;
 
-            // Apply width
-            side *= effectiveWidth;
-
-            // Apply mid-side balance
-            mid *= effectiveMidGain;
-            side *= effectiveSideGain;
-
-            // Mid-side decoding with proper gain compensation
             left[i] = mid + side;
             right[i] = mid - side;
         }
     }
     else
     {
-        // Optimized path when parameters are stable
-        const float currentWidth = widthSmoothed.getCurrentValue();
-        const float currentBalance = balanceSmoothed.getCurrentValue();
-        const float currentIntensity = intensitySmoothed.getCurrentValue();
+        if (!cache.paramsStable)
+            updateProcessCache();
 
-        // Update balance gains if needed
-        if (std::abs(currentBalance - lastBalanceForCache) > 0.001f)
-            updateBalanceGains(currentBalance);
-
-        // Pre-compute scaled parameters
-        const float effectiveWidth = 1.0f + (currentWidth - 1.0f) * currentIntensity;
-        const float effectiveMidGain = 1.0f + (cachedMidGain - 1.0f) * currentIntensity;
-        const float effectiveSideGain = cachedSideGain * currentIntensity;
-
-        // Process block
         for (size_t i = 0; i < numSamples; ++i)
         {
             const float l = left[i];
             const float r = right[i];
+            const float mid = (l + r) * 0.5f * cache.effectiveMidGain;
+            const float side = (l - r) * 0.5f * cache.effectiveWidth * cache.effectiveSideGain;
 
-            // Mid-side encoding
-            float mid = (l + r) * 0.5f;
-            float side = (l - r) * 0.5f;
-
-            // Apply width
-            side *= effectiveWidth;
-
-            // Apply mid-side balance
-            mid *= effectiveMidGain;
-            side *= effectiveSideGain;
-
-            // Mid-side decoding
             left[i] = mid + side;
             right[i] = mid - side;
         }
     }
 
-    // Update stereo correlation meter
     updateCorrelation(left, right, numSamples);
 }
