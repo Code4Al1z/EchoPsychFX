@@ -7,17 +7,14 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     addAndMakeVisible(group);
     configureGroup(group);
 
-    // Main knobs
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "delayTime", "Delay", *this));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modDepth", "Depth", *this));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modRate", "Rate", *this));
     knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modMix", "Mix", *this));
 
-    // Feedback knobs
     feedbackLKnob = std::make_unique<KnobWithLabel>(state, "feedbackL", "FB L", *this);
     feedbackRKnob = std::make_unique<KnobWithLabel>(state, "feedbackR", "FB R", *this);
 
-    // Waveform buttons with better labels
     const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
         { "Sin", ModDelay::ModulationType::Sine },
         { "Tri", ModDelay::ModulationType::Triangle },
@@ -38,14 +35,12 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
         ++idx;
     }
 
-    // Hidden combo for state management
     hiddenCombo = std::make_unique<juce::ComboBox>();
     modulationTypeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         state, "modulationType", *hiddenCombo);
     hiddenCombo->setVisible(false);
     addAndMakeVisible(*hiddenCombo);
 
-    // Sync toggle
     syncToggle.setButtonText("Sync");
     syncToggle.setColour(juce::ToggleButton::textColourId, Colors::labelText);
     syncToggle.setColour(juce::ToggleButton::tickColourId, Colors::track);
@@ -68,18 +63,11 @@ void ModDelayComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    const int availableWidth = area.getWidth();
-    const int availableHeight = area.getHeight();
 
-    // Adaptive knob size
-    const int adaptiveKnobSize = juce::jmin(knobSize, availableHeight - 50, availableWidth / 7);
-    const bool useCompactLayout = availableWidth < 700;
+    int y = area.getY();
+    int x = area.getX();
 
-    int y = area.getY() + 5;
-    int x = area.getX() + margin;
-
-    // Waveform buttons at top
-    const int btnWidth = useCompactLayout ? 45 : 55;
+    const int btnWidth = 50;
     const int btnHeight = 26;
 
     for (auto* btn : waveformButtons)
@@ -88,59 +76,30 @@ void ModDelayComponent::resized()
         x += btnWidth + 4;
     }
 
-    // Sync toggle next to waveforms
     syncToggle.setBounds(x + margin, y, 70, btnHeight);
 
     y += btnHeight + margin + 5;
-    x = area.getX() + margin;
+    x = area.getX();
 
-    // Main knobs - adapt to available space
     const int numMainKnobs = static_cast<int>(knobs.size());
-    const int mainKnobsWidth = (adaptiveKnobSize + spacing) * numMainKnobs - spacing;
+    const int totalKnobHeight = knobSize + labelHeight;
 
-    if (useCompactLayout || mainKnobsWidth > availableWidth * 0.7f)
+    for (int i = 0; i < numMainKnobs; ++i)
     {
-        // Compact: all knobs in one row
-        const int compactSize = juce::jmin(adaptiveKnobSize, (availableWidth - margin * 2) / (numMainKnobs + 2) - spacing);
-
-        for (int i = 0; i < numMainKnobs; ++i)
-        {
-            knobs[i]->setBounds(x, y, compactSize, compactSize + labelHeight);
-            x += compactSize + spacing;
-        }
-
-        // Feedback knobs at end
-        if (feedbackLKnob)
-        {
-            feedbackLKnob->setBounds(x, y, compactSize, compactSize + labelHeight);
-            x += compactSize + spacing;
-        }
-        if (feedbackRKnob)
-        {
-            feedbackRKnob->setBounds(x, y, compactSize, compactSize + labelHeight);
-        }
+        knobs[i]->setBounds(x, y, knobSize, totalKnobHeight);
+        x += knobSize + spacing;
     }
-    else
+
+    x += spacing;
+
+    if (feedbackLKnob)
     {
-        // Standard: main knobs, then feedback knobs in a separate section
-        for (int i = 0; i < numMainKnobs; ++i)
-        {
-            knobs[i]->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
-            x += adaptiveKnobSize + spacing;
-        }
-
-        // Add extra space before feedback knobs
-        x += spacing * 2;
-
-        if (feedbackLKnob)
-        {
-            feedbackLKnob->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
-            x += adaptiveKnobSize + spacing;
-        }
-        if (feedbackRKnob && x + adaptiveKnobSize <= area.getRight())
-        {
-            feedbackRKnob->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
-        }
+        feedbackLKnob->setBounds(x, y, knobSize, totalKnobHeight);
+        x += knobSize + spacing;
+    }
+    if (feedbackRKnob)
+    {
+        feedbackRKnob->setBounds(x, y, knobSize, totalKnobHeight);
     }
 }
 

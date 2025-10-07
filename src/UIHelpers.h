@@ -3,12 +3,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
 
-/**
- * @brief Shared UI configuration utilities to reduce code duplication
- */
 namespace UIHelpers
 {
-    // Standard colors
     namespace Colors
     {
         extern const juce::Colour background;
@@ -21,33 +17,29 @@ namespace UIHelpers
         extern const juce::Colour groupOutline;
     }
 
-    // Standard dimensions
     namespace Dimensions
     {
         constexpr int knobSize = 100;
         constexpr int margin = 10;
         constexpr int labelHeight = 20;
         constexpr int spacing = 20;
+        constexpr int groupLabelHeight = 25;
     }
 
-    /**
-     * @brief Configures a slider with standard psychoacoustic plugin styling
-     */
+    struct LayoutResult
+    {
+        int requiredWidth;
+        int requiredHeight;
+        std::vector<juce::Rectangle<int>> knobBounds;
+    };
+
+    LayoutResult calculateKnobLayout(int numKnobs, int availableWidth, int availableHeight,
+        bool allowMultipleRows = true);
+
     void configureKnob(juce::Slider& slider);
-
-    /**
-     * @brief Configures a label with standard styling
-     */
     void configureLabel(juce::Label& label, const juce::String& text);
-
-    /**
-     * @brief Configures a group component with standard styling
-     */
     void configureGroup(juce::GroupComponent& group);
 
-    /**
-     * @brief Standard knob with label structure
-     */
     struct KnobWithLabel
     {
         std::unique_ptr<juce::Slider> slider;

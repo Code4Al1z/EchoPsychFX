@@ -25,47 +25,15 @@ void MicroPitchDetuneComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    const int availableWidth = area.getWidth();
-    const int availableHeight = area.getHeight();
     const int numKnobs = static_cast<int>(knobs.size());
 
-    // Calculate adaptive knob size
-    const int maxKnobSize = (availableWidth - margin * (numKnobs + 1)) / numKnobs;
-    const int adaptiveKnobSize = juce::jmin(knobSize, maxKnobSize, availableHeight - labelHeight - margin * 2);
+    auto layout = UIHelpers::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), true);
 
-    // Check if knobs fit in a single row
-    const int requiredWidth = numKnobs * (adaptiveKnobSize + spacing) - spacing + margin * 2;
-    const bool useSingleRow = requiredWidth <= availableWidth;
-
-    if (useSingleRow)
+    for (int i = 0; i < numKnobs; ++i)
     {
-        // Single row layout - centered
-        const int totalWidth = numKnobs * (adaptiveKnobSize + spacing) - spacing;
-        const int startX = area.getX() + (area.getWidth() - totalWidth) / 2;
-        const int y = area.getY() + margin;
-
-        for (int i = 0; i < numKnobs; ++i)
-        {
-            const int x = startX + i * (adaptiveKnobSize + spacing);
-            knobs[i]->setBounds(x, y, adaptiveKnobSize, adaptiveKnobSize + labelHeight);
-        }
-    }
-    else
-    {
-        // Two row layout
-        const int knobsPerRow = (numKnobs + 1) / 2;
-        const int rowKnobSize = juce::jmin(adaptiveKnobSize, (availableWidth - margin * 2) / knobsPerRow - spacing);
-        const int rowHeight = rowKnobSize + labelHeight + margin;
-
-        for (int i = 0; i < numKnobs; ++i)
-        {
-            const int row = i / knobsPerRow;
-            const int col = i % knobsPerRow;
-            const int x = area.getX() + margin + col * (rowKnobSize + spacing);
-            const int y = area.getY() + margin + row * rowHeight;
-
-            knobs[i]->setBounds(x, y, rowKnobSize, rowKnobSize + labelHeight);
-        }
+        auto bounds = layout.knobBounds[i];
+        bounds.translate(area.getX(), area.getY());
+        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
     }
 }
 

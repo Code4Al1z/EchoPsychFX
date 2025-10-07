@@ -2,17 +2,70 @@
 
 namespace UIHelpers
 {
-    // Color definitions
     namespace Colors
     {
         const juce::Colour background{ 27, 17, 31 };
-        const juce::Colour knobThumb{ 255, 107, 0 }; // Blaze Orange #FF6B00
-        const juce::Colour track{ 255, 46, 136 }; // Electric Pink #FF2E88
+        const juce::Colour knobThumb{ 255, 107, 0 };
+        const juce::Colour track{ 255, 46, 136 };
         const juce::Colour knobBackground{ 123, 0, 70 };
-        const juce::Colour knobFill{ 255, 46, 136 }; // Electric Pink #FF2E88
+        const juce::Colour knobFill{ 255, 46, 136 };
         const juce::Colour knobOutline{ 90, 0, 50 };
-        const juce::Colour labelText{ 232, 232, 240 }; // Bright Gray #E8E8F0
+        const juce::Colour labelText{ 232, 232, 240 };
         const juce::Colour groupOutline = juce::Colours::white.withAlpha(0.4f);
+    }
+
+    LayoutResult calculateKnobLayout(int numKnobs, int availableWidth, int availableHeight,
+        bool allowMultipleRows)
+    {
+        using namespace Dimensions;
+
+        LayoutResult result;
+        result.knobBounds.reserve(numKnobs);
+
+        if (numKnobs == 0)
+        {
+            result.requiredWidth = margin * 2;
+            result.requiredHeight = margin * 2 + groupLabelHeight;
+            return result;
+        }
+
+        const int totalKnobHeight = knobSize + labelHeight;
+        const int singleRowWidth = numKnobs * knobSize + (numKnobs - 1) * spacing + margin * 2;
+
+        if (!allowMultipleRows || singleRowWidth <= availableWidth)
+        {
+            result.requiredWidth = singleRowWidth;
+            result.requiredHeight = totalKnobHeight + margin * 2 + groupLabelHeight;
+
+            const int startX = margin;
+            const int y = margin;
+
+            for (int i = 0; i < numKnobs; ++i)
+            {
+                const int x = startX + i * (knobSize + spacing);
+                result.knobBounds.emplace_back(x, y, knobSize, totalKnobHeight);
+            }
+        }
+        else
+        {
+            const int knobsPerRow = juce::jmax(1, (availableWidth - margin * 2 + spacing) / (knobSize + spacing));
+            const int numRows = (numKnobs + knobsPerRow - 1) / knobsPerRow;
+
+            result.requiredWidth = juce::jmin(singleRowWidth,
+                knobsPerRow * knobSize + (knobsPerRow - 1) * spacing + margin * 2);
+            result.requiredHeight = numRows * totalKnobHeight + (numRows - 1) * spacing + margin * 2 + groupLabelHeight;
+
+            for (int i = 0; i < numKnobs; ++i)
+            {
+                const int row = i / knobsPerRow;
+                const int col = i % knobsPerRow;
+                const int x = margin + col * (knobSize + spacing);
+                const int y = margin + row * (totalKnobHeight + spacing);
+                result.knobBounds.emplace_back(x, y, knobSize, totalKnobHeight);
+            }
+        }
+
+        return result;
     }
 
     void configureKnob(juce::Slider& slider)
@@ -40,7 +93,6 @@ namespace UIHelpers
         group.setColour(juce::GroupComponent::textColourId, Colors::labelText);
     }
 
-    // KnobWithLabel implementation
     KnobWithLabel::KnobWithLabel(juce::AudioProcessorValueTreeState& state,
         const juce::String& paramID,
         const juce::String& labelText,

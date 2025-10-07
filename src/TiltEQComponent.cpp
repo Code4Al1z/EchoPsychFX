@@ -33,19 +33,11 @@ void TiltEQComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(margin);
-    const int availableWidth = area.getWidth();
-    const int availableHeight = area.getHeight();
+    const int x = area.getX() + (area.getWidth() - knobSize) / 2;
+    const int y = area.getY();
 
-    // Calculate adaptive knob size
-    const int adaptiveKnobSize = juce::jmin(knobSize, availableWidth - margin * 2,
-        availableHeight - labelHeight - margin * 2);
-
-    // Center the knob
-    const int x = area.getX() + (area.getWidth() - adaptiveKnobSize) / 2;
-    const int y = area.getY() + margin;
-
-    tiltLabel.setBounds(x, y, adaptiveKnobSize, labelHeight);
-    tiltSlider.setBounds(x, y + labelHeight, adaptiveKnobSize, adaptiveKnobSize);
+    tiltLabel.setBounds(x, y, knobSize, labelHeight);
+    tiltSlider.setBounds(x, y + labelHeight, knobSize, knobSize);
 }
 
 void TiltEQComponent::setTilt(float newValue)
