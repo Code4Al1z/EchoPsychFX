@@ -21,6 +21,10 @@ public:
     void setDamping(float newValue);
     void setWet(float newValue);
 
+    int getMinimumWidth() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::margin * 2; }
+    int getMinimumHeight() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::labelHeight + UIHelpers::Dimensions::margin * 2 + UIHelpers::Dimensions::groupLabelHeight; }
+    int getRequiredHeight(int width) const;
+
 private:
     juce::GroupComponent group{ "simpleVerbWithPredelayGroup", "Simple Verb With Predelay" };
     std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;

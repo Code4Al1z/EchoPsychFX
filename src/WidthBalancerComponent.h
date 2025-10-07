@@ -20,6 +20,10 @@ public:
     void setMono(bool newValue);
     void setIntensity(float newValue);
 
+    int getMinimumWidth() const;
+    int getMinimumHeight() const;
+    int getRequiredHeight(int width) const;
+
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };
 

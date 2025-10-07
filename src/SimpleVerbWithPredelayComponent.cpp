@@ -1,9 +1,10 @@
 #include "SimpleVerbWithPredelayComponent.h"
+#include "PluginLookAndFeel.h"
 
 SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
-    UIHelpers::configureGroup(group);
+    PluginLookAndFeel::configureGroup(group);
 
     knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "predelayMs", "Predelay", *this));
     knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "size", "Size", *this));
@@ -13,19 +14,17 @@ SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProc
 
 void SimpleVerbWithPredelayComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(UIHelpers::Colors::background);
+    g.fillAll(PluginLookAndFeel::background);
 }
 
 void SimpleVerbWithPredelayComponent::resized()
 {
-    using namespace UIHelpers::Dimensions;
-
     group.setBounds(getLocalBounds());
 
-    auto area = getLocalBounds().reduced(margin);
+    auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = UIHelpers::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
 
     for (int i = 0; i < numKnobs; ++i)
     {

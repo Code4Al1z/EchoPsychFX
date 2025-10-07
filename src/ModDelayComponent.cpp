@@ -1,19 +1,18 @@
 ﻿#include "ModDelayComponent.h"
+#include "PluginLookAndFeel.h"
 
 ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 {
-    using namespace UIHelpers;
-
     addAndMakeVisible(group);
-    configureGroup(group);
+    PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "delayTime", "Delay", *this));
-    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modDepth", "Depth", *this));
-    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modRate", "Rate", *this));
-    knobs.emplace_back(std::make_unique<KnobWithLabel>(state, "modMix", "Mix", *this));
+    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "delayTime", "Delay", *this));
+    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modDepth", "Depth", *this));
+    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modRate", "Rate", *this));
+    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modMix", "Mix", *this));
 
-    feedbackLKnob = std::make_unique<KnobWithLabel>(state, "feedbackL", "FB L", *this);
-    feedbackRKnob = std::make_unique<KnobWithLabel>(state, "feedbackR", "FB R", *this);
+    feedbackLKnob = std::make_unique<UIHelpers::KnobWithLabel>(state, "feedbackL", "FB L", *this);
+    feedbackRKnob = std::make_unique<UIHelpers::KnobWithLabel>(state, "feedbackR", "FB R", *this);
 
     const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
         { "Sin", ModDelay::ModulationType::Sine },
@@ -28,8 +27,8 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     {
         auto* btn = waveformButtons.add(new juce::TextButton(label));
         btn->setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
-        btn->setColour(juce::TextButton::textColourOnId, Colors::labelText);
-        btn->setColour(juce::TextButton::textColourOffId, Colors::labelText.withAlpha(0.7f));
+        btn->setColour(juce::TextButton::textColourOnId, PluginLookAndFeel::labelText);
+        btn->setColour(juce::TextButton::textColourOffId, PluginLookAndFeel::labelText.withAlpha(0.7f));
         btn->onClick = [this, idx] { updateWaveformSelection(idx); };
         addAndMakeVisible(btn);
         ++idx;
@@ -42,8 +41,8 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     addAndMakeVisible(*hiddenCombo);
 
     syncToggle.setButtonText("Sync");
-    syncToggle.setColour(juce::ToggleButton::textColourId, Colors::labelText);
-    syncToggle.setColour(juce::ToggleButton::tickColourId, Colors::track);
+    syncToggle.setColour(juce::ToggleButton::textColourId, PluginLookAndFeel::labelText);
+    syncToggle.setColour(juce::ToggleButton::tickColourId, PluginLookAndFeel::track);
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         state, "sync", syncToggle);
     addAndMakeVisible(syncToggle);
@@ -53,16 +52,14 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 
 void ModDelayComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(UIHelpers::Colors::background);
+    g.fillAll(PluginLookAndFeel::background);
 }
 
 void ModDelayComponent::resized()
 {
-    using namespace UIHelpers::Dimensions;
-
     group.setBounds(getLocalBounds());
 
-    auto area = getLocalBounds().reduced(margin);
+    auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
 
     int y = area.getY();
     int x = area.getX();
@@ -76,30 +73,36 @@ void ModDelayComponent::resized()
         x += btnWidth + 4;
     }
 
-    syncToggle.setBounds(x + margin, y, 70, btnHeight);
+    syncToggle.setBounds(x + PluginLookAndFeel::margin, y, 70, btnHeight);
 
-    y += btnHeight + margin + 5;
-    x = area.getX();
+    y += btnHeight + PluginLookAndFeel::margin + 5;
+
+    area.removeFromTop(btnHeight + PluginLookAndFeel::margin + 5);
+
+    const int numTotalKnobs = static_cast<int>(knobs.size()) + 2;
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numTotalKnobs, area.getWidth(), area.getHeight(), true);
 
     const int numMainKnobs = static_cast<int>(knobs.size());
-    const int totalKnobHeight = knobSize + labelHeight;
-
-    for (int i = 0; i < numMainKnobs; ++i)
+    for (int i = 0; i < numTotalKnobs; ++i)
     {
-        knobs[i]->setBounds(x, y, knobSize, totalKnobHeight);
-        x += knobSize + spacing;
-    }
+        if (i >= static_cast<int>(layout.knobBounds.size()))
+            break;
 
-    x += spacing;
+        auto bounds = layout.knobBounds[i];
+        bounds.translate(area.getX(), area.getY());
 
-    if (feedbackLKnob)
-    {
-        feedbackLKnob->setBounds(x, y, knobSize, totalKnobHeight);
-        x += knobSize + spacing;
-    }
-    if (feedbackRKnob)
-    {
-        feedbackRKnob->setBounds(x, y, knobSize, totalKnobHeight);
+        if (i < numMainKnobs)
+        {
+            knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        }
+        else if (i == numMainKnobs && feedbackLKnob)
+        {
+            feedbackLKnob->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        }
+        else if (i == numMainKnobs + 1 && feedbackRKnob)
+        {
+            feedbackRKnob->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        }
     }
 }
 
@@ -115,7 +118,7 @@ void ModDelayComponent::updateWaveformSelection(int index)
         auto* btn = waveformButtons[i];
         const bool isSelected = (i == index);
         btn->setColour(juce::TextButton::buttonColourId,
-            isSelected ? UIHelpers::Colors::track : juce::Colours::darkgrey);
+            isSelected ? PluginLookAndFeel::track : juce::Colours::darkgrey);
         btn->setAlpha(isSelected ? 1.0f : 0.7f);
     }
 

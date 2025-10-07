@@ -27,8 +27,12 @@ public:
     void setHaasDelayMs(float leftMs, float rightMs);
     void setModShape(SpatialFX::LfoWaveform waveform);
 
+    int getMinimumWidth() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::margin * 2; }
+    int getMinimumHeight() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::labelHeight + UIHelpers::Dimensions::margin * 2 + UIHelpers::Dimensions::groupLabelHeight; }
+    int getRequiredHeight(int width) const;
+
 private:
-    juce::GroupComponent group{ "spatialFXGroup", "SpatialFX" };
+    juce::GroupComponent group{ "spatialFXGroup", "Spatial FX" };
     std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
 
     std::unique_ptr<juce::ComboBox> modShapeSelector;

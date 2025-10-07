@@ -1,9 +1,10 @@
 #include "ExciterSaturationComponent.h"
+#include "PluginLookAndFeel.h"
 
 ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
-    UIHelpers::configureGroup(group);
+    PluginLookAndFeel::configureGroup(group);
 
     knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "exciterDrive", "Drive", *this));
     knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "exciterMix", "Mix", *this));
@@ -12,19 +13,17 @@ ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValue
 
 void ExciterSaturationComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(UIHelpers::Colors::background);
+    g.fillAll(PluginLookAndFeel::background);
 }
 
 void ExciterSaturationComponent::resized()
 {
-    using namespace UIHelpers::Dimensions;
-
     group.setBounds(getLocalBounds());
 
-    auto area = getLocalBounds().reduced(margin);
+    auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = UIHelpers::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
 
     for (int i = 0; i < numKnobs; ++i)
     {

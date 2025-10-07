@@ -23,9 +23,13 @@ public:
     void setDetuneAmount(float newValue);
     void setStereoSeparation(float newValue);
 
+    int getMinimumWidth() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::margin * 2; }
+    int getMinimumHeight() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::labelHeight + UIHelpers::Dimensions::margin * 2 + UIHelpers::Dimensions::groupLabelHeight; }
+    int getRequiredHeight(int width) const;
+
 private:
     juce::GroupComponent group{ "microPitchDetuneGroup", "Micro-Pitch Detune" };
-    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;  // USE UIHelpers
+    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MicroPitchDetuneComponent)
 };

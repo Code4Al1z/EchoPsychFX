@@ -5,6 +5,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "UIHelpers.h"
 #include <memory>
+#include <vector>
 
 class TiltEQComponent : public juce::Component
 {
@@ -19,10 +20,7 @@ public:
 
 private:
     juce::GroupComponent group{ "tiltEQGroup", "TiltEQ" };
-
-    juce::Slider tiltSlider;
-    juce::Label tiltLabel;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tiltAttachment;
+    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TiltEQComponent)
 };

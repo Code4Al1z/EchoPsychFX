@@ -20,6 +20,10 @@ public:
     void setMix(float newValue);
     void setHighpass(float newValue);
 
+    int getMinimumWidth() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::margin * 2; }
+    int getMinimumHeight() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::labelHeight + UIHelpers::Dimensions::margin * 2 + UIHelpers::Dimensions::groupLabelHeight; }
+    int getRequiredHeight(int width) const;
+
 private:
     juce::GroupComponent group{ "exciterSaturationGroup", "Exciter Saturation" };
     std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;

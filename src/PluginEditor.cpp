@@ -39,9 +39,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
 
     setResizable(true, true);
 
-    using namespace UIHelpers::Dimensions;
-    const int calculatedMinWidth = (knobSize * 6 + spacing * 5 + margin * 2) + margin * 2;
-    const int calculatedMinHeight = (knobSize + labelHeight + groupLabelHeight + margin * 2) * 7 + margin * 10 + 40;
+    const int calculatedMinWidth = (PluginLookAndFeel::knobSize * 6 + PluginLookAndFeel::spacing * 5 + PluginLookAndFeel::margin * 2) + PluginLookAndFeel::margin * 2;
+    const int calculatedMinHeight = (PluginLookAndFeel::knobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::groupLabelHeight + PluginLookAndFeel::margin * 2) * 7 + PluginLookAndFeel::margin * 10 + 40;
 
     setResizeLimits(calculatedMinWidth, calculatedMinHeight, maxWidth, maxHeight);
     setSize(1300, 850);
@@ -79,13 +78,11 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::layoutManualMode(juce::Rectangle<int> area)
 {
-    using namespace UIHelpers::Dimensions;
-
-    const int componentHeight = knobSize + labelHeight + groupLabelHeight + margin * 2;
-    const int vSpacing = margin;
+    const int componentHeight = PluginLookAndFeel::knobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::groupLabelHeight + PluginLookAndFeel::margin * 2;
+    const int vSpacing = PluginLookAndFeel::margin;
 
     auto row1 = area.removeFromTop(componentHeight);
-    const int widthBalancerWidth = knobSize * 2 + spacing * 3 + 60 + 80 + margin * 2;
+    const int widthBalancerWidth = PluginLookAndFeel::knobSize * 2 + PluginLookAndFeel::spacing * 3 + 60 + 80 + PluginLookAndFeel::margin * 2;
     widthBalancerComponent->setBounds(row1.removeFromLeft(widthBalancerWidth));
     row1.removeFromLeft(vSpacing);
     tiltEQComponent->setBounds(row1);
@@ -121,14 +118,12 @@ void AudioPluginAudioProcessorEditor::layoutPerceptionMode(juce::Rectangle<int> 
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-    using namespace UIHelpers::Dimensions;
-
     auto bounds = getLocalBounds();
-    bounds.reduce(margin, margin);
+    bounds.reduce(PluginLookAndFeel::margin, PluginLookAndFeel::margin);
 
     const int toggleHeight = 40;
     modeToggle.setBounds(bounds.removeFromTop(toggleHeight));
-    bounds.removeFromTop(margin);
+    bounds.removeFromTop(PluginLookAndFeel::margin);
 
     const bool perceptionMode = modeToggle.getToggleState();
 

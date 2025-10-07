@@ -1,683 +1,139 @@
-#include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "PluginLookAndFeel.h"
 
-//==============================================================================
-AudioPluginAudioProcessor::AudioPluginAudioProcessor()
-    : AudioProcessor(BusesProperties()
-#if ! JucePlugin_IsMidiEffect
-#if ! JucePlugin_IsSynth
-        .withInput("Input", juce::AudioChannelSet::stereo(), true)
-#endif
-        .withOutput("Output", juce::AudioChannelSet::stereo(), true)
-#endif
-    )
-    , parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
-    , bpm(120.0)
+const juce::Colour PluginLookAndFeel::background{ 27, 17, 31 };
+const juce::Colour PluginLookAndFeel::knobThumb{ 255, 107, 0 };
+const juce::Colour PluginLookAndFeel::track{ 255, 46, 136 };
+const juce::Colour PluginLookAndFeel::knobBackground{ 123, 0, 70 };
+const juce::Colour PluginLookAndFeel::knobFill{ 255, 46, 136 };
+const juce::Colour PluginLookAndFeel::knobOutline{ 90, 0, 50 };
+const juce::Colour PluginLookAndFeel::labelText{ 232, 232, 240 };
+const juce::Colour PluginLookAndFeel::groupOutline = juce::Colours::white.withAlpha(0.4f);
+
+PluginLookAndFeel::PluginLookAndFeel()
 {
-    // Set initial modulation type for ModDelay
-    modDelay.setModulationType(ModDelay::ModulationType::Sine);
+    setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.5f));
+    setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 }
 
-AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
+void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, int height,
+    const juce::String& text, const juce::Justification& justification,
+    juce::GroupComponent& component)
 {
+    const float textPadding = 4.0f;
+    const int textHeight = 24;
+
+    auto font = juce::Font(textHeight * 0.8f, juce::Font::bold);
+    g.setFont(font);
+
+    auto textWidth = static_cast<int>(font.getStringWidth(text) + 2.0f * textPadding);
+
+    g.setColour(component.findColour(juce::GroupComponent::outlineColourId));
+    g.drawRect(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 1.0f);
+
+    g.setColour(component.findColour(juce::GroupComponent::textColourId));
+    g.drawFittedText(text, 10, height - 25, textWidth, textHeight, justification, 1);
 }
 
-//==============================================================================
-const juce::String AudioPluginAudioProcessor::getName() const
+PluginLookAndFeel::GridFitResult PluginLookAndFeel::findBestSquareGridFit(
+    int nElements,
+    float totalWidth,
+    float totalHeight,
+    float minCellSize,
+    float maxCellSize)
 {
-    return JucePlugin_Name;
-}
+    GridFitResult best;
 
-bool AudioPluginAudioProcessor::acceptsMidi() const
-{
-#if JucePlugin_WantsMidiInput
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool AudioPluginAudioProcessor::producesMidi() const
-{
-#if JucePlugin_ProducesMidiOutput
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool AudioPluginAudioProcessor::isMidiEffect() const
-{
-#if JucePlugin_IsMidiEffect
-    return true;
-#else
-    return false;
-#endif
-}
-
-double AudioPluginAudioProcessor::getTailLengthSeconds() const
-{
-    return 0.0;
-}
-
-int AudioPluginAudioProcessor::getNumPrograms()
-{
-    return 1;
-}
-
-int AudioPluginAudioProcessor::getCurrentProgram()
-{
-    return 0;
-}
-
-void AudioPluginAudioProcessor::setCurrentProgram(int index)
-{
-    juce::ignoreUnused(index);
-}
-
-const juce::String AudioPluginAudioProcessor::getProgramName(int index)
-{
-    juce::ignoreUnused(index);
-    return {};
-}
-
-void AudioPluginAudioProcessor::changeProgramName(int index, const juce::String& newName)
-{
-    juce::ignoreUnused(index, newName);
-}
-
-//==============================================================================
-void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
-{
-    spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
-    spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
-
-    // Get BPM from host if available
-    if (auto* playHead = getPlayHead())
+    for (int columns = 1; columns <= nElements; ++columns)
     {
-        juce::AudioPlayHead::CurrentPositionInfo info;
-        if (playHead->getCurrentPosition(info))
+        int rows = (nElements + columns - 1) / columns;
+
+        float cellWidth = totalWidth / static_cast<float>(columns);
+        float cellHeight = totalHeight / static_cast<float>(rows);
+
+        float cellSize = std::min(cellWidth, cellHeight);
+
+        if (cellSize >= minCellSize && cellSize <= maxCellSize)
         {
-            bpm = info.bpm > 0.0 ? info.bpm : 120.0;
+            if (cellSize > best.cellSize)
+            {
+                best.columns = columns;
+                best.rows = rows;
+                best.cellSize = cellSize;
+            }
         }
     }
 
-    // Prepare all effect processors
-    widthBalancer.prepare(spec);
-    tiltEQ.prepare(spec);
-    modDelay.prepare(spec);
-    spatialFX.prepare(spec);
-    microPitchDetune.prepare(spec);
-    exciterSaturation.prepare(spec);
-    simpleVerbWithPredelay.prepare(spec);
-
-    // Allocate dry buffer for potential future wet/dry mixing
-    dryBuffer.setSize(static_cast<int>(spec.numChannels), static_cast<int>(spec.maximumBlockSize));
+    return best;
 }
 
-void AudioPluginAudioProcessor::releaseResources()
+PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
+    int numKnobs, int availableWidth, int availableHeight, bool allowWideLayout)
 {
-    // Free any spare memory when playback stops
-}
+    KnobLayoutResult result;
 
-bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
-{
-#if JucePlugin_IsMidiEffect
-    juce::ignoreUnused(layouts);
-    return true;
-#else
-    // Only support mono or stereo
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
+    float width = static_cast<float>(availableWidth - margin * 2);
+    float height = static_cast<float>(availableHeight - margin * 2 - groupLabelHeight);
 
-    // Input layout must match output layout
-#if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-#endif
+    float minCell = knobSize + labelHeight + spacing;
+    float maxCell = knobSize + labelHeight + spacing;
 
-    return true;
-#endif
-}
+    auto grid = findBestSquareGridFit(numKnobs, width, height, minCell, maxCell);
 
-void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
-    juce::MidiBuffer& midiMessages)
-{
-    juce::ignoreUnused(midiMessages);
-    juce::ScopedNoDenormals noDenormals;
-
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-
-    // Clear any unused output channels
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear(i, 0, buffer.getNumSamples());
-
-    // Wrap the buffer for DSP processing
-    juce::dsp::AudioBlock<float> block(buffer);
-
-    // Optional: Copy input to dry buffer for wet/dry mixing
-    // dryBuffer.makeCopyOf(buffer, true);
-
-    // Get sync state
-    bool syncEnabled = parameters.getRawParameterValue("sync")->load();
-
-    //==============================================================================
-    // Effect chain processing order (psychoacoustic signal flow)
-    //==============================================================================
-
-    // 1. TiltEQ - Spectral balance adjustment
+    if (grid.cellSize <= 0 || grid.columns == 0)
     {
-        float tilt = *parameters.getRawParameterValue("tiltEQ");
-        tiltEQ.setTilt(tilt);
-        tiltEQ.process(block);
+        grid.columns = numKnobs;
+        grid.rows = 1;
+        grid.cellSize = minCell;
     }
 
-    // 2. WidthBalancer - Stereo field manipulation
-    {
-        float width = *parameters.getRawParameterValue("width");
-        float balance = *parameters.getRawParameterValue("midSideBalance");
-        bool mono = parameters.getRawParameterValue("mono")->load();
-        float intensity = *parameters.getRawParameterValue("intensity");
+    const int elementSize = static_cast<int>(grid.cellSize) - spacing;
+    const int totalElementHeight = elementSize + labelHeight;
 
-        widthBalancer.setWidth(width);
-        widthBalancer.setMidSideBalance(balance);
-        widthBalancer.setMono(mono);
-        widthBalancer.setIntensity(intensity);
-        widthBalancer.process(block);
+    const int gridWidth = static_cast<int>(grid.columns * grid.cellSize);
+    const int gridHeight = static_cast<int>(grid.rows * grid.cellSize);
+
+    const int startX = (availableWidth - gridWidth) / 2;
+    const int startY = (availableHeight - gridHeight) / 2;
+
+    for (int i = 0; i < numKnobs; ++i)
+    {
+        int col = i % grid.columns;
+        int row = i / grid.columns;
+
+        int cellX = startX + static_cast<int>(col * grid.cellSize);
+        int cellY = startY + static_cast<int>(row * grid.cellSize);
+
+        int elemX = cellX + (static_cast<int>(grid.cellSize) - elementSize) / 2;
+        int elemY = cellY + (static_cast<int>(grid.cellSize) - totalElementHeight) / 2;
+
+        result.knobBounds.emplace_back(elemX, elemY, elementSize, totalElementHeight);
     }
 
-    // 3. ModDelay - Modulated delay effects
-    {
-        float delayTime = *parameters.getRawParameterValue("delayTime");
-        float depth = *parameters.getRawParameterValue("modDepth");
-        float rate = *parameters.getRawParameterValue("modRate");
-        float feedbackL = *parameters.getRawParameterValue("feedbackL");
-        float feedbackR = *parameters.getRawParameterValue("feedbackR");
-        float modMix = *parameters.getRawParameterValue("modMix");
-        int modulationTypeValue = parameters.state.getProperty("modulationType");
+    result.totalWidth = gridWidth;
+    result.totalHeight = gridHeight;
 
-        ModDelay::ModulationType modulationType = static_cast<ModDelay::ModulationType>(modulationTypeValue);
-        modDelay.setModulationType(modulationType);
-        modDelay.setTempo(static_cast<float>(bpm));
-        modDelay.setSyncEnabled(syncEnabled);
-        modDelay.setParams(delayTime, depth, rate, feedbackL, feedbackR, modMix);
-        modDelay.process(block);
-    }
-
-    // 4. SpatialFX - Spatial positioning and phase manipulation
-    {
-        float phaseOffsetL = *parameters.getRawParameterValue("phaseOffsetL");
-        float phaseOffsetR = *parameters.getRawParameterValue("phaseOffsetR");
-        float sfxModRateL = *parameters.getRawParameterValue("sfxModRateL");
-        float sfxModRateR = *parameters.getRawParameterValue("sfxModRateR");
-        float sfxModDepthL = *parameters.getRawParameterValue("sfxModDepthL");
-        float sfxModDepthR = *parameters.getRawParameterValue("sfxModDepthR");
-        float mixValue = *parameters.getRawParameterValue("sfxWetDryMix");
-        float sfxLfoPhaseOffset = *parameters.getRawParameterValue("sfxLfoPhaseOffset");
-        float allpassFreq = *parameters.getRawParameterValue("sfxAllpassFreq");
-        float haasDelayL = *parameters.getRawParameterValue("haasDelayL");
-        float haasDelayR = *parameters.getRawParameterValue("haasDelayR");
-        int modulationShapeValue = parameters.state.getProperty("modulationShape");
-
-        SpatialFX::LfoWaveform modulationShape = static_cast<SpatialFX::LfoWaveform>(modulationShapeValue);
-        spatialFX.setPhaseAmount(phaseOffsetL, phaseOffsetR);
-        spatialFX.setLfoRate(sfxModRateL, sfxModRateR);
-        spatialFX.setLfoDepth(sfxModDepthL, sfxModDepthR);
-        spatialFX.setWetDry(mixValue);
-        spatialFX.setLfoPhaseOffset(sfxLfoPhaseOffset);
-        spatialFX.setAllpassFrequency(allpassFreq);
-        spatialFX.setHaasDelayMs(haasDelayL, haasDelayR);
-        spatialFX.setLfoWaveform(modulationShape);
-        spatialFX.process(block);
-    }
-
-    // 5. MicroPitchDetune - Subtle pitch shifting for thickness
-    {
-        float detuneAmount = *parameters.getRawParameterValue("detuneAmount");
-        float lfoRate = *parameters.getRawParameterValue("lfoRate");
-        float lfoDepth = *parameters.getRawParameterValue("lfoDepth");
-        float delayCentre = *parameters.getRawParameterValue("delayCentre");
-        float stereoSeparation = *parameters.getRawParameterValue("stereoSeparation");
-        float mix = *parameters.getRawParameterValue("mix");
-
-        microPitchDetune.setParams(detuneAmount, lfoRate, lfoDepth,
-            delayCentre, stereoSeparation, mix);
-        microPitchDetune.setBpm(static_cast<float>(bpm));
-        microPitchDetune.process(block);
-    }
-
-    // 6. ExciterSaturation - Harmonic enhancement
-    {
-        float drive = *parameters.getRawParameterValue("exciterDrive");
-        float exciterMix = *parameters.getRawParameterValue("exciterMix");
-        float highpassFreq = *parameters.getRawParameterValue("exciterHighpass");
-
-        exciterSaturation.setDrive(drive);
-        exciterSaturation.setMix(exciterMix);
-        exciterSaturation.setHighpass(highpassFreq);
-        exciterSaturation.process(block);
-    }
-
-    // 7. SimpleVerbWithPredelay - Reverb with pre-delay
-    {
-        float predelayMs = *parameters.getRawParameterValue("predelayMs");
-        float size = *parameters.getRawParameterValue("size");
-        float damping = *parameters.getRawParameterValue("damping");
-        float wet = *parameters.getRawParameterValue("wet");
-
-        simpleVerbWithPredelay.setParams(predelayMs, size, damping, wet);
-        simpleVerbWithPredelay.process(block);
-    }
+    return result;
 }
 
-//==============================================================================
-bool AudioPluginAudioProcessor::hasEditor() const
+void PluginLookAndFeel::configureKnob(juce::Slider& slider)
 {
-    return true;
+    slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    slider.setColour(juce::Slider::rotarySliderFillColourId, knobFill);
+    slider.setColour(juce::Slider::thumbColourId, knobThumb);
+    slider.setColour(juce::Slider::trackColourId, knobBackground);
+    slider.setColour(juce::Slider::rotarySliderOutlineColourId, knobOutline);
 }
 
-juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
+void PluginLookAndFeel::configureLabel(juce::Label& label, const juce::String& text)
 {
-    return new AudioPluginAudioProcessorEditor(*this);
+    label.setText(text, juce::dontSendNotification);
+    label.setJustificationType(juce::Justification::centred);
+    label.setColour(juce::Label::textColourId, labelText);
 }
 
-//==============================================================================
-void AudioPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+void PluginLookAndFeel::configureGroup(juce::GroupComponent& group)
 {
-    juce::MemoryOutputStream stream(destData, true);
-    parameters.state.writeToStream(stream);
-}
-
-void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
-{
-    juce::ValueTree tree = juce::ValueTree::readFromData(data, static_cast<size_t>(sizeInBytes));
-
-    if (tree.isValid())
-    {
-        parameters.state = tree;
-
-        // Restore modulation type
-        if (tree.hasProperty("modulationType"))
-        {
-            modDelay.setModulationType(
-                static_cast<ModDelay::ModulationType>(static_cast<int>(tree.getProperty("modulationType"))));
-        }
-    }
-}
-
-//==============================================================================
-// This creates new instances of the plugin
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
-{
-    return new AudioPluginAudioProcessor();
-}
-
-juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
-{
-    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-
-    // Helper lambdas for consistent float parameter formatting
-    auto floatToString2dp = [](float value, int) {
-        return juce::String(value, 2);
-        };
-    auto stringToFloat = [](const juce::String& text) {
-        return text.getFloatValue();
-        };
-
-    //==============================================================================
-    // WidthBalancer Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "width", 1 },
-        "Width",
-        juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f),
-        1.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "midSideBalance", 1 },
-        "Mid/Side Balance",
-        juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{ "mono", 1 },
-        "Mono",
-        false));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "intensity", 1 },
-        "Intensity",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    //==============================================================================
-    // TiltEQ Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "tiltEQ", 1 },
-        "Tilt EQ",
-        juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    //==============================================================================
-    // ModDelay Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "delayTime", 1 },
-        "Delay Time",
-        juce::NormalisableRange<float>(1.0f, 2000.0f, 0.1f),
-        400.0f,
-        juce::AudioParameterFloatAttributes()
-        .withLabel("ms")
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "feedbackL", 1 },
-        "Feedback L",
-        juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
-        0.4f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "feedbackR", 1 },
-        "Feedback R",
-        juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
-        0.4f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "modMix", 1 },
-        "Mod Mix",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "modDepth", 1 },
-        "Mod Depth",
-        juce::NormalisableRange<float>(0.0f, 10.0f, 0.01f),
-        2.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "modRate", 1 },
-        "Mod Rate",
-        juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
-        0.25f,
-        juce::AudioParameterFloatAttributes()
-        .withLabel("Hz")
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(
-        juce::ParameterID{ "modulationType", 1 },
-        "Modulation Type",
-        juce::StringArray{ "Sine", "Triangle", "Square", "Sawtooth Up", "Sawtooth Down" },
-        0)); // Default: Sine
-
-    params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{ "sync", 1 },
-        "Sync",
-        false));
-
-    //==============================================================================
-    // SpatialFX Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "phaseOffsetL", 1 },
-        "Phase L Offset",
-        juce::NormalisableRange<float>(-0.1f, 0.1f, 0.001f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "phaseOffsetR", 1 },
-        "Phase R Offset",
-        juce::NormalisableRange<float>(-0.1f, 0.1f, 0.001f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxModRateL", 1 },
-        "SFX Rate L",
-        juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
-        0.1f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxModRateR", 1 },
-        "SFX Rate R",
-        juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
-        0.1f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxModDepthL", 1 },
-        "SFX Depth L",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxModDepthR", 1 },
-        "SFX Depth R",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxWetDryMix", 1 },
-        "SFX Wet/Dry",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxLfoPhaseOffset", 1 },
-        "LFO Phase",
-        juce::NormalisableRange<float>(0.0f, juce::MathConstants<float>::twoPi, 0.01f),
-        juce::MathConstants<float>::halfPi,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "sfxAllpassFreq", 1 },
-        "Allpass Freq",
-        juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f),
-        1000.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "haasDelayL", 1 },
-        "Haas Delay L",
-        juce::NormalisableRange<float>(0.0f, 40.0f, 0.1f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "haasDelayR", 1 },
-        "Haas Delay R",
-        juce::NormalisableRange<float>(0.0f, 40.0f, 0.1f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterChoice>(
-        juce::ParameterID{ "modulationShape", 1 },
-        "Modulation Shape",
-        juce::StringArray{ "Sine", "Triangle", "Square", "Random" },
-        0)); // Default: Sine
-
-    //==============================================================================
-    // MicroPitchDetune Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "detuneAmount", 1 },
-        "Detune Amount",
-        juce::NormalisableRange<float>(-50.0f, 50.0f, 0.1f),
-        0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "lfoRate", 1 },
-        "LFO Rate",
-        juce::NormalisableRange<float>(0.01f, 20.0f, 0.01f),
-        0.3f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "lfoDepth", 1 },
-        "LFO Depth",
-        juce::NormalisableRange<float>(0.0f, 0.01f, 0.0001f),
-        0.002f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "delayCentre", 1 },
-        "Delay Centre",
-        juce::NormalisableRange<float>(0.001f, 0.015f, 0.0001f),
-        0.005f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "stereoSeparation", 1 },
-        "Stereo Separation",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "mix", 1 },
-        "Mix",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    //==============================================================================
-    // ExciterSaturation Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "exciterDrive", 1 },
-        "Exciter Drive",
-        juce::NormalisableRange<float>(0.0f, 10.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "exciterMix", 1 },
-        "Exciter Mix",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "exciterHighpass", 1 },
-        "Exciter Highpass",
-        juce::NormalisableRange<float>(20.0f, 8000.0f, 1.0f),
-        1000.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    //==============================================================================
-    // SimpleVerbWithPredelay Parameters
-    //==============================================================================
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "predelayMs", 1 },
-        "Pre-delay",
-        juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
-        20.0f,
-        juce::AudioParameterFloatAttributes()
-        .withLabel("ms")
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "size", 1 },
-        "Reverb Size",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "damping", 1 },
-        "Damping",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.3f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "wet", 1 },
-        "Wet Level",
-        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
-
-    return { params.begin(), params.end() };
+    group.setColour(juce::GroupComponent::outlineColourId, groupOutline);
+    group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 }

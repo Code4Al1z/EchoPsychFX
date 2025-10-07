@@ -1,46 +1,47 @@
 #include "TiltEQComponent.h"
+#include "PluginLookAndFeel.h"
 
 TiltEQComponent::TiltEQComponent(juce::AudioProcessorValueTreeState& state)
 {
-    using namespace UIHelpers;
-
     addAndMakeVisible(group);
-    configureGroup(group);
+    PluginLookAndFeel::configureGroup(group);
 
-    tiltSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    tiltSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    tiltSlider.setRange(-1.0, 1.0, 0.01);
-    tiltSlider.setSkewFactorFromMidPoint(0.0);
-    configureKnob(tiltSlider);
-    addAndMakeVisible(tiltSlider);
+    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "tiltEQ", "Tilt EQ", *this));
 
-    configureLabel(tiltLabel, "Tilt EQ");
-    addAndMakeVisible(tiltLabel);
-
-    tiltAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        state, "tiltEQ", tiltSlider);
+    if (!knobs.empty() && knobs[0]->slider)
+    {
+        knobs[0]->slider->setRange(-1.0, 1.0, 0.01);
+        knobs[0]->slider->setSkewFactorFromMidPoint(0.0);
+    }
 }
 
 void TiltEQComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(UIHelpers::Colors::background);
+    g.fillAll(PluginLookAndFeel::background);
 }
 
 void TiltEQComponent::resized()
 {
-    using namespace UIHelpers::Dimensions;
-
     group.setBounds(getLocalBounds());
 
-    auto area = getLocalBounds().reduced(margin);
-    const int x = area.getX() + (area.getWidth() - knobSize) / 2;
-    const int y = area.getY();
+    auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
+    const int numKnobs = static_cast<int>(knobs.size());
 
-    tiltLabel.setBounds(x, y, knobSize, labelHeight);
-    tiltSlider.setBounds(x, y + labelHeight, knobSize, knobSize);
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
+
+    for (int i = 0; i < numKnobs; ++i)
+    {
+        if (i >= static_cast<int>(layout.knobBounds.size()))
+            break;
+
+        auto bounds = layout.knobBounds[i];
+        bounds.translate(area.getX(), area.getY());
+        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+    }
 }
 
 void TiltEQComponent::setTilt(float newValue)
 {
-    tiltSlider.setValue(newValue);
+    if (!knobs.empty())
+        knobs[0]->slider->setValue(newValue);
 }

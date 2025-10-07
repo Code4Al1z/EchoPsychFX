@@ -25,23 +25,23 @@ public:
     void setModDepth(float value);
     void setModRate(float value);
 
+    int getMinimumWidth() const;
+    int getMinimumHeight() const;
+    int getRequiredHeight(int width) const;
+
 private:
     juce::GroupComponent group{ "modDelayGroup", "Motion Shifter" };
 
-    // Main knobs
     std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
 
-    // Advanced section knobs
     std::unique_ptr<UIHelpers::KnobWithLabel> feedbackLKnob;
     std::unique_ptr<UIHelpers::KnobWithLabel> feedbackRKnob;
 
-    // Waveform buttons
     juce::OwnedArray<juce::TextButton> waveformButtons;
     std::unique_ptr<juce::ComboBox> hiddenCombo;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment;
     int selectedWaveform = 0;
 
-    // Sync toggle
     juce::ToggleButton syncToggle;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
     juce::Component advancedSection;

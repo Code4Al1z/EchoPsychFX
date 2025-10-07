@@ -1,9 +1,10 @@
 #include "MicroPitchDetuneComponent.h"
+#include "PluginLookAndFeel.h"
 
 MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
-    UIHelpers::configureGroup(group);
+    PluginLookAndFeel::configureGroup(group);
 
     knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "detuneAmount", "Detune", *this));
     knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "lfoRate", "LFO Rate", *this));
@@ -15,19 +16,17 @@ MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTr
 
 void MicroPitchDetuneComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(UIHelpers::Colors::background);
+    g.fillAll(PluginLookAndFeel::background);
 }
 
 void MicroPitchDetuneComponent::resized()
 {
-    using namespace UIHelpers::Dimensions;
-
     group.setBounds(getLocalBounds());
 
-    auto area = getLocalBounds().reduced(margin);
+    auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = UIHelpers::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), true);
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), true);
 
     for (int i = 0; i < numKnobs; ++i)
     {
