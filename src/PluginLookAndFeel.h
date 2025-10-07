@@ -15,7 +15,6 @@ public:
         const juce::String& text, const juce::Justification& justification,
         juce::GroupComponent&) override;
 
-    // Colors
     static const juce::Colour background;
     static const juce::Colour knobThumb;
     static const juce::Colour track;
@@ -25,15 +24,13 @@ public:
     static const juce::Colour labelText;
     static const juce::Colour groupOutline;
 
-    // Dimensions
-    static constexpr int minKnobSize = 100;
-    static constexpr int maxKnobSize = 100;
+    static constexpr int minKnobSize = 50;
+    static constexpr int maxKnobSize = 120;
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;
-    static constexpr int spacing = 20;
+    static constexpr int spacing = 15;
     static constexpr int groupLabelHeight = 30;
 
-    // KnobWithLabel helper struct
     struct KnobWithLabel
     {
         std::unique_ptr<juce::Slider> slider;
@@ -50,7 +47,6 @@ public:
         void setBounds(int x, int y, int width, int height);
     };
 
-    // Grid layout
     struct GridFitResult
     {
         int columns = 0;

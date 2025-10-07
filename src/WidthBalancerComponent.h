@@ -20,6 +20,9 @@ public:
     void setMono(bool newValue);
     void setIntensity(float newValue);
 
+    int getMinimumWidth() const { return 300; }
+    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };
 

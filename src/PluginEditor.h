@@ -13,15 +13,6 @@
 #include "SimpleVerbWithPredelayComponent.h"
 #include "PluginLookAndFeel.h"
 
-/**
- * @brief Main plugin editor UI with intelligent resizing
- *
- * Features:
- * - Responsive layout that adapts to window size
- * - No overlapping elements at any size
- * - Components intelligently rearrange and resize
- * - Minimum size constraints to maintain usability
- */
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
 {
 public:
@@ -32,16 +23,10 @@ public:
     void resized() override;
 
 private:
-    // Reference to the processor
     AudioPluginAudioProcessor& processorRef;
-
-    // Custom look and feel
     PluginLookAndFeel pluginLookAndFeel;
-
-    // UI Mode toggle
     juce::ToggleButton modeToggle;
 
-    // Effect components (manual mode)
     std::unique_ptr<WidthBalancerComponent> widthBalancerComponent;
     std::unique_ptr<TiltEQComponent> tiltEQComponent;
     std::unique_ptr<ModDelayComponent> modDelayComponent;
@@ -50,22 +35,37 @@ private:
     std::unique_ptr<ExciterSaturationComponent> exciterSaturationComponent;
     std::unique_ptr<SimpleVerbWithPredelayComponent> simpleVerbComponent;
 
-    // Preset management (perception mode)
     std::unique_ptr<PerceptionPresetManager> presetManager;
     std::unique_ptr<PerceptionModeComponent> perceptionModeComponent;
 
-    /** Toggle between manual and perception modes */
-    void updateUIVisibility();
+    struct ComponentInfo
+    {
+        juce::Component* component;
+        int numKnobs;
+        bool allowWideLayout;
+        int minWidth;
+        int minHeight;
+        int maxWidth;
+        int maxHeight;
+        float sizeWeight;
+    };
 
-    /** Calculate optimal layout for current window size */
+    std::vector<ComponentInfo> getComponentInfoList();
+    void updateUIVisibility();
     void layoutManualMode(juce::Rectangle<int> area);
     void layoutPerceptionMode(juce::Rectangle<int> area);
+    void calculateMinMaxSizes();
+    int calculateActualContentHeight();
 
-    // Minimum sizes for usability
-    static constexpr int minWidth = 700;
-    static constexpr int minHeight = 500;
-    static constexpr int maxWidth = 2400;
-    static constexpr int maxHeight = 1800;
+    int calculateComponentMinWidth(int numKnobs, bool allowWideLayout) const;
+    int calculateComponentMinHeight(int numKnobs, bool allowWideLayout) const;
+    int calculateComponentMaxWidth(int numKnobs, bool allowWideLayout) const;
+    int calculateComponentMaxHeight(int numKnobs, bool allowWideLayout) const;
+
+    int calculatedMinWidth = 700;
+    int calculatedMinHeight = 500;
+    int calculatedMaxWidth = 2400;
+    int calculatedMaxHeight = 1800;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };

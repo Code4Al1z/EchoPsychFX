@@ -18,6 +18,9 @@ public:
 
     void setTilt(float newValue);
 
+    int getMinimumWidth() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::margin * 2; }
+    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+
 private:
     juce::GroupComponent group{ "tiltEQGroup", "TiltEQ" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;

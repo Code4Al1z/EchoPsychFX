@@ -25,7 +25,7 @@ void MicroPitchDetuneComponent::resized()
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), true);
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
     if (layout.knobBounds.size() < numKnobs)
         return; // prevent crash if layout failed
 

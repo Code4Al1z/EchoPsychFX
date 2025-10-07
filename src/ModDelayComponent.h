@@ -25,6 +25,9 @@ public:
     void setModDepth(float value);
     void setModRate(float value);
 
+    int getMinimumWidth() const { return PluginLookAndFeel::minKnobSize * 6 + PluginLookAndFeel::spacing * 5 + PluginLookAndFeel::margin * 2; }
+    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight + 30; }
+
 private:
     juce::GroupComponent group{ "modDelayGroup", "Motion Shifter" };
 

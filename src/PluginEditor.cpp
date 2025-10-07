@@ -39,17 +39,181 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
 
     setResizable(true, true);
 
-    const int calculatedMinWidth = (PluginLookAndFeel::minKnobSize * 6 + PluginLookAndFeel::spacing * 5 + PluginLookAndFeel::margin * 2) + PluginLookAndFeel::margin * 2;
-    const int calculatedMinHeight = (PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::groupLabelHeight + PluginLookAndFeel::margin * 2) * 7 + PluginLookAndFeel::margin * 10 + 40;
+    calculateMinMaxSizes();
+    setResizeLimits(calculatedMinWidth, calculatedMinHeight, calculatedMaxWidth, calculatedMaxHeight);
 
-    setResizeLimits(calculatedMinWidth, calculatedMinHeight, maxWidth, maxHeight);
-    setSize(1300, 850);
+    // Set initial size to be reasonable (not too small, not max)
+    int initialWidth = juce::jlimit(calculatedMinWidth, calculatedMaxWidth, 1200);
+    int initialHeight = juce::jlimit(calculatedMinHeight, calculatedMaxHeight, 700);
+    setSize(initialWidth, initialHeight);
+
     updateUIVisibility();
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 {
     setLookAndFeel(nullptr);
+}
+
+int AudioPluginAudioProcessorEditor::calculateComponentMinWidth(int numKnobs, bool allowWideLayout) const
+{
+    if (allowWideLayout)
+    {
+        return numKnobs * (PluginLookAndFeel::minKnobSize + PluginLookAndFeel::spacing) + PluginLookAndFeel::margin * 2;
+    }
+    else
+    {
+        int cols = static_cast<int>(std::ceil(std::sqrt(static_cast<float>(numKnobs))));
+        return cols * (PluginLookAndFeel::minKnobSize + PluginLookAndFeel::spacing) + PluginLookAndFeel::margin * 2;
+    }
+}
+
+int AudioPluginAudioProcessorEditor::calculateComponentMinHeight(int numKnobs, bool allowWideLayout) const
+{
+    if (allowWideLayout)
+    {
+        return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight;
+    }
+    else
+    {
+        int cols = static_cast<int>(std::ceil(std::sqrt(static_cast<float>(numKnobs))));
+        int rows = (numKnobs + cols - 1) / cols;
+        return rows * (PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::spacing) + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight;
+    }
+}
+
+int AudioPluginAudioProcessorEditor::calculateComponentMaxWidth(int numKnobs, bool allowWideLayout) const
+{
+    if (allowWideLayout)
+    {
+        return numKnobs * (PluginLookAndFeel::maxKnobSize + PluginLookAndFeel::spacing) + PluginLookAndFeel::margin * 2;
+    }
+    else
+    {
+        int cols = static_cast<int>(std::ceil(std::sqrt(static_cast<float>(numKnobs))));
+        return cols * (PluginLookAndFeel::maxKnobSize + PluginLookAndFeel::spacing) + PluginLookAndFeel::margin * 2;
+    }
+}
+
+int AudioPluginAudioProcessorEditor::calculateComponentMaxHeight(int numKnobs, bool allowWideLayout) const
+{
+    if (allowWideLayout)
+    {
+        // For wide layouts, allow 2 rows maximum for reflow
+        return (PluginLookAndFeel::maxKnobSize + PluginLookAndFeel::labelHeight) * 2 +
+            PluginLookAndFeel::spacing + PluginLookAndFeel::margin * 2 +
+            PluginLookAndFeel::groupLabelHeight;
+    }
+    else
+    {
+        // For grid layouts, calculate based on optimal grid size
+        int cols = static_cast<int>(std::ceil(std::sqrt(static_cast<float>(numKnobs))));
+        int rows = (numKnobs + cols - 1) / cols;
+
+        // Cap at maximum of 3 rows to keep components compact
+        rows = juce::jmin(rows, 3);
+
+        return rows * (PluginLookAndFeel::maxKnobSize + PluginLookAndFeel::labelHeight) +
+            (rows - 1) * PluginLookAndFeel::spacing +
+            PluginLookAndFeel::margin * 2 +
+            PluginLookAndFeel::groupLabelHeight;
+    }
+}
+
+void AudioPluginAudioProcessorEditor::calculateMinMaxSizes()
+{
+    auto components = getComponentInfoList();
+
+    // Calculate minimum width (largest single component min width)
+    int maxMinWidth = 0;
+    for (const auto& info : components)
+    {
+        maxMinWidth = juce::jmax(maxMinWidth, info.minWidth);
+    }
+
+    // Calculate minimum height - just the smallest component's min height
+    // This allows much more flexibility in resizing
+    int smallestMinHeight = components.empty() ? 200 : components[0].minHeight;
+    for (const auto& info : components)
+    {
+        smallestMinHeight = juce::jmin(smallestMinHeight, info.minHeight);
+    }
+
+    calculatedMinWidth = maxMinWidth + PluginLookAndFeel::margin * 2;
+    calculatedMinHeight = smallestMinHeight + PluginLookAndFeel::margin * 2 + 40; // Just one component + toggle
+
+    // Max width: allow components to be side-by-side
+    int totalMaxWidth = 0;
+    for (const auto& info : components)
+    {
+        totalMaxWidth += info.maxWidth;
+    }
+    totalMaxWidth += PluginLookAndFeel::margin * (static_cast<int>(components.size()) + 1);
+
+    // Get screen dimensions to respect user's display
+    auto displays = juce::Desktop::getInstance().getDisplays();
+    auto* primaryDisplay = displays.getPrimaryDisplay();
+    if (primaryDisplay != nullptr)
+    {
+        auto screenArea = primaryDisplay->userArea;
+        int maxScreenHeight = static_cast<int>(screenArea.getHeight() * 0.9f); // 90% of screen height
+        int maxScreenWidth = static_cast<int>(screenArea.getWidth() * 0.9f);   // 90% of screen width
+
+        // Max height should be all components stacked, or screen height, whichever is smaller
+        int totalStackedHeight = 0;
+        for (const auto& info : components)
+        {
+            totalStackedHeight += info.maxHeight;
+        }
+        totalStackedHeight += PluginLookAndFeel::margin * static_cast<int>(components.size()) + 40;
+
+        calculatedMaxHeight = juce::jmin(maxScreenHeight, totalStackedHeight);
+        calculatedMaxWidth = juce::jmin(maxScreenWidth, totalMaxWidth);
+    }
+    else
+    {
+        // Fallback if we can't get screen dimensions
+        int totalStackedHeight = 0;
+        for (const auto& info : components)
+        {
+            totalStackedHeight += info.maxHeight;
+        }
+        totalStackedHeight += PluginLookAndFeel::margin * static_cast<int>(components.size()) + 40;
+
+        calculatedMaxWidth = juce::jmin(2400, totalMaxWidth);
+        calculatedMaxHeight = juce::jmin(1400, totalStackedHeight);
+    }
+}
+
+std::vector<AudioPluginAudioProcessorEditor::ComponentInfo> AudioPluginAudioProcessorEditor::getComponentInfoList()
+{
+    std::vector<ComponentInfo> infos;
+
+    auto addComponentInfo = [&](juce::Component* comp, int numKnobs, bool allowWideLayout) {
+        ComponentInfo info;
+        info.component = comp;
+        info.numKnobs = numKnobs;
+        info.allowWideLayout = allowWideLayout;
+
+        info.minWidth = calculateComponentMinWidth(numKnobs, allowWideLayout);
+        info.minHeight = calculateComponentMinHeight(numKnobs, allowWideLayout);
+        info.maxWidth = calculateComponentMaxWidth(numKnobs, allowWideLayout);
+        info.maxHeight = calculateComponentMaxHeight(numKnobs, allowWideLayout);
+
+        info.sizeWeight = static_cast<float>(numKnobs);
+
+        infos.push_back(info);
+        };
+
+    addComponentInfo(widthBalancerComponent.get(), 2, false);
+    addComponentInfo(tiltEQComponent.get(), 1, false);
+    addComponentInfo(modDelayComponent.get(), 6, true);
+    addComponentInfo(spatialFXComponent.get(), 11, false);
+    addComponentInfo(microPitchDetuneComponent.get(), 6, true);
+    addComponentInfo(exciterSaturationComponent.get(), 3, false);
+    addComponentInfo(simpleVerbComponent.get(), 4, false);
+
+    return infos;
 }
 
 void AudioPluginAudioProcessorEditor::updateUIVisibility()
@@ -78,37 +242,170 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::layoutManualMode(juce::Rectangle<int> area)
 {
-    const int componentHeight = PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::groupLabelHeight + PluginLookAndFeel::margin * 2;
-    const int vSpacing = PluginLookAndFeel::margin;
+    auto components = getComponentInfoList();
+    const int availableWidth = area.getWidth();
+    const int availableHeight = area.getHeight();
+    const int spacing = PluginLookAndFeel::margin;
 
-    auto row1 = area.removeFromTop(componentHeight);
-    const int widthBalancerWidth = PluginLookAndFeel::minKnobSize * 2 + PluginLookAndFeel::spacing * 3 + 60 + 80 + PluginLookAndFeel::margin * 2;
-    widthBalancerComponent->setBounds(row1.removeFromLeft(widthBalancerWidth));
-    row1.removeFromLeft(vSpacing);
-    tiltEQComponent->setBounds(row1);
+    // Step 1: Determine which components fit in each row
+    std::vector<std::vector<int>> rows;
+    std::vector<int> currentRow;
+    int currentRowWidth = 0;
 
-    area.removeFromTop(vSpacing);
+    for (int i = 0; i < static_cast<int>(components.size()); ++i)
+    {
+        const auto& info = components[i];
+        int neededWidth = info.minWidth;
 
-    auto row2 = area.removeFromTop(componentHeight);
-    modDelayComponent->setBounds(row2);
+        if (currentRow.empty())
+        {
+            currentRow.push_back(i);
+            currentRowWidth = neededWidth;
+        }
+        else
+        {
+            int potentialWidth = currentRowWidth + spacing + neededWidth;
 
-    area.removeFromTop(vSpacing);
+            if (potentialWidth <= availableWidth)
+            {
+                currentRow.push_back(i);
+                currentRowWidth = potentialWidth;
+            }
+            else
+            {
+                rows.push_back(currentRow);
+                currentRow.clear();
+                currentRow.push_back(i);
+                currentRowWidth = neededWidth;
+            }
+        }
+    }
 
-    auto row3 = area.removeFromTop(componentHeight * 2);
-    spatialFXComponent->setBounds(row3);
+    if (!currentRow.empty())
+    {
+        rows.push_back(currentRow);
+    }
 
-    area.removeFromTop(vSpacing);
+    // Step 2: Calculate row heights to FILL the entire available height
+    int totalSpacing = spacing * juce::jmax(0, static_cast<int>(rows.size()) - 1);
+    int heightForComponents = availableHeight - totalSpacing;
 
-    auto row4 = area.removeFromTop(componentHeight);
-    microPitchDetuneComponent->setBounds(row4);
+    std::vector<int> rowHeights;
+    std::vector<float> rowWeights;
+    std::vector<int> rowMinHeights;
+    std::vector<int> rowMaxHeights;
+    float totalWeight = 0.0f;
 
-    area.removeFromTop(vSpacing);
+    // Calculate weight and min/max height for each row
+    for (const auto& row : rows)
+    {
+        float rowWeight = 0.0f;
+        int minHeight = 0;
+        int maxHeight = 0;
 
-    auto row5 = area;
-    const int halfWidth = row5.getWidth() / 2;
-    exciterSaturationComponent->setBounds(row5.removeFromLeft(halfWidth - vSpacing / 2));
-    row5.removeFromLeft(vSpacing);
-    simpleVerbComponent->setBounds(row5);
+        for (int compIdx : row)
+        {
+            const auto& info = components[compIdx];
+            rowWeight += info.sizeWeight;
+            minHeight = juce::jmax(minHeight, info.minHeight);
+            maxHeight = juce::jmax(maxHeight, info.maxHeight);
+        }
+
+        rowWeights.push_back(rowWeight);
+        rowMinHeights.push_back(minHeight);
+        rowMaxHeights.push_back(maxHeight);
+        totalWeight += rowWeight;
+    }
+
+    // Calculate total min height needed
+    int totalMinHeight = 0;
+    for (int h : rowMinHeights)
+        totalMinHeight += h;
+
+    // Distribute height based on weights, but respect min/max constraints
+    int remainingHeight = heightForComponents;
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i)
+    {
+        int rowHeight;
+
+        if (i == static_cast<int>(rows.size()) - 1)
+        {
+            // Last row gets all remaining height
+            rowHeight = juce::jlimit(rowMinHeights[i], rowMaxHeights[i], remainingHeight);
+        }
+        else
+        {
+            // Distribute proportionally based on weight
+            float weightRatio = rowWeights[i] / totalWeight;
+            int idealHeight = static_cast<int>(heightForComponents * weightRatio);
+
+            // Clamp to min/max
+            rowHeight = juce::jlimit(rowMinHeights[i], rowMaxHeights[i], idealHeight);
+            remainingHeight -= rowHeight;
+        }
+
+        rowHeights.push_back(rowHeight);
+    }
+
+    // Step 3: Layout each row
+    int y = area.getY();
+
+    for (int rowIdx = 0; rowIdx < static_cast<int>(rows.size()); ++rowIdx)
+    {
+        const auto& row = rows[rowIdx];
+        int rowHeight = rowHeights[rowIdx];
+
+        // Calculate total weight and min width for this row
+        float totalWeightInRow = 0.0f;
+        int totalMinWidthInRow = 0;
+
+        for (int compIdx : row)
+        {
+            const auto& info = components[compIdx];
+            totalMinWidthInRow += info.minWidth;
+            totalWeightInRow += info.sizeWeight;
+        }
+
+        totalMinWidthInRow += spacing * juce::jmax(0, static_cast<int>(row.size()) - 1);
+        int extraWidth = juce::jmax(0, availableWidth - totalMinWidthInRow);
+
+        // Layout components in this row to FILL the width
+        int x = area.getX();
+        int remainingWidth = availableWidth;
+
+        for (int idx = 0; idx < static_cast<int>(row.size()); ++idx)
+        {
+            int compIdx = row[idx];
+            const auto& info = components[compIdx];
+
+            int compWidth;
+            if (idx == static_cast<int>(row.size()) - 1)
+            {
+                // Last component in row gets all remaining width
+                compWidth = remainingWidth;
+            }
+            else
+            {
+                // Calculate component width based on weight
+                compWidth = info.minWidth;
+                if (extraWidth > 0 && totalWeightInRow > 0.0f)
+                {
+                    float weightRatio = info.sizeWeight / totalWeightInRow;
+                    int additionalWidth = static_cast<int>(extraWidth * weightRatio);
+                    compWidth += additionalWidth;
+                }
+                compWidth = juce::jlimit(info.minWidth, info.maxWidth, compWidth);
+            }
+
+            // Set bounds - components will resize and recalculate their internal layout
+            info.component->setBounds(x, y, compWidth, rowHeight);
+
+            x += compWidth + spacing;
+            remainingWidth -= (compWidth + spacing);
+        }
+
+        y += rowHeight + spacing;
+    }
 }
 
 void AudioPluginAudioProcessorEditor::layoutPerceptionMode(juce::Rectangle<int> area)
@@ -135,4 +432,69 @@ void AudioPluginAudioProcessorEditor::resized()
     {
         layoutManualMode(bounds);
     }
+}
+
+int AudioPluginAudioProcessorEditor::calculateActualContentHeight()
+{
+    auto components = getComponentInfoList();
+    const int availableWidth = getWidth() - PluginLookAndFeel::margin * 2;
+    const int spacing = PluginLookAndFeel::margin;
+
+    // Simulate the layout to calculate actual height needed
+    std::vector<std::vector<int>> rows;
+    std::vector<int> currentRow;
+    int currentRowWidth = 0;
+
+    for (int i = 0; i < static_cast<int>(components.size()); ++i)
+    {
+        const auto& info = components[i];
+        int neededWidth = info.minWidth;
+
+        if (currentRow.empty())
+        {
+            currentRow.push_back(i);
+            currentRowWidth = neededWidth;
+        }
+        else
+        {
+            int potentialWidth = currentRowWidth + spacing + neededWidth;
+
+            if (potentialWidth <= availableWidth)
+            {
+                currentRow.push_back(i);
+                currentRowWidth = potentialWidth;
+            }
+            else
+            {
+                rows.push_back(currentRow);
+                currentRow.clear();
+                currentRow.push_back(i);
+                currentRowWidth = neededWidth;
+            }
+        }
+    }
+
+    if (!currentRow.empty())
+    {
+        rows.push_back(currentRow);
+    }
+
+    // Calculate minimum height for each row
+    int totalHeight = 0;
+    for (const auto& row : rows)
+    {
+        int maxHeightInRow = 0;
+        for (int compIdx : row)
+        {
+            const auto& info = components[compIdx];
+            maxHeightInRow = juce::jmax(maxHeightInRow, info.minHeight);
+        }
+        totalHeight += maxHeightInRow;
+    }
+
+    // Add spacing and margins
+    totalHeight += spacing * juce::jmax(0, static_cast<int>(rows.size()) - 1);
+    totalHeight += PluginLookAndFeel::margin * 2 + 40; // margins + toggle
+
+    return totalHeight;
 }
