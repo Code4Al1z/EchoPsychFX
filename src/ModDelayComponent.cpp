@@ -9,9 +9,8 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modDepth", "Depth", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modRate", "Rate", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modMix", "Mix", *this));
-
-    feedbackLKnob = std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackL", "FB L", *this);
-    feedbackRKnob = std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackR", "FB R", *this);
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackL", "FB L", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackR", "FB R", *this));
 
     const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
         { "Sin", ModDelay::ModulationType::Sine },
@@ -60,50 +59,45 @@ void ModDelayComponent::resized()
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
 
-    int y = area.getY();
-    int x = area.getX();
-
+    // --- Waveform buttons + sync toggle ---
     const int btnWidth = 50;
     const int btnHeight = 26;
+    const int btnSpacing = 4;
+
+    const int totalButtonsWidth = static_cast<int>(waveformButtons.size()) * btnWidth
+        + static_cast<int>(waveformButtons.size() - 1) * btnSpacing
+        + 70 /* sync toggle width */
+        + PluginLookAndFeel::margin;
+
+    int x = area.getX() + (area.getWidth() - totalButtonsWidth) / 2; // center horizontally
+    int y = area.getY();
 
     for (auto* btn : waveformButtons)
     {
         btn->setBounds(x, y, btnWidth, btnHeight);
-        x += btnWidth + 4;
+        x += btnWidth + btnSpacing;
     }
 
-    syncToggle.setBounds(x + PluginLookAndFeel::margin, y, 70, btnHeight);
+    syncToggle.setBounds(x, y, 70, btnHeight);
 
     y += btnHeight + PluginLookAndFeel::margin + 5;
-
     area.removeFromTop(btnHeight + PluginLookAndFeel::margin + 5);
 
-    const int numTotalKnobs = static_cast<int>(knobs.size()) + 2;
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numTotalKnobs, area.getWidth(), area.getHeight(), true);
+    const int numKnobs = static_cast<int>(knobs.size());
 
-    const int numMainKnobs = static_cast<int>(knobs.size());
-    for (int i = 0; i < numTotalKnobs; ++i)
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), true);
+    if (layout.knobBounds.size() < numKnobs)
+        return; // prevent crash if layout failed
+
+
+    for (int i = 0; i < numKnobs; ++i)
     {
-        if (i >= static_cast<int>(layout.knobBounds.size()))
-            break;
-
         auto bounds = layout.knobBounds[i];
         bounds.translate(area.getX(), area.getY());
-
-        if (i < numMainKnobs)
-        {
-            knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-        }
-        else if (i == numMainKnobs && feedbackLKnob)
-        {
-            feedbackLKnob->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-        }
-        else if (i == numMainKnobs + 1 && feedbackRKnob)
-        {
-            feedbackRKnob->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-        }
+        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
     }
 }
+
 
 void ModDelayComponent::updateWaveformSelection(int index)
 {
@@ -138,24 +132,6 @@ void ModDelayComponent::setDelayTime(float value)
         knobs[0]->slider->setValue(value);
 }
 
-void ModDelayComponent::setFeedbackLeft(float value)
-{
-    if (feedbackLKnob)
-        feedbackLKnob->slider->setValue(value);
-}
-
-void ModDelayComponent::setFeedbackRight(float value)
-{
-    if (feedbackRKnob)
-        feedbackRKnob->slider->setValue(value);
-}
-
-void ModDelayComponent::setMix(float value)
-{
-    if (knobs.size() > 3)
-        knobs[3]->slider->setValue(value);
-}
-
 void ModDelayComponent::setModDepth(float value)
 {
     if (knobs.size() > 1)
@@ -166,4 +142,22 @@ void ModDelayComponent::setModRate(float value)
 {
     if (knobs.size() > 2)
         knobs[2]->slider->setValue(value);
+}
+
+void ModDelayComponent::setMix(float value)
+{
+    if (knobs.size() > 3)
+        knobs[3]->slider->setValue(value);
+}
+
+void ModDelayComponent::setFeedbackLeft(float value)
+{
+    if (knobs.size() > 4)
+        knobs[4]->slider->setValue(value);
+}
+
+void ModDelayComponent::setFeedbackRight(float value)
+{
+    if (knobs.size() > 5)
+        knobs[5]->slider->setValue(value);
 }

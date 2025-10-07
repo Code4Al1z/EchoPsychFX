@@ -27,8 +27,8 @@ public:
     void setHaasDelayMs(float leftMs, float rightMs);
     void setModShape(SpatialFX::LfoWaveform waveform);
 
-    int getMinimumWidth() const { return PluginLookAndFeel::knobSize + PluginLookAndFeel::margin * 2; }
-    int getMinimumHeight() const { return PluginLookAndFeel::knobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+    int getMinimumWidth() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::margin * 2; }
+    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
 
 private:
     juce::GroupComponent group{ "spatialFXGroup", "Spatial FX" };

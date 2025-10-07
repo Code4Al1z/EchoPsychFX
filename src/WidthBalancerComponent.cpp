@@ -57,25 +57,57 @@ void WidthBalancerComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
-    const int totalKnobHeight = PluginLookAndFeel::knobSize + PluginLookAndFeel::labelHeight;
+    const int availableWidth = area.getWidth();
+    const int availableHeight = area.getHeight();
 
-    int x = area.getX();
-    const int y = area.getY();
+    // --- Fixed sizes for right-side elements ---
+    const int midSideSliderWidth = 60;
+    const int monoToggleWidth = 80;
+    const int fixedRightWidth = midSideSliderWidth + PluginLookAndFeel::spacing * 2 + monoToggleWidth;
 
-    widthLabel.setBounds(x, y, PluginLookAndFeel::knobSize, PluginLookAndFeel::labelHeight);
-    widthSlider.setBounds(x, y + PluginLookAndFeel::labelHeight, PluginLookAndFeel::knobSize, PluginLookAndFeel::knobSize);
-    x += PluginLookAndFeel::knobSize + PluginLookAndFeel::spacing * 2;
+    // --- Remaining space for the two main knobs ---
+    const int knobCount = 2;
+    const int totalSpacingBetweenKnobs = PluginLookAndFeel::spacing * (knobCount + 1);
+    const int dynamicWidthAvailable = availableWidth - fixedRightWidth - totalSpacingBetweenKnobs;
 
-    intensityLabel.setBounds(x, y, PluginLookAndFeel::knobSize, PluginLookAndFeel::labelHeight);
-    intensitySlider.setBounds(x, y + PluginLookAndFeel::labelHeight, PluginLookAndFeel::knobSize, PluginLookAndFeel::knobSize);
-    x += PluginLookAndFeel::knobSize + PluginLookAndFeel::spacing * 2;
+    // --- Dynamically calculate knob size ---
+    // Each knob gets half of the dynamic area
+    const int knobWidth = juce::jmax(40, dynamicWidthAvailable / knobCount);
+    const int knobHeight = knobWidth; // keep them square
 
-    const int sliderWidth = 60;
-    midSideLabel.setBounds(x, y, sliderWidth, PluginLookAndFeel::labelHeight);
-    midSideSlider.setBounds(x + sliderWidth / 2 - 15, y + PluginLookAndFeel::labelHeight + 5, 30, PluginLookAndFeel::knobSize - 10);
-    x += sliderWidth + PluginLookAndFeel::spacing * 2;
+    const int labelHeight = PluginLookAndFeel::labelHeight;
+    const int elementHeight = knobHeight + labelHeight;
+    const int y = area.getY() + (availableHeight - elementHeight) / 2;
 
-    monoToggle.setBounds(x, y + PluginLookAndFeel::labelHeight + PluginLookAndFeel::knobSize / 2 - 15, 80, 30);
+    int x = area.getX() + PluginLookAndFeel::spacing;
+
+    // --- Width knob ---
+    widthLabel.setBounds(x, y, knobWidth, labelHeight);
+    widthSlider.setBounds(x, y + labelHeight, knobWidth, knobHeight);
+    x += knobWidth + PluginLookAndFeel::spacing;
+
+    // --- Intensity knob ---
+    intensityLabel.setBounds(x, y, knobWidth, labelHeight);
+    intensitySlider.setBounds(x, y + labelHeight, knobWidth, knobHeight);
+    x += knobWidth + PluginLookAndFeel::spacing;
+
+    // --- Mid/Side slider + label ---
+    midSideLabel.setBounds(x, y, midSideSliderWidth, labelHeight);
+    midSideSlider.setBounds(
+        x + midSideSliderWidth / 2 - 15,
+        y + labelHeight + 5,
+        30,
+        knobHeight - 10
+    );
+    x += midSideSliderWidth + PluginLookAndFeel::spacing;
+
+    // --- Mono toggle ---
+    monoToggle.setBounds(
+        x,
+        y + labelHeight + knobHeight / 2 - 15,
+        monoToggleWidth,
+        30
+    );
 }
 
 void WidthBalancerComponent::setWidth(float newValue)

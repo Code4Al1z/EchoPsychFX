@@ -26,7 +26,8 @@ public:
     static const juce::Colour groupOutline;
 
     // Dimensions
-    static constexpr int knobSize = 100;
+    static constexpr int minKnobSize = 100;
+    static constexpr int maxKnobSize = 100;
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;
     static constexpr int spacing = 20;

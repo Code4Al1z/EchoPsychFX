@@ -30,9 +30,6 @@ private:
 
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
-    std::unique_ptr<PluginLookAndFeel::KnobWithLabel> feedbackLKnob;
-    std::unique_ptr<PluginLookAndFeel::KnobWithLabel> feedbackRKnob;
-
     juce::OwnedArray<juce::TextButton> waveformButtons;
     std::unique_ptr<juce::ComboBox> hiddenCombo;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment;

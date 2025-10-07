@@ -70,19 +70,41 @@ PluginLookAndFeel::GridFitResult PluginLookAndFeel::findBestSquareGridFit(
 {
     GridFitResult best;
 
+    if (nElements <= 0 || totalWidth <= 0.0f || totalHeight <= 0.0f)
+        return best;
+
+    // Try to find the layout (cols x rows) that yields the largest valid cellSize
     for (int columns = 1; columns <= nElements; ++columns)
     {
-        int rows = (nElements + columns - 1) / columns;
-
-        float cellWidth = totalWidth / static_cast<float>(columns);
-        float cellHeight = totalHeight / static_cast<float>(rows);
-
-        float cellSize = std::min(cellWidth, cellHeight);
+        const int rows = (nElements + columns - 1) / columns; // ceil div
+        const float cellWidth = totalWidth / static_cast<float>(columns);
+        const float cellHeight = totalHeight / static_cast<float>(rows);
+        const float cellSize = std::min(cellWidth, cellHeight); // square cell
 
         if (cellSize >= minCellSize && cellSize <= maxCellSize)
         {
             if (cellSize > best.cellSize)
             {
+                best.columns = columns;
+                best.rows = rows;
+                best.cellSize = cellSize;
+            }
+        }
+    }
+
+    // If nothing matched the min/max bounds, pick the best possible (largest cellSize)
+    if (best.columns == 0)
+    {
+        float bestCell = 0.0f;
+        for (int columns = 1; columns <= nElements; ++columns)
+        {
+            const int rows = (nElements + columns - 1) / columns;
+            const float cellWidth = totalWidth / static_cast<float>(columns);
+            const float cellHeight = totalHeight / static_cast<float>(rows);
+            const float cellSize = std::min(cellWidth, cellHeight);
+            if (cellSize > bestCell)
+            {
+                bestCell = cellSize;
                 best.columns = columns;
                 best.rows = rows;
                 best.cellSize = cellSize;
@@ -98,49 +120,76 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
 {
     KnobLayoutResult result;
 
-    float width = static_cast<float>(availableWidth - margin * 2);
-    float height = static_cast<float>(availableHeight - margin * 2 - groupLabelHeight);
+    if (numKnobs <= 0 || availableWidth <= 0 || availableHeight <= 0)
+        return result;
 
-    float minCell = knobSize + labelHeight + spacing;
-    float maxCell = knobSize + labelHeight + spacing;
+    // compute available area
+    const float contentW = static_cast<float>(availableWidth - margin * 2);
+    const float contentH = static_cast<float>(availableHeight - margin * 2 - groupLabelHeight);
 
-    auto grid = findBestSquareGridFit(numKnobs, width, height, minCell, maxCell);
+    if (contentW <= 0.0f || contentH <= 0.0f)
+        return result;
 
-    if (grid.cellSize <= 0 || grid.columns == 0)
+    // Each cell includes the spacing around the knob
+    const float minCell = static_cast<float>(minKnobSize) + labelHeight + spacing;
+    const float maxCell = static_cast<float>(maxKnobSize) + labelHeight + spacing;
+
+    auto grid = findBestSquareGridFit(numKnobs, contentW, contentH, minCell, maxCell);
+
+    if (allowWideLayout)
+    {
+        // Single row using full width
+        grid.rows = 1;
+        grid.columns = numKnobs;
+        grid.cellSize = contentW / static_cast<float>(numKnobs);
+    }
+
+    // Fallback if grid invalid
+    if (grid.columns <= 0 || grid.rows <= 0 || grid.cellSize <= 0.0f)
     {
         grid.columns = numKnobs;
         grid.rows = 1;
-        grid.cellSize = minCell;
+        grid.cellSize = contentW / static_cast<float>(grid.columns);
     }
 
-    const int elementSize = static_cast<int>(grid.cellSize) - spacing;
+    if (grid.columns <= 0 || grid.cellSize <= 0.0f)
+        return result;
+
+    // Now, elementSize is the knob size inside the cell
+    const int elementSize = juce::jlimit(PluginLookAndFeel::minKnobSize,
+        PluginLookAndFeel::maxKnobSize,
+        static_cast<int>(std::floor(grid.cellSize - spacing)));
     const int totalElementHeight = elementSize + labelHeight;
 
-    const int gridWidth = static_cast<int>(grid.columns * grid.cellSize);
-    const int gridHeight = static_cast<int>(grid.rows * grid.cellSize);
+    const int gridWidth = static_cast<int>(std::round(grid.columns * grid.cellSize));
+    const int gridHeight = static_cast<int>(std::round(grid.rows * grid.cellSize));
 
     const int startX = (availableWidth - gridWidth) / 2;
-    const int startY = (availableHeight - gridHeight) / 2;
+    const int startY = (availableHeight - gridHeight) / 2 + (groupLabelHeight / 2);
+
+    result.totalWidth = gridWidth;
+    result.totalHeight = gridHeight;
+    result.knobBounds.reserve(numKnobs);
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        int col = i % grid.columns;
-        int row = i / grid.columns;
+        const int col = i % grid.columns;
+        const int row = i / grid.columns;
 
-        int cellX = startX + static_cast<int>(col * grid.cellSize);
-        int cellY = startY + static_cast<int>(row * grid.cellSize);
+        const int cellX = startX + static_cast<int>(std::round(col * grid.cellSize));
+        const int cellY = startY + static_cast<int>(std::round(row * grid.cellSize));
 
-        int elemX = cellX + (static_cast<int>(grid.cellSize) - elementSize) / 2;
-        int elemY = cellY + (static_cast<int>(grid.cellSize) - totalElementHeight) / 2;
+        // Center the knob inside the cell, spacing is included
+        const int elemX = cellX + (static_cast<int>(grid.cellSize) - elementSize) / 2;
+        const int elemY = cellY + (static_cast<int>(grid.cellSize) - totalElementHeight) / 2;
 
         result.knobBounds.emplace_back(elemX, elemY, elementSize, totalElementHeight);
     }
 
-    result.totalWidth = gridWidth;
-    result.totalHeight = gridHeight;
-
     return result;
 }
+
+
 
 void PluginLookAndFeel::configureKnob(juce::Slider& slider)
 {

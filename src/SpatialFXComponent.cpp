@@ -43,6 +43,7 @@ void SpatialFXComponent::resized()
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
 
+    // --- Combo box + label ---
     const int comboHeight = 26;
     const int comboWidth = 120;
 
@@ -53,15 +54,18 @@ void SpatialFXComponent::resized()
 
     area.removeFromTop(PluginLookAndFeel::spacing);
 
+    // --- Knobs ---
     const int numKnobs = static_cast<int>(knobs.size());
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), true);
+
+    // Use false so layout calculates multiple rows if needed
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
+    if (layout.knobBounds.size() < numKnobs)
+        return; // prevent crash if layout failed
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        if (i >= static_cast<int>(layout.knobBounds.size()))
-            break;
-
         auto bounds = layout.knobBounds[i];
+        // translate into component coordinates
         bounds.translate(area.getX(), area.getY());
         knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
     }

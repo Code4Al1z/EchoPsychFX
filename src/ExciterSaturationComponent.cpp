@@ -23,6 +23,9 @@ void ExciterSaturationComponent::resized()
     const int numKnobs = static_cast<int>(knobs.size());
 
     auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
+    if (layout.knobBounds.size() < numKnobs)
+        return; // prevent crash if layout failed
+
 
     for (int i = 0; i < numKnobs; ++i)
     {
