@@ -1,12 +1,11 @@
 #include "TiltEQComponent.h"
-#include "PluginLookAndFeel.h"
 
 TiltEQComponent::TiltEQComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "tiltEQ", "Tilt EQ", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "tiltEQ", "Tilt EQ", *this));
 
     if (!knobs.empty() && knobs[0]->slider)
     {

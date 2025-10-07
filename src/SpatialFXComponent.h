@@ -3,7 +3,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "UIHelpers.h"
+#include "PluginLookAndFeel.h"
 #include "SpatialFX.h"
 #include <memory>
 #include <vector>
@@ -27,13 +27,12 @@ public:
     void setHaasDelayMs(float leftMs, float rightMs);
     void setModShape(SpatialFX::LfoWaveform waveform);
 
-    int getMinimumWidth() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::margin * 2; }
-    int getMinimumHeight() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::labelHeight + UIHelpers::Dimensions::margin * 2 + UIHelpers::Dimensions::groupLabelHeight; }
-    int getRequiredHeight(int width) const;
+    int getMinimumWidth() const { return PluginLookAndFeel::knobSize + PluginLookAndFeel::margin * 2; }
+    int getMinimumHeight() const { return PluginLookAndFeel::knobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
 
 private:
     juce::GroupComponent group{ "spatialFXGroup", "Spatial FX" };
-    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
+    std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
     std::unique_ptr<juce::ComboBox> modShapeSelector;
     std::unique_ptr<juce::Label> modShapeLabel;

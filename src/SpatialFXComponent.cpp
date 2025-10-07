@@ -1,22 +1,21 @@
 #include "SpatialFXComponent.h"
-#include "PluginLookAndFeel.h"
 
 SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "phaseOffsetLeft", "Phase L", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "phaseOffsetRight", "Phase R", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modulationRateLeft", "Rate L", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modulationRateRight", "Rate R", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modulationDepthLeft", "Depth L", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modulationDepthRight", "Depth R", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "wetDryMix", "Mix", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "lfoPhaseOffset", "LFO Phase", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "allpassFrequency", "Allpass", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "haasDelayMsLeft", "Haas L", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "haasDelayMsRight", "Haas R", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "phaseOffsetLeft", "Phase L", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "phaseOffsetRight", "Phase R", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modulationRateLeft", "Rate L", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modulationRateRight", "Rate R", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modulationDepthLeft", "Depth L", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modulationDepthRight", "Depth R", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "wetDryMix", "Mix", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "lfoPhaseOffset", "LFO Phase", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "allpassFrequency", "Allpass", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayMsLeft", "Haas L", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayMsRight", "Haas R", *this));
 
     modShapeSelector = std::make_unique<juce::ComboBox>("modShapeSelector");
     modShapeSelector->addItem("Sine", 1);

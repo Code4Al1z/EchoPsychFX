@@ -19,7 +19,6 @@ juce_add_plugin(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        UIHelpers.cpp
         PluginLookAndFeel.cpp
         SimpleVerbWithPredelayComponent.cpp
         SimpleVerbWithPredelay.cpp

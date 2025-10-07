@@ -2,6 +2,8 @@
 #define ECHOPSYCHFX_PLUGINLOOKANDFEEL_H_INCLUDED
 
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <memory>
 
 class PluginLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -29,6 +31,23 @@ public:
     static constexpr int labelHeight = 20;
     static constexpr int spacing = 20;
     static constexpr int groupLabelHeight = 30;
+
+    // KnobWithLabel helper struct
+    struct KnobWithLabel
+    {
+        std::unique_ptr<juce::Slider> slider;
+        std::unique_ptr<juce::Label> label;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
+
+        KnobWithLabel() = default;
+
+        KnobWithLabel(juce::AudioProcessorValueTreeState& state,
+            const juce::String& paramID,
+            const juce::String& labelText,
+            juce::Component& parent);
+
+        void setBounds(int x, int y, int width, int height);
+    };
 
     // Grid layout
     struct GridFitResult

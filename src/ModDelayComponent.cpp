@@ -1,25 +1,24 @@
 ﻿#include "ModDelayComponent.h"
-#include "PluginLookAndFeel.h"
 
 ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "delayTime", "Delay", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modDepth", "Depth", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modRate", "Rate", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "modMix", "Mix", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "delayTime", "Delay", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modDepth", "Depth", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modRate", "Rate", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "modMix", "Mix", *this));
 
-    feedbackLKnob = std::make_unique<UIHelpers::KnobWithLabel>(state, "feedbackL", "FB L", *this);
-    feedbackRKnob = std::make_unique<UIHelpers::KnobWithLabel>(state, "feedbackR", "FB R", *this);
+    feedbackLKnob = std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackL", "FB L", *this);
+    feedbackRKnob = std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackR", "FB R", *this);
 
     const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
         { "Sin", ModDelay::ModulationType::Sine },
         { "Tri", ModDelay::ModulationType::Triangle },
         { "Sqr", ModDelay::ModulationType::Square },
-        { "Sw▲", ModDelay::ModulationType::SawtoothUp },
-        { "Sw▼", ModDelay::ModulationType::SawtoothDown }
+        { "Sw^", ModDelay::ModulationType::SawtoothUp },
+        { "Sw_", ModDelay::ModulationType::SawtoothDown }
     };
 
     int idx = 0;

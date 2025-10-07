@@ -1,17 +1,16 @@
 #include "MicroPitchDetuneComponent.h"
-#include "PluginLookAndFeel.h"
 
 MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "detuneAmount", "Detune", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "lfoRate", "LFO Rate", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "lfoDepth", "LFO Depth", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "delayCentre", "Delay", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "stereoSeparation", "Stereo", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "mix", "Mix", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "detuneAmount", "Detune", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "lfoRate", "LFO Rate", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "lfoDepth", "LFO Depth", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "delayCentre", "Delay", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "stereoSeparation", "Stereo", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "mix", "Mix", *this));
 }
 
 void MicroPitchDetuneComponent::paint(juce::Graphics& g)

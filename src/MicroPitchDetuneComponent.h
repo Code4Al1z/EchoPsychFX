@@ -3,7 +3,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "UIHelpers.h"
+#include "PluginLookAndFeel.h"
 #include <memory>
 #include <vector>
 
@@ -23,13 +23,12 @@ public:
     void setDetuneAmount(float newValue);
     void setStereoSeparation(float newValue);
 
-    int getMinimumWidth() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::margin * 2; }
-    int getMinimumHeight() const { return UIHelpers::Dimensions::knobSize + UIHelpers::Dimensions::labelHeight + UIHelpers::Dimensions::margin * 2 + UIHelpers::Dimensions::groupLabelHeight; }
-    int getRequiredHeight(int width) const;
+    int getMinimumWidth() const { return PluginLookAndFeel::knobSize + PluginLookAndFeel::margin * 2; }
+    int getMinimumHeight() const { return PluginLookAndFeel::knobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
 
 private:
     juce::GroupComponent group{ "microPitchDetuneGroup", "Micro-Pitch Detune" };
-    std::vector<std::unique_ptr<UIHelpers::KnobWithLabel>> knobs;
+    std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MicroPitchDetuneComponent)
 };

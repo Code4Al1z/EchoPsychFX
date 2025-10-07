@@ -3,7 +3,7 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "UIHelpers.h"
+#include "PluginLookAndFeel.h"
 #include <memory>
 
 class WidthBalancerComponent : public juce::Component
@@ -19,10 +19,6 @@ public:
     void setMidSideBalance(float newValue);
     void setMono(bool newValue);
     void setIntensity(float newValue);
-
-    int getMinimumWidth() const;
-    int getMinimumHeight() const;
-    int getRequiredHeight(int width) const;
 
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };

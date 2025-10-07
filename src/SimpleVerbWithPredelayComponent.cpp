@@ -1,15 +1,14 @@
 #include "SimpleVerbWithPredelayComponent.h"
-#include "PluginLookAndFeel.h"
 
 SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "predelayMs", "Predelay", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "size", "Size", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "damping", "Damping", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "wet", "Wet", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "predelayMs", "Predelay", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "size", "Size", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "damping", "Damping", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "wet", "Wet", *this));
 }
 
 void SimpleVerbWithPredelayComponent::paint(juce::Graphics& g)

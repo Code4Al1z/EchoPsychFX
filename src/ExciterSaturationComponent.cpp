@@ -1,14 +1,13 @@
 #include "ExciterSaturationComponent.h"
-#include "PluginLookAndFeel.h"
 
 ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state)
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "exciterDrive", "Drive", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "exciterMix", "Mix", *this));
-    knobs.emplace_back(std::make_unique<UIHelpers::KnobWithLabel>(state, "exciterHighpass", "Highpass", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "exciterDrive", "Drive", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "exciterMix", "Mix", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "exciterHighpass", "Highpass", *this));
 }
 
 void ExciterSaturationComponent::paint(juce::Graphics& g)

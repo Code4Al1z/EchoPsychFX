@@ -1,5 +1,4 @@
 #include "WidthBalancerComponent.h"
-#include "PluginLookAndFeel.h"
 
 WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeState& state)
 {
