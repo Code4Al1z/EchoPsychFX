@@ -27,45 +27,37 @@ private:
     PluginLookAndFeel pluginLookAndFeel;
     juce::ToggleButton modeToggle;
 
-    std::unique_ptr<WidthBalancerComponent> widthBalancerComponent;
-    std::unique_ptr<TiltEQComponent> tiltEQComponent;
-    std::unique_ptr<ModDelayComponent> modDelayComponent;
-    std::unique_ptr<SpatialFXComponent> spatialFXComponent;
-    std::unique_ptr<MicroPitchDetuneComponent> microPitchDetuneComponent;
-    std::unique_ptr<ExciterSaturationComponent> exciterSaturationComponent;
+    std::unique_ptr<WidthBalancerComponent>          widthBalancerComponent;
+    std::unique_ptr<TiltEQComponent>                 tiltEQComponent;
+    std::unique_ptr<ModDelayComponent>               modDelayComponent;
+    std::unique_ptr<SpatialFXComponent>              spatialFXComponent;
+    std::unique_ptr<MicroPitchDetuneComponent>       microPitchDetuneComponent;
+    std::unique_ptr<ExciterSaturationComponent>      exciterSaturationComponent;
     std::unique_ptr<SimpleVerbWithPredelayComponent> simpleVerbComponent;
 
     std::unique_ptr<PerceptionPresetManager> presetManager;
     std::unique_ptr<PerceptionModeComponent> perceptionModeComponent;
 
+    std::vector<std::unique_ptr<juce::TextButton>> blockToggles;
+
     struct ComponentInfo
     {
-        juce::Component* component;
-        int numKnobs;
-        bool allowWideLayout;
-        int minWidth;
-        int minHeight;
-        int maxWidth;
-        int maxHeight;
-        float sizeWeight;
+        juce::Component* component = nullptr;
+        juce::String     label;
+        int              numKnobs = 0;
+        bool             userVisible = true;
+        // minWidth is computed once in buildComponentInfoList —
+        // it is the narrowest this block can usefully render.
+        // Used only for row-wrap decisions, not as a render clamp.
+        int              minWidth = 0;
     };
 
-    std::vector<ComponentInfo> getComponentInfoList();
+    std::vector<ComponentInfo> componentInfoList;
+
+    void buildComponentInfoList();
+    void resizeWindowForVisibleBlocks();
     void updateUIVisibility();
     void layoutManualMode(juce::Rectangle<int> area);
-    void layoutPerceptionMode(juce::Rectangle<int> area);
-    void calculateMinMaxSizes();
-    int calculateActualContentHeight();
-
-    int calculateComponentMinWidth(int numKnobs, bool allowWideLayout) const;
-    int calculateComponentMinHeight(int numKnobs, bool allowWideLayout) const;
-    int calculateComponentMaxWidth(int numKnobs, bool allowWideLayout) const;
-    int calculateComponentMaxHeight(int numKnobs, bool allowWideLayout) const;
-
-    int calculatedMinWidth = 700;
-    int calculatedMinHeight = 500;
-    int calculatedMaxWidth = 2400;
-    int calculatedMaxHeight = 1800;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };

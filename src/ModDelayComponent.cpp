@@ -13,11 +13,11 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackR", "FB R", *this));
 
     const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
-        { "Sin", ModDelay::ModulationType::Sine },
-        { "Tri", ModDelay::ModulationType::Triangle },
-        { "Sqr", ModDelay::ModulationType::Square },
-        { "Sw^", ModDelay::ModulationType::SawtoothUp },
-        { "Sw_", ModDelay::ModulationType::SawtoothDown }
+        { "Sin",  ModDelay::ModulationType::Sine        },
+        { "Tri",  ModDelay::ModulationType::Triangle    },
+        { "Sqr",  ModDelay::ModulationType::Square      },
+        { "Sw^",  ModDelay::ModulationType::SawtoothUp  },
+        { "Sw_",  ModDelay::ModulationType::SawtoothDown}
     };
 
     int idx = 0;
@@ -55,109 +55,86 @@ void ModDelayComponent::paint(juce::Graphics& g)
 
 void ModDelayComponent::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
+    const int totalH = area.getHeight();
 
-    // --- Waveform buttons + sync toggle ---
-    const int btnWidth = 50;
-    const int btnHeight = 26;
-    const int btnSpacing = 4;
+    // Button strip height: proportional, min 20px max 30px
+    const int btnH = juce::jlimit(20, 30, static_cast<int>(totalH * 0.15f));
 
-    const int totalButtonsWidth = static_cast<int>(waveformButtons.size()) * btnWidth
-        + static_cast<int>(waveformButtons.size() - 1) * btnSpacing
-        + 70 /* sync toggle width */
-        + PluginLookAndFeel::margin;
+    // Distribute waveform buttons + sync toggle across full width
+    // 5 waveform buttons + 1 sync toggle = 6 slots, sync gets ~1.4x a button
+    const int nBtns = waveformButtons.size();
+    const int totalSlots = nBtns * 10 + 14; // relative units: each btn=10, sync=14
+    const int availW = area.getWidth();
+    const float unitW = static_cast<float>(availW) / static_cast<float>(totalSlots);
 
-    int x = area.getX() + (area.getWidth() - totalButtonsWidth) / 2; // center horizontally
-    int y = area.getY();
+    int x = area.getX();
+    const int y = area.getY();
 
-    for (auto* btn : waveformButtons)
+    for (int i = 0; i < nBtns; ++i)
     {
-        btn->setBounds(x, y, btnWidth, btnHeight);
-        x += btnWidth + btnSpacing;
+        const int bw = (i == nBtns - 1)
+            ? (area.getRight() - static_cast<int>(unitW * 14.0f) - x)
+            : static_cast<int>(unitW * 10.0f);
+        waveformButtons[i]->setBounds(x, y, bw, btnH);
+        x += bw;
     }
+    syncToggle.setBounds(x, y, area.getRight() - x, btnH);
 
-    syncToggle.setBounds(x, y, 70, btnHeight);
-
-    y += btnHeight + PluginLookAndFeel::margin + 5;
-    area.removeFromTop(btnHeight + PluginLookAndFeel::margin + 5);
-
+    // Knob area: everything below the button strip
+    const int knobAreaY = y + btnH + PluginLookAndFeel::spacing;
+    const int knobAreaH = area.getBottom() - knobAreaY;
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
-    if (layout.knobBounds.size() < numKnobs)
-        return; // prevent crash if layout failed
-
-
-    for (int i = 0; i < numKnobs; ++i)
+    if (knobAreaH > 0)
     {
-        auto bounds = layout.knobBounds[i];
-        bounds.translate(area.getX(), area.getY());
-        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        auto layout = PluginLookAndFeel::calculateKnobLayout(
+            numKnobs, area.getWidth(), knobAreaH, false);
+
+        if ((int)layout.knobBounds.size() < numKnobs) return;
+
+        for (int i = 0; i < numKnobs; ++i)
+        {
+            auto b = layout.knobBounds[i];
+            knobs[i]->setBounds(
+                area.getX() + b.getX(),
+                knobAreaY + b.getY(),
+                b.getWidth(),
+                b.getHeight());
+        }
     }
 }
 
-
 void ModDelayComponent::updateWaveformSelection(int index)
 {
-    if (index < 0 || index >= waveformButtons.size())
-        return;
+    if (index < 0 || index >= waveformButtons.size()) return;
 
     selectedWaveform = index;
-
     for (int i = 0; i < waveformButtons.size(); ++i)
     {
         auto* btn = waveformButtons[i];
-        const bool isSelected = (i == index);
+        const bool sel = (i == index);
         btn->setColour(juce::TextButton::buttonColourId,
-            isSelected ? PluginLookAndFeel::track : juce::Colours::darkgrey);
-        btn->setAlpha(isSelected ? 1.0f : 0.7f);
+            sel ? PluginLookAndFeel::track : juce::Colours::darkgrey);
+        btn->setAlpha(sel ? 1.0f : 0.7f);
     }
 
     if (hiddenCombo)
-        hiddenCombo->setSelectedId(index + 1, juce::NotificationType::sendNotification);
+        hiddenCombo->setSelectedId(index + 1, juce::sendNotification);
 }
 
 void ModDelayComponent::setModulationType(ModDelay::ModulationType type)
 {
-    int index = static_cast<int>(type) - 1;
-    if (index != selectedWaveform)
-        updateWaveformSelection(index);
+    const int index = static_cast<int>(type) - 1;
+    if (index != selectedWaveform) updateWaveformSelection(index);
 }
 
-void ModDelayComponent::setDelayTime(float value)
-{
-    if (!knobs.empty())
-        knobs[0]->slider->setValue(value);
-}
-
-void ModDelayComponent::setModDepth(float value)
-{
-    if (knobs.size() > 1)
-        knobs[1]->slider->setValue(value);
-}
-
-void ModDelayComponent::setModRate(float value)
-{
-    if (knobs.size() > 2)
-        knobs[2]->slider->setValue(value);
-}
-
-void ModDelayComponent::setMix(float value)
-{
-    if (knobs.size() > 3)
-        knobs[3]->slider->setValue(value);
-}
-
-void ModDelayComponent::setFeedbackLeft(float value)
-{
-    if (knobs.size() > 4)
-        knobs[4]->slider->setValue(value);
-}
-
-void ModDelayComponent::setFeedbackRight(float value)
-{
-    if (knobs.size() > 5)
-        knobs[5]->slider->setValue(value);
-}
+void ModDelayComponent::setDelayTime(float v) { if (!knobs.empty())       knobs[0]->slider->setValue(v); }
+void ModDelayComponent::setModDepth(float v) { if (knobs.size() > 1)     knobs[1]->slider->setValue(v); }
+void ModDelayComponent::setModRate(float v) { if (knobs.size() > 2)     knobs[2]->slider->setValue(v); }
+void ModDelayComponent::setMix(float v) { if (knobs.size() > 3)     knobs[3]->slider->setValue(v); }
+void ModDelayComponent::setFeedbackLeft(float v) { if (knobs.size() > 4)     knobs[4]->slider->setValue(v); }
+void ModDelayComponent::setFeedbackRight(float v) { if (knobs.size() > 5)     knobs[5]->slider->setValue(v); }

@@ -39,81 +39,68 @@ void SpatialFXComponent::paint(juce::Graphics& g)
 
 void SpatialFXComponent::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
+    const int totalH = area.getHeight();
 
-    // --- Combo box + label ---
-    const int comboHeight = 26;
-    const int comboWidth = 120;
+    // Header strip: Mod Shape label + combo box
+    // Height proportional, min 20 max 28
+    const int headerH = juce::jlimit(20, 28, static_cast<int>(totalH * 0.12f));
 
-    auto comboArea = area.removeFromTop(comboHeight);
-    modShapeLabel->setBounds(comboArea.removeFromLeft(80));
-    comboArea.removeFromLeft(PluginLookAndFeel::spacing / 2);
-    modShapeSelector->setBounds(comboArea.removeFromLeft(comboWidth));
+    // Label gets ~35% of width, combo gets rest
+    const int labelW = juce::jlimit(50, 90, static_cast<int>(area.getWidth() * 0.35f));
+    const int comboW = area.getWidth() - labelW - PluginLookAndFeel::spacing;
 
-    area.removeFromTop(PluginLookAndFeel::spacing);
+    modShapeLabel->setBounds(area.getX(), area.getY(), labelW, headerH);
+    modShapeSelector->setBounds(area.getX() + labelW + PluginLookAndFeel::spacing,
+        area.getY(), comboW, headerH);
 
-    // --- Knobs ---
+    // Knob area below header
+    const int knobAreaY = area.getY() + headerH + PluginLookAndFeel::spacing;
+    const int knobAreaH = area.getBottom() - knobAreaY;
     const int numKnobs = static_cast<int>(knobs.size());
 
-    // Use false so layout calculates multiple rows if needed
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
-    if (layout.knobBounds.size() < numKnobs)
-        return; // prevent crash if layout failed
-
-    for (int i = 0; i < numKnobs; ++i)
+    if (knobAreaH > 0)
     {
-        auto bounds = layout.knobBounds[i];
-        // translate into component coordinates
-        bounds.translate(area.getX(), area.getY());
-        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        auto layout = PluginLookAndFeel::calculateKnobLayout(
+            numKnobs, area.getWidth(), knobAreaH, false);
+
+        if ((int)layout.knobBounds.size() < numKnobs) return;
+
+        for (int i = 0; i < numKnobs; ++i)
+        {
+            auto b = layout.knobBounds[i];
+            knobs[i]->setBounds(
+                area.getX() + b.getX(),
+                knobAreaY + b.getY(),
+                b.getWidth(),
+                b.getHeight());
+        }
     }
 }
 
-void SpatialFXComponent::setPhaseOffsetLeft(float newValue)
+void SpatialFXComponent::setPhaseOffsetLeft(float v) { if (!knobs.empty())   knobs[0]->slider->setValue(v); }
+void SpatialFXComponent::setPhaseOffsetRight(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
+void SpatialFXComponent::setModulationRate(float l, float r)
 {
-    if (!knobs.empty()) knobs[0]->slider->setValue(newValue);
+    if (knobs.size() > 2) knobs[2]->slider->setValue(l);
+    if (knobs.size() > 3) knobs[3]->slider->setValue(r);
 }
-
-void SpatialFXComponent::setPhaseOffsetRight(float newValue)
+void SpatialFXComponent::setModulationDepth(float l, float r)
 {
-    if (knobs.size() > 1) knobs[1]->slider->setValue(newValue);
+    if (knobs.size() > 4) knobs[4]->slider->setValue(l);
+    if (knobs.size() > 5) knobs[5]->slider->setValue(r);
 }
-
-void SpatialFXComponent::setModulationRate(float left, float right)
+void SpatialFXComponent::setWetDryMix(float v) { if (knobs.size() > 6)  knobs[6]->slider->setValue(v); }
+void SpatialFXComponent::setLfoPhaseOffset(float v) { if (knobs.size() > 7)  knobs[7]->slider->setValue(v); }
+void SpatialFXComponent::setAllpassFrequency(float v) { if (knobs.size() > 8)  knobs[8]->slider->setValue(v); }
+void SpatialFXComponent::setHaasDelayMs(float l, float r)
 {
-    if (knobs.size() > 2) knobs[2]->slider->setValue(left);
-    if (knobs.size() > 3) knobs[3]->slider->setValue(right);
+    if (knobs.size() > 9)  knobs[9]->slider->setValue(l);
+    if (knobs.size() > 10) knobs[10]->slider->setValue(r);
 }
-
-void SpatialFXComponent::setModulationDepth(float left, float right)
-{
-    if (knobs.size() > 4) knobs[4]->slider->setValue(left);
-    if (knobs.size() > 5) knobs[5]->slider->setValue(right);
-}
-
-void SpatialFXComponent::setWetDryMix(float newValue)
-{
-    if (knobs.size() > 6) knobs[6]->slider->setValue(newValue);
-}
-
-void SpatialFXComponent::setLfoPhaseOffset(float newValue)
-{
-    if (knobs.size() > 7) knobs[7]->slider->setValue(newValue);
-}
-
-void SpatialFXComponent::setAllpassFrequency(float newValue)
-{
-    if (knobs.size() > 8) knobs[8]->slider->setValue(newValue);
-}
-
-void SpatialFXComponent::setHaasDelayMs(float leftMs, float rightMs)
-{
-    if (knobs.size() > 9) knobs[9]->slider->setValue(leftMs);
-    if (knobs.size() > 10) knobs[10]->slider->setValue(rightMs);
-}
-
 void SpatialFXComponent::setModShape(SpatialFX::LfoWaveform waveform)
 {
     if (modShapeSelector)

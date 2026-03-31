@@ -21,28 +21,26 @@ void TiltEQComponent::paint(juce::Graphics& g)
 
 void TiltEQComponent::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
-    if (layout.knobBounds.size() < numKnobs)
-        return; // prevent crash if layout failed
+    auto layout = PluginLookAndFeel::calculateKnobLayout(
+        numKnobs, area.getWidth(), area.getHeight(), false);
+
+    if ((int)layout.knobBounds.size() < numKnobs) return;
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        if (i >= static_cast<int>(layout.knobBounds.size()))
-            break;
-
-        auto bounds = layout.knobBounds[i];
-        bounds.translate(area.getX(), area.getY());
-        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        auto b = layout.knobBounds[i];
+        knobs[i]->setBounds(area.getX() + b.getX(), area.getY() + b.getY(),
+            b.getWidth(), b.getHeight());
     }
 }
 
-void TiltEQComponent::setTilt(float newValue)
+void TiltEQComponent::setTilt(float v)
 {
-    if (!knobs.empty())
-        knobs[0]->slider->setValue(newValue);
+    if (!knobs.empty()) knobs[0]->slider->setValue(v);
 }

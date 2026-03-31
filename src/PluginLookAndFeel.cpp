@@ -9,20 +9,22 @@ const juce::Colour PluginLookAndFeel::knobOutline{ 90, 0, 50 };
 const juce::Colour PluginLookAndFeel::labelText{ 232, 232, 240 };
 const juce::Colour PluginLookAndFeel::groupOutline = juce::Colours::white.withAlpha(0.4f);
 
+//==============================================================================
 PluginLookAndFeel::PluginLookAndFeel()
 {
     setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.5f));
     setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 }
 
+//==============================================================================
 void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, int height,
     const juce::String& text, const juce::Justification& justification,
     juce::GroupComponent& component)
 {
     const float textPadding = 4.0f;
-    const int textHeight = 24;
+    const int   textHeight = 20;
 
-    auto font = juce::Font(textHeight * 0.8f, juce::Font::bold);
+    auto font = juce::Font(static_cast<float>(textHeight) * 0.85f, juce::Font::bold);
     g.setFont(font);
 
     auto textWidth = static_cast<int>(font.getStringWidth(text) + 2.0f * textPadding);
@@ -31,19 +33,23 @@ void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, 
     g.drawRect(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 1.0f);
 
     g.setColour(component.findColour(juce::GroupComponent::textColourId));
-    g.drawFittedText(text, 10, height - 25, textWidth, textHeight, justification, 1);
+    g.drawFittedText(text, 10, height - textHeight - 4, textWidth, textHeight, justification, 1);
 }
+
+//==============================================================================
+// KnobWithLabel
+//==============================================================================
 
 PluginLookAndFeel::KnobWithLabel::KnobWithLabel(juce::AudioProcessorValueTreeState& state,
     const juce::String& paramID,
-    const juce::String& labelText,
+    const juce::String& labelTextStr,
     juce::Component& parent)
 {
     slider = std::make_unique<juce::Slider>();
     label = std::make_unique<juce::Label>();
 
     PluginLookAndFeel::configureKnob(*slider);
-    PluginLookAndFeel::configureLabel(*label, labelText);
+    PluginLookAndFeel::configureLabel(*label, labelTextStr);
 
     parent.addAndMakeVisible(*slider);
     parent.addAndMakeVisible(*label);
@@ -54,66 +60,60 @@ PluginLookAndFeel::KnobWithLabel::KnobWithLabel(juce::AudioProcessorValueTreeSta
 
 void PluginLookAndFeel::KnobWithLabel::setBounds(int x, int y, int width, int height)
 {
-    const int labelH = PluginLookAndFeel::labelHeight;
-    const int knobH = height - labelH;
+    // Label takes a proportional slice of the height — minimum 12px, maximum 20px.
+    // This makes labels scale down gracefully when blocks are small.
+    const int lH = juce::jlimit(12, 20, static_cast<int>(height * 0.22f));
+    const int knobH = height - lH;
 
-    label->setBounds(x, y, width, labelH);
-    slider->setBounds(x, y + labelH, width, knobH);
+    // Scale the text box inside the slider proportionally too
+    const int tbW = juce::jlimit(40, 70, static_cast<int>(width * 0.85f));
+    const int tbH = juce::jlimit(14, 20, static_cast<int>(knobH * 0.22f));
+    slider->setTextBoxStyle(juce::Slider::TextBoxBelow, false, tbW, tbH);
+
+    label->setBounds(x, y, width, lH);
+    slider->setBounds(x, y + lH, width, knobH);
 }
 
+//==============================================================================
+// findBestSquareGridFit
+//
+// Finds the column count that maximises cell size given the available area.
+// No min/max cell size constraints — purely geometric best fit.
+//==============================================================================
+
 PluginLookAndFeel::GridFitResult PluginLookAndFeel::findBestSquareGridFit(
-    int nElements,
-    float totalWidth,
-    float totalHeight,
-    float minCellSize,
-    float maxCellSize)
+    int nElements, float totalWidth, float totalHeight)
 {
     GridFitResult best;
 
     if (nElements <= 0 || totalWidth <= 0.0f || totalHeight <= 0.0f)
         return best;
 
-    // Try to find the layout (cols x rows) that yields the largest valid cellSize
     for (int columns = 1; columns <= nElements; ++columns)
     {
-        const int rows = (nElements + columns - 1) / columns; // ceil div
+        const int   rows = (nElements + columns - 1) / columns;
         const float cellWidth = totalWidth / static_cast<float>(columns);
         const float cellHeight = totalHeight / static_cast<float>(rows);
-        const float cellSize = std::min(cellWidth, cellHeight); // square cell
+        const float cellSize = std::min(cellWidth, cellHeight);
 
-        if (cellSize >= minCellSize && cellSize <= maxCellSize)
+        if (cellSize > best.cellSize)
         {
-            if (cellSize > best.cellSize)
-            {
-                best.columns = columns;
-                best.rows = rows;
-                best.cellSize = cellSize;
-            }
-        }
-    }
-
-    // If nothing matched the min/max bounds, pick the best possible (largest cellSize)
-    if (best.columns == 0)
-    {
-        float bestCell = 0.0f;
-        for (int columns = 1; columns <= nElements; ++columns)
-        {
-            const int rows = (nElements + columns - 1) / columns;
-            const float cellWidth = totalWidth / static_cast<float>(columns);
-            const float cellHeight = totalHeight / static_cast<float>(rows);
-            const float cellSize = std::min(cellWidth, cellHeight);
-            if (cellSize > bestCell)
-            {
-                bestCell = cellSize;
-                best.columns = columns;
-                best.rows = rows;
-                best.cellSize = cellSize;
-            }
+            best.columns = columns;
+            best.rows = rows;
+            best.cellSize = cellSize;
         }
     }
 
     return best;
 }
+
+//==============================================================================
+// calculateKnobLayout
+//
+// Works purely from available space — no hard pixel clamps.
+// Knob size = cellSize * 0.78 (leaves room for label and breathing space).
+// Label height = cellSize * 0.22, clamped to [12, 20].
+//==============================================================================
 
 PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
     int numKnobs, int availableWidth, int availableHeight, bool allowWideLayout)
@@ -123,52 +123,44 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
     if (numKnobs <= 0 || availableWidth <= 0 || availableHeight <= 0)
         return result;
 
-    // compute available area
-    const float contentW = static_cast<float>(availableWidth - margin * 2);
-    const float contentH = static_cast<float>(availableHeight - margin * 2 - groupLabelHeight);
+    const float contentW = static_cast<float>(availableWidth);
+    const float contentH = static_cast<float>(availableHeight);
 
-    if (contentW <= 0.0f || contentH <= 0.0f)
-        return result;
-
-    // Each cell includes the spacing around the knob
-    const float minCell = static_cast<float>(minKnobSize) + labelHeight + spacing;
-    const float maxCell = static_cast<float>(maxKnobSize) + labelHeight + spacing;
-
-    auto grid = findBestSquareGridFit(numKnobs, contentW, contentH, minCell, maxCell);
+    GridFitResult grid;
 
     if (allowWideLayout)
     {
-        // Single row using full width
-        grid.rows = 1;
+        // Force single row
         grid.columns = numKnobs;
+        grid.rows = 1;
         grid.cellSize = contentW / static_cast<float>(numKnobs);
     }
+    else
+    {
+        grid = findBestSquareGridFit(numKnobs, contentW, contentH);
+    }
 
-    // Fallback if grid invalid
-    if (grid.columns <= 0 || grid.rows <= 0 || grid.cellSize <= 0.0f)
+    // Absolute fallback — should never be reached
+    if (grid.columns <= 0 || grid.cellSize <= 0.0f)
     {
         grid.columns = numKnobs;
         grid.rows = 1;
-        grid.cellSize = contentW / static_cast<float>(grid.columns);
+        grid.cellSize = contentW / static_cast<float>(numKnobs);
     }
 
-    if (grid.columns <= 0 || grid.cellSize <= 0.0f)
-        return result;
+    // knob cell occupies the full cell — KnobWithLabel::setBounds splits it
+    // internally into label + knob proportionally.
+    const float cellSize = grid.cellSize;
 
-    // Now, elementSize is the knob size inside the cell
-    const int elementSize = juce::jlimit(PluginLookAndFeel::minKnobSize,
-        PluginLookAndFeel::maxKnobSize,
-        static_cast<int>(std::floor(grid.cellSize - spacing)));
-    const int totalElementHeight = elementSize + labelHeight;
+    // Centre the grid within the available area
+    const float gridW = grid.columns * cellSize;
+    const float gridH = grid.rows * cellSize;
 
-    const int gridWidth = static_cast<int>(std::round(grid.columns * grid.cellSize));
-    const int gridHeight = static_cast<int>(std::round(grid.rows * grid.cellSize));
+    const int startX = static_cast<int>((contentW - gridW) * 0.5f);
+    const int startY = static_cast<int>((contentH - gridH) * 0.5f);
 
-    const int startX = (availableWidth - gridWidth) / 2;
-    const int startY = (availableHeight - gridHeight) / 2 + (groupLabelHeight / 2);
-
-    result.totalWidth = gridWidth;
-    result.totalHeight = gridHeight;
+    result.totalWidth = static_cast<int>(gridW);
+    result.totalHeight = static_cast<int>(gridH);
     result.knobBounds.reserve(numKnobs);
 
     for (int i = 0; i < numKnobs; ++i)
@@ -176,25 +168,27 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
         const int col = i % grid.columns;
         const int row = i / grid.columns;
 
-        const int cellX = startX + static_cast<int>(std::round(col * grid.cellSize));
-        const int cellY = startY + static_cast<int>(std::round(row * grid.cellSize));
+        const int cellX = startX + static_cast<int>(col * cellSize);
+        const int cellY = startY + static_cast<int>(row * cellSize);
 
-        // Center the knob inside the cell, spacing is included
-        const int elemX = cellX + (static_cast<int>(grid.cellSize) - elementSize) / 2;
-        const int elemY = cellY + (static_cast<int>(grid.cellSize) - totalElementHeight) / 2;
+        // Small inset so knobs don't butt against each other
+        const int inset = juce::jmax(2, static_cast<int>(cellSize * 0.04f));
 
-        result.knobBounds.emplace_back(elemX, elemY, elementSize, totalElementHeight);
+        result.knobBounds.emplace_back(
+            cellX + inset,
+            cellY + inset,
+            static_cast<int>(cellSize) - inset * 2,
+            static_cast<int>(cellSize) - inset * 2);
     }
 
     return result;
 }
 
-
-
+//==============================================================================
 void PluginLookAndFeel::configureKnob(juce::Slider& slider)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 18);
     slider.setColour(juce::Slider::rotarySliderFillColourId, knobFill);
     slider.setColour(juce::Slider::thumbColourId, knobThumb);
     slider.setColour(juce::Slider::trackColourId, knobBackground);

@@ -18,43 +18,26 @@ void SimpleVerbWithPredelayComponent::paint(juce::Graphics& g)
 
 void SimpleVerbWithPredelayComponent::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
-    if (layout.knobBounds.size() < numKnobs)
-        return; // prevent crash if layout failed
+    auto layout = PluginLookAndFeel::calculateKnobLayout(
+        numKnobs, area.getWidth(), area.getHeight(), false);
+
+    if ((int)layout.knobBounds.size() < numKnobs) return;
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        auto bounds = layout.knobBounds[i];
-        bounds.translate(area.getX(), area.getY());
-        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        auto b = layout.knobBounds[i];
+        knobs[i]->setBounds(area.getX() + b.getX(), area.getY() + b.getY(),
+            b.getWidth(), b.getHeight());
     }
 }
 
-void SimpleVerbWithPredelayComponent::setPredelay(float newValue)
-{
-    if (!knobs.empty())
-        knobs[0]->slider->setValue(newValue);
-}
-
-void SimpleVerbWithPredelayComponent::setSize(float newValue)
-{
-    if (knobs.size() > 1)
-        knobs[1]->slider->setValue(newValue);
-}
-
-void SimpleVerbWithPredelayComponent::setDamping(float newValue)
-{
-    if (knobs.size() > 2)
-        knobs[2]->slider->setValue(newValue);
-}
-
-void SimpleVerbWithPredelayComponent::setWet(float newValue)
-{
-    if (knobs.size() > 3)
-        knobs[3]->slider->setValue(newValue);
-}
+void SimpleVerbWithPredelayComponent::setPredelay(float v) { if (!knobs.empty())   knobs[0]->slider->setValue(v); }
+void SimpleVerbWithPredelayComponent::setSize(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
+void SimpleVerbWithPredelayComponent::setDamping(float v) { if (knobs.size() > 2) knobs[2]->slider->setValue(v); }
+void SimpleVerbWithPredelayComponent::setWet(float v) { if (knobs.size() > 3) knobs[3]->slider->setValue(v); }

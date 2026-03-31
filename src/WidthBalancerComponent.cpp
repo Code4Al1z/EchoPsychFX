@@ -5,46 +5,37 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     PluginLookAndFeel::configureKnob(widthSlider);
+    widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     addAndMakeVisible(widthSlider);
 
+    PluginLookAndFeel::configureKnob(intensitySlider);
+    intensitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    intensitySlider.setSkewFactorFromMidPoint(0.2f);
+    addAndMakeVisible(intensitySlider);
+
     midSideSlider.setSliderStyle(juce::Slider::LinearVertical);
-    midSideSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
     midSideSlider.setColour(juce::Slider::thumbColourId, PluginLookAndFeel::knobThumb);
     midSideSlider.setColour(juce::Slider::trackColourId, PluginLookAndFeel::track);
     midSideSlider.setColour(juce::Slider::backgroundColourId, PluginLookAndFeel::knobBackground);
     addAndMakeVisible(midSideSlider);
 
-    intensitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 20);
-    intensitySlider.setSkewFactorFromMidPoint(0.2f);
-    PluginLookAndFeel::configureKnob(intensitySlider);
-    addAndMakeVisible(intensitySlider);
-
     PluginLookAndFeel::configureLabel(widthLabel, "Width");
-    addAndMakeVisible(widthLabel);
-
+    PluginLookAndFeel::configureLabel(intensityLabel, "Inte...");
     PluginLookAndFeel::configureLabel(midSideLabel, "Mid/Side");
-    addAndMakeVisible(midSideLabel);
-
-    PluginLookAndFeel::configureLabel(intensityLabel, "Intensity");
+    addAndMakeVisible(widthLabel);
     addAndMakeVisible(intensityLabel);
+    addAndMakeVisible(midSideLabel);
 
     monoToggle.setButtonText("Mono");
     monoToggle.setColour(juce::ToggleButton::textColourId, PluginLookAndFeel::labelText);
     monoToggle.setColour(juce::ToggleButton::tickColourId, PluginLookAndFeel::track);
     addAndMakeVisible(monoToggle);
 
-    widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        state, "width", widthSlider);
-    midSideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        state, "midSideBalance", midSideSlider);
-    intensityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        state, "intensity", intensitySlider);
-    monoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-        state, "mono", monoToggle);
+    widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "width", widthSlider);
+    midSideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "midSideBalance", midSideSlider);
+    intensityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "intensity", intensitySlider);
+    monoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(state, "mono", monoToggle);
 }
 
 void WidthBalancerComponent::paint(juce::Graphics& g)
@@ -54,70 +45,63 @@ void WidthBalancerComponent::paint(juce::Graphics& g)
 
 void WidthBalancerComponent::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
-    const int availableWidth = area.getWidth();
-    const int availableHeight = area.getHeight();
+    const int w = area.getWidth();
+    const int h = area.getHeight();
 
-    const int midSideSliderWidth = 60;
-    const int monoToggleWidth = 80;
-    const int fixedRightWidth = midSideSliderWidth + PluginLookAndFeel::spacing * 2 + monoToggleWidth;
+    // Proportional layout:
+    // We have 4 elements: width knob, intensity knob, mid/side slider, mono toggle.
+    // The two knobs share roughly half the width each (40% each),
+    // mid/side gets ~12%, mono toggle ~8%.
+    // All scale with whatever space the editor gives this block.
 
-    const int knobCount = 2;
-    const int totalSpacingBetweenKnobs = PluginLookAndFeel::spacing * (knobCount + 1);
-    const int dynamicWidthAvailable = availableWidth - fixedRightWidth - totalSpacingBetweenKnobs;
+    const int labelH = juce::jlimit(12, 20, static_cast<int>(h * 0.18f));
+    const int knobH = h - labelH - PluginLookAndFeel::margin;
+    const int knobW = juce::jlimit(30, static_cast<int>(w * 0.38f), static_cast<int>(w * 0.38f));
+    const int midSideW = juce::jlimit(20, static_cast<int>(w * 0.14f), static_cast<int>(w * 0.14f));
+    const int monoW = w - knobW * 2 - midSideW - PluginLookAndFeel::spacing * 3;
 
-    const int knobWidth = juce::jmax(40, dynamicWidthAvailable / knobCount);
-    const int knobHeight = knobWidth;
+    const int y = area.getY();
+    int x = area.getX();
 
-    const int labelHeight = PluginLookAndFeel::labelHeight;
-    const int elementHeight = knobHeight + labelHeight;
-    const int y = area.getY() + (availableHeight - elementHeight) / 2;
+    // Width knob
+    widthLabel.setBounds(x, y, knobW, labelH);
+    widthSlider.setBounds(x, y + labelH, knobW, knobH);
+    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+        juce::jlimit(30, 60, knobW - 4), juce::jlimit(12, 18, static_cast<int>(knobH * 0.2f)));
+    x += knobW + PluginLookAndFeel::spacing;
 
-    int x = area.getX() + PluginLookAndFeel::spacing;
+    // Intensity knob
+    intensityLabel.setBounds(x, y, knobW, labelH);
+    intensitySlider.setBounds(x, y + labelH, knobW, knobH);
+    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+        juce::jlimit(30, 60, knobW - 4), juce::jlimit(12, 18, static_cast<int>(knobH * 0.2f)));
+    x += knobW + PluginLookAndFeel::spacing;
 
-    widthLabel.setBounds(x, y, knobWidth, labelHeight);
-    widthSlider.setBounds(x, y + labelHeight, knobWidth, knobHeight);
-    x += knobWidth + PluginLookAndFeel::spacing;
+    // Mid/Side vertical slider
+    midSideLabel.setBounds(x, y, midSideW, labelH);
+    midSideSlider.setBounds(x, y + labelH, midSideW, knobH);
+    midSideSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
+        midSideW, juce::jlimit(12, 18, static_cast<int>(knobH * 0.2f)));
+    x += midSideW + PluginLookAndFeel::spacing;
 
-    intensityLabel.setBounds(x, y, knobWidth, labelHeight);
-    intensitySlider.setBounds(x, y + labelHeight, knobWidth, knobHeight);
-    x += knobWidth + PluginLookAndFeel::spacing;
-
-    midSideLabel.setBounds(x, y, midSideSliderWidth, labelHeight);
-    midSideSlider.setBounds(
-        x + midSideSliderWidth / 2 - 15,
-        y + labelHeight + 5,
-        30,
-        knobHeight - 10
-    );
-    x += midSideSliderWidth + PluginLookAndFeel::spacing;
-
-    monoToggle.setBounds(
-        x,
-        y + labelHeight + knobHeight / 2 - 15,
-        monoToggleWidth,
-        30
-    );
+    // Mono toggle — vertically centred in remaining space
+    if (monoW > 20)
+    {
+        const int toggleH = juce::jlimit(18, 28, static_cast<int>(h * 0.25f));
+        monoToggle.setBounds(x, y + (h - toggleH) / 2, monoW, toggleH);
+        monoToggle.setVisible(true);
+    }
+    else
+    {
+        monoToggle.setVisible(false);
+    }
 }
 
-void WidthBalancerComponent::setWidth(float newValue)
-{
-    widthSlider.setValue(newValue);
-}
-
-void WidthBalancerComponent::setMidSideBalance(float newValue)
-{
-    midSideSlider.setValue(newValue);
-}
-
-void WidthBalancerComponent::setMono(bool newValue)
-{
-    monoToggle.setToggleState(newValue, juce::sendNotification);
-}
-
-void WidthBalancerComponent::setIntensity(float newValue)
-{
-    intensitySlider.setValue(newValue);
-}
+void WidthBalancerComponent::setWidth(float v) { widthSlider.setValue(v); }
+void WidthBalancerComponent::setMidSideBalance(float v) { midSideSlider.setValue(v); }
+void WidthBalancerComponent::setMono(bool v) { monoToggle.setToggleState(v, juce::sendNotification); }
+void WidthBalancerComponent::setIntensity(float v) { intensitySlider.setValue(v); }

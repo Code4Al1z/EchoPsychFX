@@ -20,50 +20,28 @@ void MicroPitchDetuneComponent::paint(juce::Graphics& g)
 
 void MicroPitchDetuneComponent::resized()
 {
+    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
-    if (layout.knobBounds.size() < numKnobs)
-        return; // prevent crash if layout failed
+    auto layout = PluginLookAndFeel::calculateKnobLayout(
+        numKnobs, area.getWidth(), area.getHeight(), false);
 
+    if ((int)layout.knobBounds.size() < numKnobs) return;
 
     for (int i = 0; i < numKnobs; ++i)
     {
-        auto bounds = layout.knobBounds[i];
-        bounds.translate(area.getX(), area.getY());
-        knobs[i]->setBounds(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+        auto b = layout.knobBounds[i];
+        knobs[i]->setBounds(area.getX() + b.getX(), area.getY() + b.getY(),
+            b.getWidth(), b.getHeight());
     }
 }
 
-void MicroPitchDetuneComponent::setMix(float newValue)
-{
-    if (knobs.size() > 5) knobs[5]->slider->setValue(newValue);
-}
-
-void MicroPitchDetuneComponent::setLfoRate(float newValue)
-{
-    if (knobs.size() > 1) knobs[1]->slider->setValue(newValue);
-}
-
-void MicroPitchDetuneComponent::setLfoDepth(float newValue)
-{
-    if (knobs.size() > 2) knobs[2]->slider->setValue(newValue);
-}
-
-void MicroPitchDetuneComponent::setDelayCentre(float newValue)
-{
-    if (knobs.size() > 3) knobs[3]->slider->setValue(newValue);
-}
-
-void MicroPitchDetuneComponent::setDetuneAmount(float newValue)
-{
-    if (!knobs.empty()) knobs[0]->slider->setValue(newValue);
-}
-
-void MicroPitchDetuneComponent::setStereoSeparation(float newValue)
-{
-    if (knobs.size() > 4) knobs[4]->slider->setValue(newValue);
-}
+void MicroPitchDetuneComponent::setDetuneAmount(float v) { if (!knobs.empty())   knobs[0]->slider->setValue(v); }
+void MicroPitchDetuneComponent::setLfoRate(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
+void MicroPitchDetuneComponent::setLfoDepth(float v) { if (knobs.size() > 2) knobs[2]->slider->setValue(v); }
+void MicroPitchDetuneComponent::setDelayCentre(float v) { if (knobs.size() > 3) knobs[3]->slider->setValue(v); }
+void MicroPitchDetuneComponent::setStereoSeparation(float v) { if (knobs.size() > 4) knobs[4]->slider->setValue(v); }
+void MicroPitchDetuneComponent::setMix(float v) { if (knobs.size() > 5) knobs[5]->slider->setValue(v); }
