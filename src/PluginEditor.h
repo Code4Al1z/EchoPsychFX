@@ -2,8 +2,7 @@
 #define ECHOPSYCHFX_PLUGINEDITOR_H_INCLUDED
 
 #include "PluginProcessor.h"
-#include "WidthBalancerComponent.h"
-#include "TiltEQComponent.h"
+#include "InputControlsComponent.h"
 #include "ModDelayComponent.h"
 #include "SpatialFXComponent.h"
 #include "PerceptionModeComponent.h"
@@ -27,8 +26,9 @@ private:
     PluginLookAndFeel pluginLookAndFeel;
     juce::ToggleButton modeToggle;
 
-    std::unique_ptr<WidthBalancerComponent>          widthBalancerComponent;
-    std::unique_ptr<TiltEQComponent>                 tiltEQComponent;
+    // Combined TiltEQ + WidthBalancer block
+    std::unique_ptr<InputControlsComponent>          inputControlsComponent;
+
     std::unique_ptr<ModDelayComponent>               modDelayComponent;
     std::unique_ptr<SpatialFXComponent>              spatialFXComponent;
     std::unique_ptr<MicroPitchDetuneComponent>       microPitchDetuneComponent;
@@ -45,11 +45,10 @@ private:
         juce::Component* component = nullptr;
         juce::String     label;
         int              numKnobs = 0;
-        bool             userVisible = true;
-        // minWidth is computed once in buildComponentInfoList —
-        // it is the narrowest this block can usefully render.
-        // Used only for row-wrap decisions, not as a render clamp.
-        int              minWidth = 0;
+        bool             userVisible = true;   // user-controlled via toggle button
+        bool             autoHidden = false;  // set by layout when block is too small to fit
+        int              minWidth = 0;      // minimum px width — window cannot go below this
+        int              minHeight = 0;      // minimum px height — window cannot go below this
     };
 
     std::vector<ComponentInfo> componentInfoList;
@@ -62,4 +61,4 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };
 
-#endif // ECHOPSYCHFX_PLUGINEDITOR_H_INCLUDED
+#endif

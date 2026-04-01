@@ -14,18 +14,37 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     intensitySlider.setSkewFactorFromMidPoint(0.2f);
     addAndMakeVisible(intensitySlider);
 
-    midSideSlider.setSliderStyle(juce::Slider::LinearVertical);
+    midSideSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     midSideSlider.setColour(juce::Slider::thumbColourId, PluginLookAndFeel::knobThumb);
     midSideSlider.setColour(juce::Slider::trackColourId, PluginLookAndFeel::track);
     midSideSlider.setColour(juce::Slider::backgroundColourId, PluginLookAndFeel::knobBackground);
     addAndMakeVisible(midSideSlider);
 
     PluginLookAndFeel::configureLabel(widthLabel, "Width");
-    PluginLookAndFeel::configureLabel(intensityLabel, "Inte...");
+    PluginLookAndFeel::configureLabel(intensityLabel, "Intensity");
     PluginLookAndFeel::configureLabel(midSideLabel, "Mid/Side");
     addAndMakeVisible(widthLabel);
     addAndMakeVisible(intensityLabel);
     addAndMakeVisible(midSideLabel);
+
+    // Value label for Mid/Side — right-aligned, updates with slider
+    midSideValueLabel.setJustificationType(juce::Justification::centredRight);
+    midSideValueLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::labelText);
+    midSideValueLabel.setText("0.00", juce::dontSendNotification);
+    addAndMakeVisible(midSideValueLabel);
+
+    // 2 decimal places on all sliders
+    widthSlider.setNumDecimalPlacesToDisplay(2);
+    intensitySlider.setNumDecimalPlacesToDisplay(2);
+    midSideSlider.setNumDecimalPlacesToDisplay(2);
+
+    // Keep value label in sync — no separate listener needed
+    midSideSlider.onValueChange = [this]()
+        {
+            midSideValueLabel.setText(
+                juce::String(midSideSlider.getValue(), 2),
+                juce::dontSendNotification);
+        };
 
     monoToggle.setButtonText("Mono");
     monoToggle.setColour(juce::ToggleButton::textColourId, PluginLookAndFeel::labelText);
@@ -51,54 +70,60 @@ void WidthBalancerComponent::resized()
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int w = area.getWidth();
     const int h = area.getHeight();
+    const int gap = PluginLookAndFeel::spacing;
 
-    // Proportional layout:
-    // We have 4 elements: width knob, intensity knob, mid/side slider, mono toggle.
-    // The two knobs share roughly half the width each (40% each),
-    // mid/side gets ~12%, mono toggle ~8%.
-    // All scale with whatever space the editor gives this block.
+    const int labelH = 16;  // fixed label/value row height
+    const int trackH = juce::jmax(18, static_cast<int>(h * 0.16f));
+    const int monoW = juce::jlimit(40, 60, static_cast<int>(w * 0.20f));
+    const int sliderW = w - monoW - gap;
 
-    const int labelH = juce::jlimit(12, 20, static_cast<int>(h * 0.18f));
-    const int knobH = h - labelH - PluginLookAndFeel::margin;
-    const int knobW = juce::jlimit(30, static_cast<int>(w * 0.38f), static_cast<int>(w * 0.38f));
-    const int midSideW = juce::jlimit(20, static_cast<int>(w * 0.14f), static_cast<int>(w * 0.14f));
-    const int monoW = w - knobW * 2 - midSideW - PluginLookAndFeel::spacing * 3;
-
-    const int y = area.getY();
     int x = area.getX();
+    int y = area.getY();
 
-    // Width knob
-    widthLabel.setBounds(x, y, knobW, labelH);
-    widthSlider.setBounds(x, y + labelH, knobW, knobH);
-    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-        juce::jlimit(30, 60, knobW - 4), juce::jlimit(12, 18, static_cast<int>(knobH * 0.2f)));
-    x += knobW + PluginLookAndFeel::spacing;
+    // ── Mid/Side: label top-left, value top-right, track below ───────────────
+    const int valueW = 44; // fixed width for the value label on the right
+    midSideLabel.setBounds(x, y, sliderW - valueW, labelH);
+    midSideValueLabel.setBounds(x + sliderW - valueW, y, valueW, labelH);
+    y += labelH;
 
-    // Intensity knob
-    intensityLabel.setBounds(x, y, knobW, labelH);
-    intensitySlider.setBounds(x, y + labelH, knobW, knobH);
-    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-        juce::jlimit(30, 60, knobW - 4), juce::jlimit(12, 18, static_cast<int>(knobH * 0.2f)));
-    x += knobW + PluginLookAndFeel::spacing;
+    // Slider track with no built-in text box (label and value handled above)
+    midSideSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    midSideSlider.setBounds(x, y, sliderW, trackH);
 
-    // Mid/Side vertical slider
-    midSideLabel.setBounds(x, y, midSideW, labelH);
-    midSideSlider.setBounds(x, y + labelH, midSideW, knobH);
-    midSideSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false,
-        midSideW, juce::jlimit(12, 18, static_cast<int>(knobH * 0.2f)));
-    x += midSideW + PluginLookAndFeel::spacing;
+    // Mono toggle — centred vertically alongside the label+track block
+    const int monoBlockH = labelH + trackH;
+    monoToggle.setBounds(x + sliderW + gap,
+        area.getY() + (monoBlockH - 22) / 2,
+        monoW, 22);
 
-    // Mono toggle — vertically centred in remaining space
-    if (monoW > 20)
-    {
-        const int toggleH = juce::jlimit(18, 28, static_cast<int>(h * 0.25f));
-        monoToggle.setBounds(x, y + (h - toggleH) / 2, monoW, toggleH);
-        monoToggle.setVisible(true);
-    }
-    else
-    {
-        monoToggle.setVisible(false);
-    }
+    y += trackH + gap;
+
+    // ── Width and Intensity rotary knobs ──────────────────────────────────────
+    const int knobAreaH = area.getBottom() - y;
+    const int knobW = (w - gap) / 2;
+    const int knobLabelH = labelH;
+    const int rotaryH = knobAreaH - knobLabelH;
+    const int tbW = juce::jlimit(28, 56, static_cast<int>(knobW * 0.8f));
+    const int tbH = juce::jlimit(12, 18, static_cast<int>(rotaryH * 0.2f));
+
+    widthLabel.setBounds(area.getX(), y, knobW, knobLabelH);
+    widthLabel.setJustificationType(juce::Justification::centred);
+    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, tbW, tbH);
+    widthSlider.setBounds(area.getX(), y + knobLabelH, knobW, rotaryH);
+
+    intensityLabel.setBounds(area.getX() + knobW + gap, y, knobW, knobLabelH);
+    intensityLabel.setJustificationType(juce::Justification::centred);
+    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, tbW, tbH);
+    intensitySlider.setBounds(area.getX() + knobW + gap, y + knobLabelH, knobW, rotaryH);
+
+    widthSlider.setVisible(true);
+    intensitySlider.setVisible(true);
+    midSideSlider.setVisible(true);
+    widthLabel.setVisible(true);
+    intensityLabel.setVisible(true);
+    midSideLabel.setVisible(true);
+    midSideValueLabel.setVisible(true);
+    monoToggle.setVisible(true);
 }
 
 void WidthBalancerComponent::setWidth(float v) { widthSlider.setValue(v); }

@@ -1,8 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-// Minimum pixel width per knob for row-wrap decisions.
-// Intentionally generous so blocks wrap before becoming illegible.
 static constexpr int kMinPixelsPerKnob = 50;
 static constexpr int kGap = PluginLookAndFeel::margin;
 
@@ -10,25 +8,29 @@ static constexpr int kGap = PluginLookAndFeel::margin;
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor& p)
     : AudioProcessorEditor(&p), processorRef(p)
 {
-    widthBalancerComponent = std::make_unique<WidthBalancerComponent>(p.parameters);
-    tiltEQComponent = std::make_unique<TiltEQComponent>(p.parameters);
+    inputControlsComponent = std::make_unique<InputControlsComponent>(p.parameters);
     modDelayComponent = std::make_unique<ModDelayComponent>(p.parameters);
     spatialFXComponent = std::make_unique<SpatialFXComponent>(p.parameters);
     microPitchDetuneComponent = std::make_unique<MicroPitchDetuneComponent>(p.parameters);
     exciterSaturationComponent = std::make_unique<ExciterSaturationComponent>(p.parameters);
     simpleVerbComponent = std::make_unique<SimpleVerbWithPredelayComponent>(p.parameters);
 
+    // PerceptionPresetManager still receives individual component references
+    // accessed through the InputControlsComponent wrapper
     presetManager = std::make_unique<PerceptionPresetManager>(
-        *tiltEQComponent, *widthBalancerComponent, *modDelayComponent,
-        *spatialFXComponent, *microPitchDetuneComponent, *exciterSaturationComponent,
+        inputControlsComponent->getTiltEQ(),
+        inputControlsComponent->getWidthBalancer(),
+        *modDelayComponent,
+        *spatialFXComponent,
+        *microPitchDetuneComponent,
+        *exciterSaturationComponent,
         *simpleVerbComponent);
 
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
 
     setLookAndFeel(&pluginLookAndFeel);
 
-    addAndMakeVisible(*widthBalancerComponent);
-    addAndMakeVisible(*tiltEQComponent);
+    addAndMakeVisible(*inputControlsComponent);
     addAndMakeVisible(*modDelayComponent);
     addAndMakeVisible(*spatialFXComponent);
     addAndMakeVisible(*microPitchDetuneComponent);
@@ -60,7 +62,10 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
         btn->onClick = [this, idx]
             {
                 componentInfoList[idx].userVisible = blockToggles[idx]->getToggleState();
-                // Always resize window when visibility changes — grow OR shrink
+                // If the user is turning a block back on, clear its auto-hidden state
+                // so the layout doesn't immediately re-hide it before the window grows
+                if (componentInfoList[idx].userVisible)
+                    componentInfoList[idx].autoHidden = false;
                 resizeWindowForVisibleBlocks();
                 resized();
             };
@@ -84,22 +89,27 @@ void AudioPluginAudioProcessorEditor::buildComponentInfoList()
 {
     componentInfoList.clear();
 
-    // minWidth = numKnobs * kMinPixelsPerKnob + margins
-    // This is the width below which row-wrapping should occur.
-    // It is NOT a render floor — components render fine below this.
-    auto add = [&](juce::Component* comp, const juce::String& label, int numKnobs)
+    // minWidth  = numKnobs * kMinPixelsPerKnob + edge gaps
+    // minHeight = enough for one row of knobs at minimum size + label + group label
+    //             = kMinPixelsPerKnob (knob arc) + 16 (label) + 16 (textbox) + margins
+    static constexpr int kMinKnobH = kMinPixelsPerKnob + 16 + 16 + kGap * 2 + 24; // 24 = group label
+
+    auto add = [&](juce::Component* comp, const juce::String& label,
+        int numKnobs, int overrideMinH = 0)
         {
             ComponentInfo info;
             info.component = comp;
             info.label = label;
             info.numKnobs = numKnobs;
             info.userVisible = true;
+            info.autoHidden = false;
             info.minWidth = numKnobs * kMinPixelsPerKnob + kGap * 2;
+            info.minHeight = overrideMinH > 0 ? overrideMinH : kMinKnobH;
             componentInfoList.push_back(info);
         };
 
-    add(widthBalancerComponent.get(), "Width", 3);
-    add(tiltEQComponent.get(), "Tilt EQ", 1);
+    // Input Controls has two stacked sections — needs more min height
+    add(inputControlsComponent.get(), "Input", 4, kMinKnobH + 60);
     add(modDelayComponent.get(), "Mod Delay", 6);
     add(spatialFXComponent.get(), "Spatial", 11);
     add(microPitchDetuneComponent.get(), "Pitch", 6);
@@ -108,23 +118,12 @@ void AudioPluginAudioProcessorEditor::buildComponentInfoList()
 }
 
 //==============================================================================
-// resizeWindowForVisibleBlocks
-//
-// Called whenever block visibility changes (toggle on/off).
-// Always recalculates and applies preferred size — grows AND shrinks.
-//
-// Preferred width  = sum of (numKnobs * 90px) for visible blocks + gaps
-// Preferred height = auto based on how many rows that implies + overhead
-//==============================================================================
-
 void AudioPluginAudioProcessorEditor::resizeWindowForVisibleBlocks()
 {
     const int edgePad = kGap * 2;
-    const int overhead = 40 + kGap   // mode toggle
-        + 28 + kGap   // block button strip
-        + edgePad;
+    const int overhead = 40 + kGap + 28 + kGap + edgePad;
 
-    // Gather visible blocks
+    // Only count blocks the user wants visible (not auto-hidden — that's layout's job)
     std::vector<const ComponentInfo*> vis;
     for (const auto& info : componentInfoList)
         if (info.userVisible) vis.push_back(&info);
@@ -136,50 +135,56 @@ void AudioPluginAudioProcessorEditor::resizeWindowForVisibleBlocks()
         return;
     }
 
-    // Minimum window width = widest single block's minWidth + edge padding
+    // ── Minimum window size ───────────────────────────────────────────────────
+    // Width: widest single block's minWidth (at minimum, one block must fit per row)
     int widestMin = 0;
     for (auto* v : vis) widestMin = juce::jmax(widestMin, v->minWidth);
     const int minW = widestMin + edgePad;
 
-    // Minimum window height = one row of the tallest single block + overhead
-    const int minH = overhead + 120; // 120px is one usable row
+    // Height: tallest single block's minHeight + overhead (one block always fits)
+    int tallestMin = 0;
+    for (auto* v : vis) tallestMin = juce::jmax(tallestMin, v->minHeight);
+    const int minH = overhead + tallestMin;
 
-    // Preferred width: aim to fit all visible blocks in ~2 rows.
-    // Each knob gets 90px ideal width.
-    int totalIdealW = edgePad + kGap * (juce::jmax(0, (int)vis.size() - 1));
+    // ── Preferred window size ─────────────────────────────────────────────────
+    // Width: all blocks side by side at 90px per knob
+    int totalIdealW = edgePad + kGap * juce::jmax(0, (int)vis.size() - 1);
     for (auto* v : vis) totalIdealW += v->numKnobs * 90;
 
-    // If they'd all fit in one row at ideal size, use that.
-    // Otherwise target ~half on each of two rows.
-    // Cap at 90% screen width.
     auto* display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
     const int screenW = display ? static_cast<int>(display->userArea.getWidth() * 0.9f) : 2400;
     const int screenH = display ? static_cast<int>(display->userArea.getHeight() * 0.9f) : 1400;
 
     int prefW = juce::jlimit(minW, screenW, totalIdealW);
 
-    // Height: simulate how many rows we'd get at prefW and size accordingly
-    // Each row gets roughly equal height; aim for ~200px per row of knobs.
+    // Simulate row count at prefW to estimate preferred height
     int rowCount = 1;
     {
         int rowW = 0;
-        for (int j = 0; j < (int)vis.size(); ++j)
+        for (auto* v : vis)
         {
             const int gap = (rowW == 0) ? 0 : kGap;
-            if (rowW > 0 && rowW + gap + vis[j]->minWidth > prefW - edgePad)
+            if (rowW > 0 && rowW + gap + v->minWidth > prefW - edgePad)
             {
                 ++rowCount;
-                rowW = vis[j]->minWidth;
+                rowW = v->minWidth;
             }
             else
             {
-                rowW += gap + vis[j]->minWidth;
+                rowW += gap + v->minWidth;
             }
         }
     }
-    const int prefH = juce::jlimit(minH, screenH, overhead + rowCount * 220);
+
+    // Height: 220px per row, but at least minHeight per row
+    int prefH = overhead;
+    for (int r = 0; r < rowCount; ++r)
+        prefH += 220 + (r > 0 ? kGap : 0);
+    prefH = juce::jlimit(minH, screenH, prefH);
 
     setResizeLimits(minW, minH, 3000, 2000);
+
+    // Always apply preferred size when blocks change — grows AND shrinks
     setSize(prefW, prefH);
 }
 
@@ -220,7 +225,6 @@ void AudioPluginAudioProcessorEditor::resized()
         return;
     }
 
-    // Block visibility button strip — always full width, even splits
     {
         auto strip = bounds.removeFromTop(28);
         bounds.removeFromTop(kGap);
@@ -244,154 +248,172 @@ void AudioPluginAudioProcessorEditor::resized()
 }
 
 //==============================================================================
-// layoutManualMode — two-pass fluid layout
-//
-// Pass 1: Row packing using minWidth.
-//   Each block declares a minimum width based on its knob count.
-//   Blocks are greedily packed into rows: if a block's minWidth fits on
-//   the current row (alongside existing blocks + gaps), it goes there.
-//   Otherwise it starts a new row. This produces genuine multi-row layout.
-//
-// Pass 2: Width distribution within each row.
-//   Once rows are formed, each row's actual available width is distributed
-//   proportionally to numKnobs. The last block in a row fills the remainder
-//   exactly to avoid pixel-rounding gaps.
-//
-// Pass 3: Height distribution across rows.
-//   Available height is split proportionally by each row's total weight.
-//   Last row fills the remainder.
-//
-// No auto-hiding. Blocks that are userVisible always render.
-// They just get smaller as the window shrinks — calculateKnobLayout handles
-// proportional degradation gracefully at any size.
-//==============================================================================
-
 void AudioPluginAudioProcessorEditor::layoutManualMode(juce::Rectangle<int> area)
 {
     const int availW = area.getWidth();
     const int availH = area.getHeight();
 
-    // Hide everything first
+    // Reset auto-hidden state from previous layout pass
     for (auto& info : componentInfoList)
-        if (info.component) info.component->setVisible(false);
+        info.autoHidden = false;
 
-    // Collect visible blocks
-    std::vector<int> active; // indices into componentInfoList
-    for (int i = 0; i < (int)componentInfoList.size(); ++i)
-        if (componentInfoList[i].userVisible && componentInfoList[i].component)
-            active.push_back(i);
-
-    if (active.empty()) return;
-
-    // ── Pass 1: Row packing by minWidth ──────────────────────────────────────
-    struct Row
+    // Up to 2 passes: pass 0 = try with all userVisible blocks,
+    // pass 1 = retry after marking undersized blocks as autoHidden
+    for (int pass = 0; pass < 2; ++pass)
     {
-        std::vector<int> indices; // indices into active[]
-        float            weight = 0.f;
-    };
+        // Hide all first
+        for (auto& info : componentInfoList)
+            if (info.component) info.component->setVisible(false);
 
-    std::vector<Row> rows;
-    Row currentRow;
-    int currentRowMinW = 0;
+        // Collect active blocks (userVisible and not autoHidden)
+        std::vector<int> active;
+        for (int i = 0; i < (int)componentInfoList.size(); ++i)
+            if (componentInfoList[i].userVisible && !componentInfoList[i].autoHidden
+                && componentInfoList[i].component)
+                active.push_back(i);
 
-    for (int j = 0; j < (int)active.size(); ++j)
-    {
-        const int ai = active[j];
-        const int minW = componentInfoList[ai].minWidth;
-        const int gap = currentRow.indices.empty() ? 0 : kGap;
-        const int needed = currentRowMinW + gap + minW;
+        if (active.empty()) break;
 
-        // Wrap if this block's minimum width doesn't fit on the current row
-        if (!currentRow.indices.empty() && needed > availW)
+        // ── Pass 1: Row packing by minWidth ──────────────────────────────────
+        struct Row { std::vector<int> indices; float weight = 0.f; };
+        std::vector<Row> rows;
+        Row currentRow;
+        int currentRowMinW = 0;
+
+        for (int j = 0; j < (int)active.size(); ++j)
         {
-            rows.push_back(currentRow);
-            currentRow = {};
-            currentRowMinW = 0;
-        }
+            const int ai = active[j];
+            const int minW = componentInfoList[ai].minWidth;
+            const int gap = currentRow.indices.empty() ? 0 : kGap;
 
-        currentRow.indices.push_back(j);
-        currentRow.weight += static_cast<float>(componentInfoList[ai].numKnobs);
-        currentRowMinW += (currentRowMinW == 0 ? 0 : kGap) + minW;
-    }
-    if (!currentRow.indices.empty())
-        rows.push_back(currentRow);
-
-    const int rowCount = (int)rows.size();
-
-    // ── Pass 2: Width distribution within each row ────────────────────────────
-    // For each row, distribute availW proportionally by numKnobs.
-    // Last block in row fills remainder to avoid rounding gaps.
-    std::vector<std::vector<int>> resolvedWidths(rowCount);
-
-    for (int r = 0; r < rowCount; ++r)
-    {
-        const auto& row = rows[r];
-        const int   n = (int)row.indices.size();
-        const int   gaps = kGap * (n - 1);
-        const int   wForBlocks = availW - gaps;
-
-        resolvedWidths[r].resize(n);
-        int allocated = 0;
-
-        for (int j = 0; j < n; ++j)
-        {
-            const int ai = active[row.indices[j]];
-            const float share = static_cast<float>(componentInfoList[ai].numKnobs) / row.weight;
-
-            if (j == n - 1)
-                resolvedWidths[r][j] = wForBlocks - allocated;
-            else
+            if (!currentRow.indices.empty() && currentRowMinW + gap + minW > availW)
             {
-                resolvedWidths[r][j] = static_cast<int>(share * wForBlocks);
-                allocated += resolvedWidths[r][j];
+                rows.push_back(currentRow);
+                currentRow = {};
+                currentRowMinW = 0;
+            }
+
+            currentRow.indices.push_back(j);
+            currentRow.weight += static_cast<float>(componentInfoList[ai].numKnobs);
+            currentRowMinW += (currentRowMinW == 0 ? 0 : kGap) + minW;
+        }
+        if (!currentRow.indices.empty())
+            rows.push_back(currentRow);
+
+        const int rowCount = (int)rows.size();
+
+        // ── Pass 2: Width distribution ────────────────────────────────────────
+        std::vector<std::vector<int>> resolvedWidths(rowCount);
+        for (int r = 0; r < rowCount; ++r)
+        {
+            const auto& row = rows[r];
+            const int   n = (int)row.indices.size();
+            const int   wForBlocks = availW - kGap * (n - 1);
+            resolvedWidths[r].resize(n);
+            int allocated = 0;
+            for (int j = 0; j < n; ++j)
+            {
+                const int   ai = active[row.indices[j]];
+                const float share = static_cast<float>(componentInfoList[ai].numKnobs) / row.weight;
+                if (j == n - 1)
+                    resolvedWidths[r][j] = wForBlocks - allocated;
+                else
+                {
+                    resolvedWidths[r][j] = static_cast<int>(share * wForBlocks);
+                    allocated += resolvedWidths[r][j];
+                }
             }
         }
+
+        // ── Pass 3: Height distribution ───────────────────────────────────────
+        const int heightForRows = availH - kGap * juce::jmax(0, rowCount - 1);
+        float totalRowWeight = 0.f;
+        for (const auto& row : rows) totalRowWeight += row.weight;
+
+        std::vector<int> rowHeights(rowCount);
+        int remainingH = heightForRows;
+        for (int r = 0; r < rowCount; ++r)
+        {
+            if (r == rowCount - 1)
+                rowHeights[r] = remainingH;
+            else
+            {
+                rowHeights[r] = static_cast<int>(
+                    static_cast<float>(heightForRows) * rows[r].weight / totalRowWeight);
+                remainingH -= rowHeights[r];
+            }
+        }
+
+        // ── Check minimums — auto-hide any block that's too small ─────────────
+        bool anyNewlyHidden = false;
+        for (int r = 0; r < rowCount; ++r)
+        {
+            for (int j = 0; j < (int)rows[r].indices.size(); ++j)
+            {
+                const int ai = active[rows[r].indices[j]];
+                const int bw = resolvedWidths[r][j];
+                const int bh = rowHeights[r];
+
+                if (bw < componentInfoList[ai].minWidth ||
+                    bh < componentInfoList[ai].minHeight)
+                {
+                    componentInfoList[ai].autoHidden = true;
+                    anyNewlyHidden = true;
+                }
+            }
+        }
+
+        // If we hid something new on pass 0, redo the layout without those blocks
+        if (anyNewlyHidden && pass == 0)
+            continue;
+
+        // ── Apply bounds ──────────────────────────────────────────────────────
+        int y = area.getY();
+        for (int r = 0; r < rowCount; ++r)
+        {
+            const auto& row = rows[r];
+            int x = area.getX();
+            for (int j = 0; j < (int)row.indices.size(); ++j)
+            {
+                const int ai = active[row.indices[j]];
+                componentInfoList[ai].component->setBounds(
+                    x, y, resolvedWidths[r][j], rowHeights[r]);
+                componentInfoList[ai].component->setVisible(true);
+                x += resolvedWidths[r][j] + kGap;
+            }
+            y += rowHeights[r] + kGap;
+        }
+        break;
     }
 
-    // ── Pass 3: Height distribution across rows ───────────────────────────────
-    const int totalRowGaps = kGap * juce::jmax(0, rowCount - 1);
-    const int heightForRows = availH - totalRowGaps;
-
-    float totalRowWeight = 0.f;
-    for (const auto& row : rows) totalRowWeight += row.weight;
-
-    std::vector<int> rowHeights(rowCount);
-    int remainingH = heightForRows;
-
-    for (int r = 0; r < rowCount; ++r)
+    // ── Sync toggle button appearance ─────────────────────────────────────────
+    // Dim buttons for auto-hidden blocks; restore full opacity for visible ones
+    for (int i = 0; i < (int)componentInfoList.size(); ++i)
     {
-        if (r == rowCount - 1)
-        {
-            rowHeights[r] = remainingH;
-        }
-        else
-        {
-            rowHeights[r] = static_cast<int>(
-                static_cast<float>(heightForRows) * rows[r].weight / totalRowWeight);
-            remainingH -= rowHeights[r];
-        }
+        const bool hidden = componentInfoList[i].autoHidden;
+        blockToggles[i]->setAlpha(hidden ? 0.4f : 1.0f);
+        // Keep the toggle in its user state — don't change getToggleState()
     }
 
-    // ── Apply bounds ──────────────────────────────────────────────────────────
-    int y = area.getY();
-
-    for (int r = 0; r < rowCount; ++r)
+    // ── Update resize limits to reflect what's currently rendered ─────────────
+    // After auto-hiding, the true minimum window size may be smaller.
+    // Recalculate based on what's actually visible now.
     {
-        const auto& row = rows[r];
-        int x = area.getX();
+        const int edgePad = kGap * 2;
+        const int overhead = 40 + kGap + 28 + kGap + edgePad;
 
-        for (int j = 0; j < (int)row.indices.size(); ++j)
+        int minW = 0, minH = 0;
+        for (const auto& info : componentInfoList)
         {
-            const int ai = active[row.indices[j]];
-            const int bw = resolvedWidths[r][j];
-            const int bh = rowHeights[r];
-
-            componentInfoList[ai].component->setBounds(x, y, bw, bh);
-            componentInfoList[ai].component->setVisible(true);
-
-            x += bw + kGap;
+            if (info.userVisible && !info.autoHidden)
+            {
+                minW = juce::jmax(minW, info.minWidth);
+                minH = juce::jmax(minH, info.minHeight);
+            }
         }
+        if (minW == 0) minW = 200;
+        if (minH == 0) minH = 120;
 
-        y += rowHeights[r] + kGap;
+        setResizeLimits(minW + edgePad, minH + overhead, 3000, 2000);
     }
 }

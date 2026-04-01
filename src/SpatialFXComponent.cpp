@@ -30,6 +30,10 @@ SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state
 
     modShapeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         state, "modShape", *modShapeSelector);
+
+    // 2 decimal places on all knobs
+    for (auto& k : knobs)
+        k->slider->setNumDecimalPlacesToDisplay(2);
 }
 
 void SpatialFXComponent::paint(juce::Graphics& g)

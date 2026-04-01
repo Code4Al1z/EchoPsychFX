@@ -33,6 +33,7 @@ private:
 
     juce::Label widthLabel;
     juce::Label midSideLabel;
+    juce::Label midSideValueLabel;   // shows current value, top-right of slider
     juce::Label intensityLabel;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;
