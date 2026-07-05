@@ -10,16 +10,12 @@
 class TiltEQComponent : public juce::Component
 {
 public:
-    TiltEQComponent(juce::AudioProcessorValueTreeState& state);
+    explicit TiltEQComponent(juce::AudioProcessorValueTreeState& state);
     ~TiltEQComponent() override = default;
 
     void paint(juce::Graphics& g) override;
     void resized() override;
-
-    void setTilt(float newValue);
-
-    int getMinimumWidth() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::margin * 2; }
-    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+    void setTilt(float v);
 
 private:
     juce::GroupComponent group{ "tiltEQGroup", "TiltEQ" };

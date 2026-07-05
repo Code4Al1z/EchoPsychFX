@@ -42,6 +42,7 @@ target_compile_definitions(EchoPsychFX PRIVATE
     JUCE_USE_OGGVORBIS=0
     JUCE_USE_FLAC=0
     JUCE_USE_MP3AUDIOFORMAT=0
+    JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
 target_compile_features(EchoPsychFX PUBLIC cxx_std_17)

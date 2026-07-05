@@ -15,13 +15,10 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
 
-    void setWidth(float newValue);
-    void setMidSideBalance(float newValue);
-    void setMono(bool newValue);
-    void setIntensity(float newValue);
-
-    int getMinimumWidth() const { return 300; }
-    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+    void setWidth(float v);
+    void setMidSideBalance(float v);
+    void setMono(bool v);
+    void setIntensity(float v);
 
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };
@@ -33,7 +30,7 @@ private:
 
     juce::Label widthLabel;
     juce::Label midSideLabel;
-    juce::Label midSideValueLabel;   // shows current value, top-right of slider
+    juce::Label midSideValueLabel;
     juce::Label intensityLabel;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;

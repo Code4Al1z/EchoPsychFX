@@ -1,27 +1,30 @@
 #ifndef ECHOPSYCHFX_EXCITERSATURATIONCOMPONENT_H_INCLUDED
 #define ECHOPSYCHFX_EXCITERSATURATIONCOMPONENT_H_INCLUDED
 
-#include <juce_gui_extra/juce_gui_extra.h>
-#include <juce_audio_processors/juce_audio_processors.h>
+#include "CollapsibleComponent.h"
 #include "PluginLookAndFeel.h"
+#include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
 #include <vector>
 
-class ExciterSaturationComponent : public juce::Component
+class ExciterSaturationComponent : public CollapsibleComponent
 {
 public:
-    ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state);
+    static constexpr int kExpandedW = 3 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+    static constexpr int kExpandedH = PluginLookAndFeel::kHeaderH + PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+
+    explicit ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state);
     ~ExciterSaturationComponent() override = default;
 
-    void paint(juce::Graphics& g) override;
-    void resized() override;
+    int expandedWidth() const override { return kExpandedW; }
+    int expandedHeight() const override { return kExpandedH; }
 
-    void setDrive(float newValue);
-    void setMix(float newValue);
-    void setHighpass(float newValue);
+    void paintContent(juce::Graphics& g) override;
+    void layoutContent(juce::Rectangle<int> area) override;
 
-    int getMinimumWidth() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::margin * 2; }
-    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+    void setDrive(float v);
+    void setMix(float v);
+    void setHighpass(float v);
 
 private:
     juce::GroupComponent group{ "exciterSaturationGroup", "Exciter Saturation" };

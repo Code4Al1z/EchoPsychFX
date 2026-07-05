@@ -1,28 +1,31 @@
 #ifndef ECHOPSYCHFX_SIMPLEVERBWITHPREDELAYCOMPONENT_H_INCLUDED
 #define ECHOPSYCHFX_SIMPLEVERBWITHPREDELAYCOMPONENT_H_INCLUDED
 
-#include <juce_gui_extra/juce_gui_extra.h>
-#include <juce_audio_processors/juce_audio_processors.h>
+#include "CollapsibleComponent.h"
 #include "PluginLookAndFeel.h"
+#include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
 #include <vector>
 
-class SimpleVerbWithPredelayComponent : public juce::Component
+class SimpleVerbWithPredelayComponent : public CollapsibleComponent
 {
 public:
-    SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state);
+    static constexpr int kExpandedW = 4 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+    static constexpr int kExpandedH = PluginLookAndFeel::kHeaderH + PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+
+    explicit SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state);
     ~SimpleVerbWithPredelayComponent() override = default;
 
-    void paint(juce::Graphics& g) override;
-    void resized() override;
+    int expandedWidth() const override { return kExpandedW; }
+    int expandedHeight() const override { return kExpandedH; }
 
-    void setPredelay(float newValue);
-    void setSize(float newValue);
-    void setDamping(float newValue);
-    void setWet(float newValue);
+    void paintContent(juce::Graphics& g) override;
+    void layoutContent(juce::Rectangle<int> area) override;
 
-    int getMinimumWidth() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::margin * 2; }
-    int getMinimumHeight() const { return PluginLookAndFeel::minKnobSize + PluginLookAndFeel::labelHeight + PluginLookAndFeel::margin * 2 + PluginLookAndFeel::groupLabelHeight; }
+    void setPredelay(float v);
+    void setSize(float v);
+    void setDamping(float v);
+    void setWet(float v);
 
 private:
     juce::GroupComponent group{ "simpleVerbWithPredelayGroup", "Simple Verb With Predelay" };

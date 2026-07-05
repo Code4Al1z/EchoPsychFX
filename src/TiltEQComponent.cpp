@@ -27,16 +27,13 @@ void TiltEQComponent::resized()
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(
-        numKnobs, area.getWidth(), area.getHeight(), false);
-
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);
     if ((int)layout.knobBounds.size() < numKnobs) return;
 
     for (int i = 0; i < numKnobs; ++i)
     {
         auto b = layout.knobBounds[i];
-        knobs[i]->setBounds(area.getX() + b.getX(), area.getY() + b.getY(),
-            b.getWidth(), b.getHeight());
+        knobs[i]->setBounds(area.getX() + b.getX(), area.getY() + b.getY(), b.getWidth(), b.getHeight());
     }
 }
 

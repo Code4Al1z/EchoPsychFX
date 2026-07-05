@@ -1,6 +1,7 @@
 #include "ExciterSaturationComponent.h"
 
 ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValueTreeState& state)
+    : CollapsibleComponent("Exciter Saturation")
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
@@ -10,32 +11,27 @@ ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValue
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "exciterHighpass", "Highpass", *this));
 }
 
-void ExciterSaturationComponent::paint(juce::Graphics& g)
+void ExciterSaturationComponent::paintContent(juce::Graphics& g)
 {
     g.fillAll(PluginLookAndFeel::background);
 }
 
-void ExciterSaturationComponent::resized()
+void ExciterSaturationComponent::layoutContent(juce::Rectangle<int> area)
 {
-    if (getWidth() <= 0 || getHeight() <= 0) return;
     group.setBounds(getLocalBounds());
-
-    auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
+    auto inner = area.reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 
-    auto layout = PluginLookAndFeel::calculateKnobLayout(
-        numKnobs, area.getWidth(), area.getHeight(), false);
-
+    auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, inner.getWidth(), inner.getHeight(), false);
     if ((int)layout.knobBounds.size() < numKnobs) return;
 
     for (int i = 0; i < numKnobs; ++i)
     {
         auto b = layout.knobBounds[i];
-        knobs[i]->setBounds(area.getX() + b.getX(), area.getY() + b.getY(),
-            b.getWidth(), b.getHeight());
+        knobs[i]->setBounds(inner.getX() + b.getX(), inner.getY() + b.getY(), b.getWidth(), b.getHeight());
     }
 }
 
-void ExciterSaturationComponent::setDrive(float v) { if (!knobs.empty())   knobs[0]->slider->setValue(v); }
+void ExciterSaturationComponent::setDrive(float v) { if (!knobs.empty()) knobs[0]->slider->setValue(v); }
 void ExciterSaturationComponent::setMix(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
 void ExciterSaturationComponent::setHighpass(float v) { if (knobs.size() > 2) knobs[2]->slider->setValue(v); }

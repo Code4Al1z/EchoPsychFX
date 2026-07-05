@@ -23,6 +23,8 @@ public:
     static const juce::Colour knobOutline;
     static const juce::Colour labelText;
     static const juce::Colour groupOutline;
+    static const juce::Colour headerBg;
+    static const juce::Colour headerText;
 
     static constexpr int minKnobSize = 50;
     static constexpr int maxKnobSize = 120;
@@ -30,6 +32,12 @@ public:
     static constexpr int labelHeight = 20;
     static constexpr int spacing = 15;
     static constexpr int groupLabelHeight = 30;
+
+    static constexpr int kKnobCell = 110;
+    static constexpr int kHeaderH = 28;
+    static constexpr int kGap = 10;
+    static constexpr int kEdgePad = 10;
+    static constexpr int kModeToggleH = 36;
 
     struct KnobWithLabel
     {
@@ -68,6 +76,12 @@ public:
         float maxCellSize);
 
     static KnobLayoutResult calculateKnobLayout(int numKnobs, int availableWidth, int availableHeight, bool allowWideLayout);
+
+    static void drawCollapsibleHeader(juce::Graphics& g,
+        juce::Rectangle<int> bounds,
+        const juce::String& title,
+        bool isCollapsed,
+        bool isVerticalCollapse);
 
     static void configureKnob(juce::Slider& slider);
     static void configureLabel(juce::Label& label, const juce::String& text);
