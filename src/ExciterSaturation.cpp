@@ -1,4 +1,4 @@
-#include "ExciterSaturation.h"
+﻿#include "ExciterSaturation.h"
 #include <cmath>
 
 ExciterSaturation::ExciterSaturation()
@@ -182,7 +182,7 @@ float ExciterSaturation::calculateGainCompensation()
 
     // Calculate gain compensation with limiting
     float compensation = avgInputRMS / avgOutputRMS;
-    return juce::jlimit(0.5f, 2.0f, compensation);  // Limit to �6dB
+    return juce::jlimit(0.5f, 2.0f, compensation);  // Limit to �6dB
 }
 
 float ExciterSaturation::softSaturation(float x)
@@ -233,10 +233,8 @@ float ExciterSaturation::digitalSaturation(float x)
     return std::round(x * levels) / levels;
 }
 
-float ExciterSaturation::waveshape(float x, SaturationType type)
+float ExciterSaturation::waveshape(float x, SaturationType type, float driveAmount)
 {
-    // Map drive (0-1) to useful range (1-20)
-    float driveAmount = juce::jmap(smoothedDrive.getNextValue(), 1.0f, 20.0f);
     float driven = x * driveAmount;
 
     float output = 0.0f;
@@ -263,7 +261,6 @@ float ExciterSaturation::waveshape(float x, SaturationType type)
         break;
     }
 
-    // Normalize output
     return output / driveAmount;
 }
 
@@ -327,18 +324,22 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
     // Apply pre-emphasis
     preEmphasis.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
 
-    // Apply saturation
-    for (int ch = 0; ch < numChannels; ++ch)
+    // Apply saturation — advance drive smoother once per sample, not per channel
     {
-        auto* samples = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
         auto oversampledNumSamples = static_cast<int>(oversampledBlock.getNumSamples());
-
         for (int i = 0; i < oversampledNumSamples; ++i)
         {
-            float input = samples[i];
-            float shaped = waveshape(input, saturationType);
-            shaped = applyHarmonicMode(shaped, harmonicMode);
-            samples[i] = shaped;
+            // Advance smoother once per sample
+            float driveAmount = juce::jmap(smoothedDrive.getNextValue(), 1.0f, 20.0f);
+
+            for (int ch = 0; ch < numChannels; ++ch)
+            {
+                auto* samples = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
+                float input = samples[i];
+                float shaped = waveshape(input, saturationType, driveAmount);
+                shaped = applyHarmonicMode(shaped, harmonicMode);
+                samples[i] = shaped;
+            }
         }
     }
 
@@ -372,26 +373,20 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
     }
 
     // Apply gain compensation and mix with dry signal (equal-power crossfade)
-    float currentMix = smoothedMix.getCurrentValue();
-    float wetGain = std::sin(currentMix * juce::MathConstants<float>::halfPi) * gainComp;
-    float dryGain = std::cos(currentMix * juce::MathConstants<float>::halfPi);
-
-    for (int ch = 0; ch < numChannels; ++ch)
+    // Advance mix smoother once per sample across all channels
+    for (int i = 0; i < numSamples; ++i)
     {
-        auto* wet = block.getChannelPointer(static_cast<size_t>(ch));
-        auto* dry = dryBuffer.getReadPointer(ch);
+        float currentMix = smoothedMix.getNextValue();
+        float wetGain = std::sin(currentMix * juce::MathConstants<float>::halfPi) * gainComp;
+        float dryGain = std::cos(currentMix * juce::MathConstants<float>::halfPi);
 
-        for (int i = 0; i < numSamples; ++i)
+        for (int ch = 0; ch < numChannels; ++ch)
         {
+            auto* wet = block.getChannelPointer(static_cast<size_t>(ch));
+            auto* dry = dryBuffer.getReadPointer(ch);
             wet[i] = wet[i] * wetGain + dry[i] * dryGain;
         }
-
-        // Advance smoothed mix for next sample
-        smoothedMix.skip(1);
     }
-
-    // Reset smoothed mix position for next block
-    smoothedMix.skip(-numSamples);
 }
 
 void ExciterSaturation::loadPreset(const Preset& preset)

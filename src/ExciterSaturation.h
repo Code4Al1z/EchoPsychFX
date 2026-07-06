@@ -117,7 +117,7 @@ private:
     std::array<float, 2> outputRMS = { 0.0f, 0.0f };
 
     // Waveshaping functions
-    float waveshape(float x, SaturationType type);
+    float waveshape(float x, SaturationType type, float driveAmount);
     float softSaturation(float x);
     float hardClip(float x);
     float tubeSaturation(float x);
