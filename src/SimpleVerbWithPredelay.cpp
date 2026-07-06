@@ -16,8 +16,12 @@ void SimpleVerbWithPredelay::prepare(const juce::dsp::ProcessSpec& spec)
     sampleRate = spec.sampleRate;
 
     // Allocate pre-delay buffer (max 500ms)
-    maxPredelaySamples = static_cast<int>(sampleRate * 0.5);
-    predelayBuffer.setSize(static_cast<int>(spec.numChannels), maxPredelaySamples + 4); // +4 for interpolation
+    // Must be power of 2 for the bitwise wrap (& mask) to work correctly
+    int rawMax = static_cast<int>(sampleRate * 0.5);
+    maxPredelaySamples = 1;
+    while (maxPredelaySamples < rawMax)
+        maxPredelaySamples <<= 1;
+    predelayBuffer.setSize(static_cast<int>(spec.numChannels), maxPredelaySamples + 4);
 
     // Allocate working buffer for reverb processing
     workingBuffer.setSize(static_cast<int>(spec.numChannels),
@@ -135,52 +139,34 @@ void SimpleVerbWithPredelay::applyPredelay(juce::dsp::AudioBlock<float>& inputBl
     const int numChannels = static_cast<int>(inputBlock.getNumChannels());
     const int numSamples = static_cast<int>(inputBlock.getNumSamples());
 
-    // Get current pre-delay in samples (smoothed per-block, not per-sample)
-    const float currentDelaySamples = predelaySmoothed.getNextValue();
-    const int delaySamplesInt = static_cast<int>(currentDelaySamples);
-    const float delayFraction = currentDelaySamples - static_cast<float>(delaySamplesInt);
-
-    // Write input to circular buffer
-    for (int ch = 0; ch < numChannels; ++ch)
+    for (int i = 0; i < numSamples; ++i)
     {
-        const float* input = inputBlock.getChannelPointer(ch);
-        float* delayBuffer = predelayBuffer.getWritePointer(ch);
+        // Advance smoother once per sample
+        const float currentDelaySamples = predelaySmoothed.getNextValue();
+        const int delaySamplesInt = static_cast<int>(currentDelaySamples);
+        const float delayFraction = currentDelaySamples - static_cast<float>(delaySamplesInt);
 
-        for (int i = 0; i < numSamples; ++i)
+        const int currentWritePos = (predelayWritePos + i) & (maxPredelaySamples - 1);
+
+        for (int ch = 0; ch < numChannels; ++ch)
         {
-            const int writePos = (predelayWritePos + i) & (maxPredelaySamples - 1); // Fast modulo for power-of-2
-            delayBuffer[writePos] = input[i];
-        }
-    }
+            // Write input sample to circular buffer
+            predelayBuffer.getWritePointer(ch)[currentWritePos] = inputBlock.getSample(ch, i);
 
-    // Read delayed samples with Hermite interpolation
-    for (int ch = 0; ch < numChannels; ++ch)
-    {
-        const float* delayBuffer = predelayBuffer.getReadPointer(ch);
-        float* output = outputBlock.getChannelPointer(ch);
-
-        for (int i = 0; i < numSamples; ++i)
-        {
-            // Calculate read position with wrap-around
-            const int currentWritePos = (predelayWritePos + i);
+            // Calculate read position
             const int readPos = currentWritePos - delaySamplesInt;
 
-            // Get 4 samples for cubic interpolation
             const int idx0 = (readPos - 1 + maxPredelaySamples) & (maxPredelaySamples - 1);
-            const int idx1 = readPos & (maxPredelaySamples - 1);
-            const int idx2 = (readPos + 1) & (maxPredelaySamples - 1);
-            const int idx3 = (readPos + 2) & (maxPredelaySamples - 1);
+            const int idx1 = (readPos + maxPredelaySamples) & (maxPredelaySamples - 1);
+            const int idx2 = (readPos + 1 + maxPredelaySamples) & (maxPredelaySamples - 1);
+            const int idx3 = (readPos + 2 + maxPredelaySamples) & (maxPredelaySamples - 1);
 
-            const float y0 = delayBuffer[idx0];
-            const float y1 = delayBuffer[idx1];
-            const float y2 = delayBuffer[idx2];
-            const float y3 = delayBuffer[idx3];
-
-            output[i] = hermiteInterpolation(delayFraction, y0, y1, y2, y3);
+            const float* buf = predelayBuffer.getReadPointer(ch);
+            outputBlock.setSample(ch, i,
+                hermiteInterpolation(delayFraction, buf[idx0], buf[idx1], buf[idx2], buf[idx3]));
         }
     }
 
-    // Advance write position
     predelayWritePos = (predelayWritePos + numSamples) & (maxPredelaySamples - 1);
 }
 
@@ -255,13 +241,8 @@ void SimpleVerbWithPredelay::process(juce::dsp::AudioBlock<float>& block)
         }
     }
 
-    // Skip next value for predelay smoothing (already consumed in applyPredelay)
-    if (predelaySmoothed.isSmoothing())
-    {
-        for (int i = 1; i < numSamples; ++i)
-            predelaySmoothed.skip(1);
-    }
 }
+
 
 float SimpleVerbWithPredelay::getPredelayTime() const noexcept
 {
