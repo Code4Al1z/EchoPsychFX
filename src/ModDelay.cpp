@@ -25,13 +25,18 @@ void ModDelay::resetState() {
     targetModulationType = ModulationType::Sine;
     modulationTypeCrossfade.setCurrentAndTargetValue(0.0f);
     params.reset(sampleRate, 0.05);
+
+    currentRateHz = 0.25f;
 }
 
 void ModDelay::setParams(float dMs, float depth, float rate, float fbL, float fbR, float m) {
+    // Smoothly transition to the new values without resetting the smoothing state
     params.delayMs.setTargetValue(dMs);
     params.modDepth.setTargetValue(depth);
+
     rawRate = rate;
     updateEffectiveRate();
+
     params.feedbackL.setTargetValue(juce::jlimit(0.0f, 0.95f, fbL));
     params.feedbackR.setTargetValue(juce::jlimit(0.0f, 0.95f, fbR));
     params.mix.setTargetValue(juce::jlimit(0.0f, 1.0f, m));
@@ -53,7 +58,7 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
         // Get next smoothed values
         float dMs = std::max(params.delayMs.getNextValue(), 5.0f);
         float depth = params.modDepth.getNextValue();
-        float rateHz = params.modRateHz.getNextValue();
+        float rateHz = currentRateHz;
         float fbL = juce::jlimit(0.0f, 0.95f, params.feedbackL.getNextValue());
         float fbR = juce::jlimit(0.0f, 0.95f, params.feedbackR.getNextValue());
         float wetMix = params.mix.getNextValue();
@@ -129,7 +134,7 @@ float ModDelay::calculateModulation(float currentPhase, float depth, ModulationT
     case ModulationType::Sine:
         return std::sin(juce::MathConstants<float>::twoPi * phaseWrapped) * depth;
     case ModulationType::Triangle:
-        return (2.0f * std::abs(2.0f * (phaseWrapped - 0.5f)) - 1.0f) * depth;
+        return (1.0f - 4.0f * std::abs(phaseWrapped - 0.5f)) * depth;
     case ModulationType::Square:
         return (phaseWrapped < 0.5f ? 1.0f : -1.0f) * depth;
     case ModulationType::SawtoothUp:
@@ -142,15 +147,28 @@ float ModDelay::calculateModulation(float currentPhase, float depth, ModulationT
 }
 
 float ModDelay::getEffectiveRateHz() const {
-    if (syncEnabled && rawRate > 0.0f) {
-        // Convert note division to Hz: e.g., rawRate=1 (quarter note), rawRate=2 (half note)
-        return (bpm / 60.0f) / rawRate;
+    if (syncEnabled) {
+        // Note divisions as fractions of a beat: 1/16=0.0625, 1/8=0.125, 1/4=0.25, 1/2=0.5, 1 bar=1.0, 2 bars=2.0
+        const float noteDivisions[] = { 0.0625f, 0.125f, 0.25f, 0.5f, 1.0f, 2.0f };
+        const int numDivisions = 6;
+
+        // 1. Convert rawRate (0.01 to 10.0 Hz) down to a normalized 0.0 to 1.0 range
+        float normalizedRate = (rawRate - 0.01f) / (10.0f - 0.01f);
+
+        // 2. Map that 0.0-1.0 range smoothly across the 6 available array choices (indices 0 to 5)
+        int index = juce::jlimit(0, numDivisions - 1, juce::roundToInt(normalizedRate * (numDivisions - 1)));
+        float bestDiv = noteDivisions[index];
+
+        // 3. Scale by the host BPM
+        float beatsPerSecond = bpm / 60.0f;
+        return beatsPerSecond * bestDiv;
     }
-    return rawRate;
+
+    return juce::jlimit(0.01f, 20.0f, rawRate);
 }
 
 void ModDelay::updateEffectiveRate() {
-    params.modRateHz.setTargetValue(getEffectiveRateHz());
+    currentRateHz = getEffectiveRateHz();
 }
 
 bool ModDelay::isValidModulationType(ModulationType type) const {

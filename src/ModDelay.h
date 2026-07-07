@@ -28,22 +28,24 @@ private:
     struct ModDelayParameters {
         juce::LinearSmoothedValue<float> delayMs;
         juce::LinearSmoothedValue<float> modDepth;
-        juce::LinearSmoothedValue<float> modRateHz;
         juce::LinearSmoothedValue<float> feedbackL;
         juce::LinearSmoothedValue<float> feedbackR;
         juce::LinearSmoothedValue<float> mix;
 
         void reset(double sampleRate, double smoothingTime) {
-            for (auto* p : { &delayMs, &modDepth, &modRateHz, &feedbackL, &feedbackR, &mix }) {
+            delayMs.reset(sampleRate, 0.1); // 100ms for delay to avoid scrubbing
+            for (auto* p : { &modDepth, &feedbackL, &feedbackR, &mix }) {
                 p->reset(sampleRate, smoothingTime);
                 p->setCurrentAndTargetValue(0.0f);
             }
+            delayMs.setCurrentAndTargetValue(0.0f);
         }
     };
 
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayL;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delayR;
 
+    float currentRateHz = 0.25f;
     float sampleRate = 44100.0f;
     float phase = 0.0f;
     ModulationType currentModulationType = ModulationType::Sine;

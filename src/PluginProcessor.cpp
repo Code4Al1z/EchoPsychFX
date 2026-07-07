@@ -74,11 +74,6 @@ int AudioPluginAudioProcessor::getCurrentProgram()
 }
 
 void AudioPluginAudioProcessor::setCurrentProgram(int index)
-
-
-
-
-
 {
     juce::ignoreUnused(index);
 }
@@ -101,21 +96,6 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
     spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
 
-    // Get BPM from host if available
-    if (auto* playHead = getPlayHead())
-    {
-        juce::AudioPlayHead::CurrentPositionInfo info;
-        if (playHead->getCurrentPosition(info))
-        {
-            bpm = info.bpm > 0.0 ? info.bpm : 120.0;
-
-
-
-
-
-        }
-    }
-
     // Prepare all effect processors
     widthBalancer.prepare(spec);
     tiltEQ.prepare(spec);
@@ -136,23 +116,23 @@ void AudioPluginAudioProcessor::releaseResources()
 
 bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-#if JucePlugin_IsMidiEffect
-    juce::ignoreUnused(layouts);
-    return true;
-#else
-    // Only support mono or stereo
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
+    #if JucePlugin_IsMidiEffect
+        juce::ignoreUnused(layouts);
+        return true;
+    #else
+        // Only support mono or stereo
+        if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+            && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+            return false;
 
-    // Input layout must match output layout
-#if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-#endif
+        // Input layout must match output layout
+    #if ! JucePlugin_IsSynth
+        if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+            return false;
+    #endif
 
-    return true;
-#endif
+        return true;
+    #endif
 }
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
@@ -160,6 +140,16 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 {
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
+
+    if (auto* playHead = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo info;
+        if (playHead->getCurrentPosition(info))
+        {
+            bpm = info.bpm > 0.0 ? info.bpm : 120.0;
+        }
+    }
+    // -------------------------------------
 
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -210,7 +200,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float feedbackL = *parameters.getRawParameterValue("feedbackL");
         float feedbackR = *parameters.getRawParameterValue("feedbackR");
         float modMix = *parameters.getRawParameterValue("modMix");
-        int modulationTypeValue = parameters.state.getProperty("modulationType");
+        int modulationTypeValue = juce::roundToInt(parameters.getRawParameterValue("modulationType")->load()) + 1;
 
         ModDelay::ModulationType modulationType = static_cast<ModDelay::ModulationType>(modulationTypeValue);
         modDelay.setModulationType(modulationType);
@@ -233,7 +223,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float allpassFreq = *parameters.getRawParameterValue("sfxAllpassFreq");
         float haasDelayL = *parameters.getRawParameterValue("haasDelayL");
         float haasDelayR = *parameters.getRawParameterValue("haasDelayR");
-        int modulationShapeValue = parameters.state.getProperty("modulationShape");
+        int modulationShapeValue = juce::roundToInt(parameters.getRawParameterValue("modulationShape")->load());
 
         SpatialFX::LfoWaveform modulationShape = static_cast<SpatialFX::LfoWaveform>(modulationShapeValue);
         spatialFX.setPhaseAmount(phaseOffsetL, phaseOffsetR);
@@ -302,10 +292,6 @@ void AudioPluginAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::MemoryOutputStream stream(destData, true);
     parameters.state.writeToStream(stream);
-
-
-
-
 }
 
 void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
