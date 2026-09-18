@@ -43,7 +43,7 @@ void SpatialFXComponent::paintContent(juce::Graphics& g)
 
 void SpatialFXComponent::layoutContent(juce::Rectangle<int> area)
 {
-    group.setBounds(getLocalBounds());
+    group.setBounds(area);
     auto inner = area.reduced(PluginLookAndFeel::margin);
     const int totalH = inner.getHeight();
 

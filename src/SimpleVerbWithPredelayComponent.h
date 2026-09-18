@@ -28,7 +28,7 @@ public:
     void setWet(float v);
 
 private:
-    juce::GroupComponent group{ "simpleVerbWithPredelayGroup", "Simple Verb With Predelay" };
+    juce::GroupComponent group{ "simpleVerbWithPredelayGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleVerbWithPredelayComponent)

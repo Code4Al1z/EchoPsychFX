@@ -35,7 +35,7 @@ public:
     void setModShape(SpatialFX::LfoWaveform waveform);
 
 private:
-    juce::GroupComponent group{ "spatialFXGroup", "Spatial FX" };
+    juce::GroupComponent group{ "spatialFXGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
     std::unique_ptr<juce::ComboBox> modShapeSelector;
     std::unique_ptr<juce::Label> modShapeLabel;

@@ -30,7 +30,7 @@ public:
     void setMix(float v);
 
 private:
-    juce::GroupComponent group{ "microPitchDetuneGroup", "Micro-Pitch Detune" };
+    juce::GroupComponent group{ "microPitchDetuneGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MicroPitchDetuneComponent)

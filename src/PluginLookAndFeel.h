@@ -31,7 +31,8 @@ public:
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;
     static constexpr int spacing = 15;
-    static constexpr int groupLabelHeight = 45;
+
+    static constexpr int groupLabelHeight = 20;
 
     static constexpr int kKnobCell = 110;
     static constexpr int kHeaderH = 28;

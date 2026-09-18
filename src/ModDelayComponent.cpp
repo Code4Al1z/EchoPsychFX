@@ -56,7 +56,7 @@ void ModDelayComponent::paintContent(juce::Graphics& g)
 
 void ModDelayComponent::layoutContent(juce::Rectangle<int> area)
 {
-    group.setBounds(getLocalBounds());
+    group.setBounds(area);
     auto inner = area.reduced(PluginLookAndFeel::margin);
     const int totalH = inner.getHeight();
 

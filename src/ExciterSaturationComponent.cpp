@@ -18,7 +18,7 @@ void ExciterSaturationComponent::paintContent(juce::Graphics& g)
 
 void ExciterSaturationComponent::layoutContent(juce::Rectangle<int> area)
 {
-    group.setBounds(getLocalBounds());
+    group.setBounds(area);
     auto inner = area.reduced(PluginLookAndFeel::margin);
     const int numKnobs = static_cast<int>(knobs.size());
 

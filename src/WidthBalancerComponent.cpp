@@ -64,6 +64,7 @@ void WidthBalancerComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
+    area.removeFromTop(PluginLookAndFeel::groupLabelHeight);
     const int w = area.getWidth();
     const int h = area.getHeight();
     const int gap = PluginLookAndFeel::spacing;

@@ -25,6 +25,7 @@ void TiltEQComponent::resized()
     group.setBounds(getLocalBounds());
 
     auto area = getLocalBounds().reduced(PluginLookAndFeel::margin);
+    area.removeFromTop(PluginLookAndFeel::groupLabelHeight);
     const int numKnobs = static_cast<int>(knobs.size());
 
     auto layout = PluginLookAndFeel::calculateKnobLayout(numKnobs, area.getWidth(), area.getHeight(), false);

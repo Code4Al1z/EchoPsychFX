@@ -27,7 +27,7 @@ public:
     void setHighpass(float v);
 
 private:
-    juce::GroupComponent group{ "exciterSaturationGroup", "Exciter Saturation" };
+    juce::GroupComponent group{ "exciterSaturationGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ExciterSaturationComponent)

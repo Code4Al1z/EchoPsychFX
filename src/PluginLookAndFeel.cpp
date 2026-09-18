@@ -26,13 +26,13 @@ void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, 
 
     if (text.isNotEmpty())
     {
-        const int textHeight = 24;
-        auto font = juce::Font(textHeight * 0.8f, juce::Font::bold);
+        const int textHeight = groupLabelHeight;
+        auto font = juce::Font(textHeight * 0.7f, juce::Font::bold);
         g.setFont(font);
         const float textPadding = 4.0f;
         auto textWidth = static_cast<int>(juce::GlyphArrangement::getStringWidth(font, text) + 2.0f * textPadding);
         g.setColour(component.findColour(juce::GroupComponent::textColourId));
-        g.drawFittedText(text, 10, height - 25, textWidth, textHeight, justification, 1);
+        g.drawFittedText(text, 10, 0, textWidth, textHeight, justification, 1);
     }
 }
 
@@ -207,7 +207,7 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
         const int col = i % bestCols;
         const int row = i / bestCols;
         const int cellX = static_cast<int>(col * cellW);
-        const int cellY = static_cast<int>(row * cellH) + groupLabelHeight;
+        const int cellY = static_cast<int>(row * cellH);
         const int cw = static_cast<int>((col + 1) * cellW) - cellX;
         const int ch = static_cast<int>((row + 1) * cellH) - cellY;
         result.knobBounds.emplace_back(cellX, cellY, cw, ch);

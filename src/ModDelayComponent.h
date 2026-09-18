@@ -33,7 +33,7 @@ public:
     void setFeedbackRight(float v);
 
 private:
-    juce::GroupComponent group{ "modDelayGroup", "Motion Shifter" };
+    juce::GroupComponent group{ "modDelayGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
     juce::OwnedArray<juce::TextButton> waveformButtons;
     std::unique_ptr<juce::ComboBox> hiddenCombo;
