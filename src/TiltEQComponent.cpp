@@ -40,5 +40,5 @@ void TiltEQComponent::resized()
 
 void TiltEQComponent::setTilt(float v)
 {
-    if (!knobs.empty()) knobs[0]->slider->setValue(v);
+    PluginLookAndFeel::setKnobValue(knobs, 0, v);
 }

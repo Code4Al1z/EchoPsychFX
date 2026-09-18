@@ -33,7 +33,7 @@ void SimpleVerbWithPredelayComponent::layoutContent(juce::Rectangle<int> area)
     }
 }
 
-void SimpleVerbWithPredelayComponent::setPredelay(float v) { if (!knobs.empty()) knobs[0]->slider->setValue(v); }
-void SimpleVerbWithPredelayComponent::setSize(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
-void SimpleVerbWithPredelayComponent::setDamping(float v) { if (knobs.size() > 2) knobs[2]->slider->setValue(v); }
-void SimpleVerbWithPredelayComponent::setWet(float v) { if (knobs.size() > 3) knobs[3]->slider->setValue(v); }
+void SimpleVerbWithPredelayComponent::setPredelay(float v) { PluginLookAndFeel::setKnobValue(knobs, 0, v); }
+void SimpleVerbWithPredelayComponent::setSize(float v) { PluginLookAndFeel::setKnobValue(knobs, 1, v); }
+void SimpleVerbWithPredelayComponent::setDamping(float v) { PluginLookAndFeel::setKnobValue(knobs, 2, v); }
+void SimpleVerbWithPredelayComponent::setWet(float v) { PluginLookAndFeel::setKnobValue(knobs, 3, v); }

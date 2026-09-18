@@ -32,6 +32,6 @@ void ExciterSaturationComponent::layoutContent(juce::Rectangle<int> area)
     }
 }
 
-void ExciterSaturationComponent::setDrive(float v) { if (!knobs.empty()) knobs[0]->slider->setValue(v); }
-void ExciterSaturationComponent::setMix(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
-void ExciterSaturationComponent::setHighpass(float v) { if (knobs.size() > 2) knobs[2]->slider->setValue(v); }
+void ExciterSaturationComponent::setDrive(float v) { PluginLookAndFeel::setKnobValue(knobs, 0, v); }
+void ExciterSaturationComponent::setMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 1, v); }
+void ExciterSaturationComponent::setHighpass(float v) { PluginLookAndFeel::setKnobValue(knobs, 2, v); }

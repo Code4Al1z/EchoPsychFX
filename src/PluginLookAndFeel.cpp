@@ -242,3 +242,9 @@ void PluginLookAndFeel::configureGroup(juce::GroupComponent& group)
     group.setColour(juce::GroupComponent::outlineColourId, groupOutline);
     group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 }
+
+void PluginLookAndFeel::setKnobValue(const std::vector<std::unique_ptr<KnobWithLabel>>& knobs, int index, float value)
+{
+    if (index >= 0 && index < static_cast<int>(knobs.size()) && knobs[static_cast<size_t>(index)]->slider)
+        knobs[static_cast<size_t>(index)]->slider->setValue(value);
+}

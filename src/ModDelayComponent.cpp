@@ -120,9 +120,9 @@ void ModDelayComponent::setModulationType(ModDelay::ModulationType type)
     if (index != selectedWaveform) updateWaveformSelection(index);
 }
 
-void ModDelayComponent::setDelayTime(float v) { if (!knobs.empty()) knobs[0]->slider->setValue(v); }
-void ModDelayComponent::setModDepth(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
-void ModDelayComponent::setModRate(float v) { if (knobs.size() > 2) knobs[2]->slider->setValue(v); }
-void ModDelayComponent::setMix(float v) { if (knobs.size() > 3) knobs[3]->slider->setValue(v); }
-void ModDelayComponent::setFeedbackLeft(float v) { if (knobs.size() > 4) knobs[4]->slider->setValue(v); }
-void ModDelayComponent::setFeedbackRight(float v) { if (knobs.size() > 5) knobs[5]->slider->setValue(v); }
+void ModDelayComponent::setDelayTime(float v) { PluginLookAndFeel::setKnobValue(knobs, 0, v); }
+void ModDelayComponent::setModDepth(float v) { PluginLookAndFeel::setKnobValue(knobs, 1, v); }
+void ModDelayComponent::setModRate(float v) { PluginLookAndFeel::setKnobValue(knobs, 2, v); }
+void ModDelayComponent::setMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 3, v); }
+void ModDelayComponent::setFeedbackLeft(float v) { PluginLookAndFeel::setKnobValue(knobs, 4, v); }
+void ModDelayComponent::setFeedbackRight(float v) { PluginLookAndFeel::setKnobValue(knobs, 5, v); }

@@ -23,19 +23,16 @@ public:
 private:
     juce::GroupComponent group{ "widthGroup", "Width Balancer" };
 
-    juce::Slider widthSlider;
+    std::unique_ptr<PluginLookAndFeel::KnobWithLabel> widthKnob;
+    std::unique_ptr<PluginLookAndFeel::KnobWithLabel> intensityKnob;
+
     juce::Slider midSideSlider;
-    juce::Slider intensitySlider;
     juce::ToggleButton monoToggle;
 
-    juce::Label widthLabel;
     juce::Label midSideLabel;
     juce::Label midSideValueLabel;
-    juce::Label intensityLabel;
 
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> widthAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> midSideAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> intensityAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> monoAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WidthBalancerComponent)

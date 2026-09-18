@@ -31,7 +31,6 @@ public:
     static constexpr int margin = 10;
     static constexpr int labelHeight = 20;
     static constexpr int spacing = 15;
-
     static constexpr int groupLabelHeight = 20;
 
     static constexpr int kKnobCell = 110;
@@ -87,6 +86,8 @@ public:
     static void configureKnob(juce::Slider& slider);
     static void configureLabel(juce::Label& label, const juce::String& text);
     static void configureGroup(juce::GroupComponent& group);
+
+    static void setKnobValue(const std::vector<std::unique_ptr<KnobWithLabel>>& knobs, int index, float value);
 
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginLookAndFeel)

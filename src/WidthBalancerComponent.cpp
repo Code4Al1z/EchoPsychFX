@@ -5,14 +5,16 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
 
-    PluginLookAndFeel::configureKnob(widthSlider);
-    widthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    addAndMakeVisible(widthSlider);
+    widthKnob = std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "width", "Width", *this);
+    intensityKnob = std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "intensity", "Intensity", *this);
 
-    PluginLookAndFeel::configureKnob(intensitySlider);
-    intensitySlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    intensitySlider.setSkewFactorFromMidPoint(0.2f);
-    addAndMakeVisible(intensitySlider);
+    if (intensityKnob->slider)
+        intensityKnob->slider->setSkewFactorFromMidPoint(0.2f);
+
+    if (widthKnob->slider)
+        widthKnob->slider->setNumDecimalPlacesToDisplay(2);
+    if (intensityKnob->slider)
+        intensityKnob->slider->setNumDecimalPlacesToDisplay(2);
 
     midSideSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     midSideSlider.setColour(juce::Slider::thumbColourId, PluginLookAndFeel::knobThumb);
@@ -20,11 +22,7 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     midSideSlider.setColour(juce::Slider::backgroundColourId, PluginLookAndFeel::knobBackground);
     addAndMakeVisible(midSideSlider);
 
-    PluginLookAndFeel::configureLabel(widthLabel, "Width");
-    PluginLookAndFeel::configureLabel(intensityLabel, "Intensity");
     PluginLookAndFeel::configureLabel(midSideLabel, "Mid/Side");
-    addAndMakeVisible(widthLabel);
-    addAndMakeVisible(intensityLabel);
     addAndMakeVisible(midSideLabel);
 
     midSideValueLabel.setJustificationType(juce::Justification::centredRight);
@@ -32,8 +30,6 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     midSideValueLabel.setText("0.00", juce::dontSendNotification);
     addAndMakeVisible(midSideValueLabel);
 
-    widthSlider.setNumDecimalPlacesToDisplay(2);
-    intensitySlider.setNumDecimalPlacesToDisplay(2);
     midSideSlider.setNumDecimalPlacesToDisplay(2);
 
     midSideSlider.onValueChange = [this]()
@@ -47,9 +43,7 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     monoToggle.setColour(juce::ToggleButton::tickColourId, PluginLookAndFeel::track);
     addAndMakeVisible(monoToggle);
 
-    widthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "width", widthSlider);
     midSideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "midSideBalance", midSideSlider);
-    intensityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "intensity", intensitySlider);
     monoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(state, "mono", monoToggle);
 }
 
@@ -91,32 +85,17 @@ void WidthBalancerComponent::resized()
 
     const int knobAreaH = area.getBottom() - y;
     const int knobW = (w - gap) / 2;
-    const int knobLabelH = labelH;
-    const int rotaryH = knobAreaH - knobLabelH;
-    const int tbW = juce::jlimit(28, 56, static_cast<int>(knobW * 0.8f));
-    const int tbH = juce::jlimit(12, 18, static_cast<int>(rotaryH * 0.2f));
 
-    widthLabel.setBounds(area.getX(), y, knobW, knobLabelH);
-    widthLabel.setJustificationType(juce::Justification::centred);
-    widthSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, tbW, tbH);
-    widthSlider.setBounds(area.getX(), y + knobLabelH, knobW, rotaryH);
+    widthKnob->setBounds(area.getX(), y, knobW, knobAreaH);
+    intensityKnob->setBounds(area.getX() + knobW + gap, y, knobW, knobAreaH);
 
-    intensityLabel.setBounds(area.getX() + knobW + gap, y, knobW, knobLabelH);
-    intensityLabel.setJustificationType(juce::Justification::centred);
-    intensitySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, tbW, tbH);
-    intensitySlider.setBounds(area.getX() + knobW + gap, y + knobLabelH, knobW, rotaryH);
-
-    widthSlider.setVisible(true);
-    intensitySlider.setVisible(true);
     midSideSlider.setVisible(true);
-    widthLabel.setVisible(true);
-    intensityLabel.setVisible(true);
     midSideLabel.setVisible(true);
     midSideValueLabel.setVisible(true);
     monoToggle.setVisible(true);
 }
 
-void WidthBalancerComponent::setWidth(float v) { widthSlider.setValue(v); }
+void WidthBalancerComponent::setWidth(float v) { if (widthKnob && widthKnob->slider) widthKnob->slider->setValue(v); }
 void WidthBalancerComponent::setMidSideBalance(float v) { midSideSlider.setValue(v); }
 void WidthBalancerComponent::setMono(bool v) { monoToggle.setToggleState(v, juce::sendNotification); }
-void WidthBalancerComponent::setIntensity(float v) { intensitySlider.setValue(v); }
+void WidthBalancerComponent::setIntensity(float v) { if (intensityKnob && intensityKnob->slider) intensityKnob->slider->setValue(v); }

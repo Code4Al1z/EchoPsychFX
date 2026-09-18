@@ -71,25 +71,25 @@ void SpatialFXComponent::layoutContent(juce::Rectangle<int> area)
     }
 }
 
-void SpatialFXComponent::setPhaseOffsetLeft(float v) { if (!knobs.empty()) knobs[0]->slider->setValue(v); }
-void SpatialFXComponent::setPhaseOffsetRight(float v) { if (knobs.size() > 1) knobs[1]->slider->setValue(v); }
+void SpatialFXComponent::setPhaseOffsetLeft(float v) { PluginLookAndFeel::setKnobValue(knobs, 0, v); }
+void SpatialFXComponent::setPhaseOffsetRight(float v) { PluginLookAndFeel::setKnobValue(knobs, 1, v); }
 void SpatialFXComponent::setModulationRate(float l, float r)
 {
-    if (knobs.size() > 2) knobs[2]->slider->setValue(l);
-    if (knobs.size() > 3) knobs[3]->slider->setValue(r);
+    PluginLookAndFeel::setKnobValue(knobs, 2, l);
+    PluginLookAndFeel::setKnobValue(knobs, 3, r);
 }
 void SpatialFXComponent::setModulationDepth(float l, float r)
 {
-    if (knobs.size() > 4) knobs[4]->slider->setValue(l);
-    if (knobs.size() > 5) knobs[5]->slider->setValue(r);
+    PluginLookAndFeel::setKnobValue(knobs, 4, l);
+    PluginLookAndFeel::setKnobValue(knobs, 5, r);
 }
-void SpatialFXComponent::setWetDryMix(float v) { if (knobs.size() > 6) knobs[6]->slider->setValue(v); }
-void SpatialFXComponent::setLfoPhaseOffset(float v) { if (knobs.size() > 7) knobs[7]->slider->setValue(v); }
-void SpatialFXComponent::setAllpassFrequency(float v) { if (knobs.size() > 8) knobs[8]->slider->setValue(v); }
+void SpatialFXComponent::setWetDryMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 6, v); }
+void SpatialFXComponent::setLfoPhaseOffset(float v) { PluginLookAndFeel::setKnobValue(knobs, 7, v); }
+void SpatialFXComponent::setAllpassFrequency(float v) { PluginLookAndFeel::setKnobValue(knobs, 8, v); }
 void SpatialFXComponent::setHaasDelayMs(float l, float r)
 {
-    if (knobs.size() > 9) knobs[9]->slider->setValue(l);
-    if (knobs.size() > 10) knobs[10]->slider->setValue(r);
+    PluginLookAndFeel::setKnobValue(knobs, 9, l);
+    PluginLookAndFeel::setKnobValue(knobs, 10, r);
 }
 void SpatialFXComponent::setModShape(SpatialFX::LfoWaveform waveform)
 {
