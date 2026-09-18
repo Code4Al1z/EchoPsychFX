@@ -195,8 +195,15 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
         }
     }
 
-    const float cellW = contentW / static_cast<float>(bestCols);
-    const float cellH = contentH / static_cast<float>(bestRows);
+    const float rawCellW = contentW / static_cast<float>(bestCols);
+    const float rawCellH = contentH / static_cast<float>(bestRows);
+    const float cellSize = juce::jlimit(static_cast<float>(minKnobSize),
+        static_cast<float>(maxKnobSize), std::min(rawCellW, rawCellH));
+
+    const float gridW = cellSize * static_cast<float>(bestCols);
+    const float gridH = cellSize * static_cast<float>(bestRows);
+    const float offsetX = juce::jmax(0.0f, (contentW - gridW) * 0.5f);
+    const float offsetY = juce::jmax(0.0f, (contentH - gridH) * 0.5f);
 
     result.totalWidth = availableWidth;
     result.totalHeight = availableHeight;
@@ -206,11 +213,9 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
     {
         const int col = i % bestCols;
         const int row = i / bestCols;
-        const int cellX = static_cast<int>(col * cellW);
-        const int cellY = static_cast<int>(row * cellH);
-        const int cw = static_cast<int>((col + 1) * cellW) - cellX;
-        const int ch = static_cast<int>((row + 1) * cellH) - cellY;
-        result.knobBounds.emplace_back(cellX, cellY, cw, ch);
+        const int cellX = static_cast<int>(offsetX + col * cellSize);
+        const int cellY = static_cast<int>(offsetY + row * cellSize);
+        result.knobBounds.emplace_back(cellX, cellY, static_cast<int>(cellSize), static_cast<int>(cellSize));
     }
     return result;
 }
