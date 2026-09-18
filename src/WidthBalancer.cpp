@@ -77,19 +77,10 @@ void WidthBalancer::setSmoothingTime(float timeMs)
 
 void WidthBalancer::updateBalanceGains(float balance)
 {
-    // Constant power panning for natural mid-side balance
-    // Map -1..1 to 0..pi/2 for one quadrant of sine/cosine
     const float balanceAngle = (balance * 0.5f + 0.5f) * juce::MathConstants<float>::halfPi;
 
     cachedMidGain = std::cos(balanceAngle);
     cachedSideGain = std::sin(balanceAngle);
-
-    // Handle negative balance (more side)
-    if (balance < 0.0f)
-    {
-        cachedSideGain = 1.0f;
-        cachedMidGain = std::cos(std::abs(balance) * juce::MathConstants<float>::halfPi);
-    }
 
     lastBalanceForCache = balance;
 }
