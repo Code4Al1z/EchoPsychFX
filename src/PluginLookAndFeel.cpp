@@ -207,7 +207,7 @@ PluginLookAndFeel::KnobLayoutResult PluginLookAndFeel::calculateKnobLayout(
         const int col = i % bestCols;
         const int row = i / bestCols;
         const int cellX = static_cast<int>(col * cellW);
-        const int cellY = static_cast<int>(row * cellH);
+        const int cellY = static_cast<int>(row * cellH) + groupLabelHeight;
         const int cw = static_cast<int>((col + 1) * cellW) - cellX;
         const int ch = static_cast<int>((row + 1) * cellH) - cellY;
         result.knobBounds.emplace_back(cellX, cellY, cw, ch);
