@@ -55,6 +55,24 @@ public:
         void setBounds(int x, int y, int width, int height);
     };
 
+    struct ShapePicker
+    {
+        juce::OwnedArray<juce::TextButton> buttons;
+        std::unique_ptr<juce::ComboBox> hiddenCombo;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> attachment;
+        int selectedIndex = 0;
+
+        ShapePicker() = default;
+
+        ShapePicker(juce::AudioProcessorValueTreeState& state,
+            const juce::String& paramID,
+            const std::vector<juce::String>& labels,
+            juce::Component& parent);
+
+        void setSelected(int index);
+        void setBounds(int x, int y, int width, int height);
+    };
+
     struct GridFitResult
     {
         int columns = 0;

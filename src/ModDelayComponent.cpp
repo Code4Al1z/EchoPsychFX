@@ -13,31 +13,8 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackL", "FB L", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "feedbackR", "FB R", *this));
 
-    const std::vector<std::pair<juce::String, ModDelay::ModulationType>> waveformData = {
-        { "Sin", ModDelay::ModulationType::Sine },
-        { "Tri", ModDelay::ModulationType::Triangle },
-        { "Sqr", ModDelay::ModulationType::Square },
-        { "Sw^", ModDelay::ModulationType::SawtoothUp },
-        { "Sw_", ModDelay::ModulationType::SawtoothDown }
-    };
-
-    int idx = 0;
-    for (auto& [label, type] : waveformData)
-    {
-        auto* btn = waveformButtons.add(new juce::TextButton(label));
-        btn->setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
-        btn->setColour(juce::TextButton::textColourOnId, PluginLookAndFeel::labelText);
-        btn->setColour(juce::TextButton::textColourOffId, PluginLookAndFeel::labelText.withAlpha(0.7f));
-        btn->onClick = [this, idx] { updateWaveformSelection(idx); };
-        addAndMakeVisible(btn);
-        ++idx;
-    }
-
-    hiddenCombo = std::make_unique<juce::ComboBox>();
-    modulationTypeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-        state, "modulationType", *hiddenCombo);
-    hiddenCombo->setVisible(false);
-    addAndMakeVisible(*hiddenCombo);
+    const std::vector<juce::String> waveformLabels = { "Sin", "Tri", "Sqr", "Sw^", "Sw_" };
+    waveformPicker = std::make_unique<PluginLookAndFeel::ShapePicker>(state, "modulationType", waveformLabels, *this);
 
     syncToggle.setButtonText("Sync");
     syncToggle.setColour(juce::ToggleButton::textColourId, PluginLookAndFeel::labelText);
@@ -45,8 +22,6 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         state, "sync", syncToggle);
     addAndMakeVisible(syncToggle);
-
-    updateWaveformSelection(0);
 }
 
 void ModDelayComponent::paintContent(juce::Graphics& g)
@@ -61,23 +36,12 @@ void ModDelayComponent::layoutContent(juce::Rectangle<int> area)
     const int totalH = inner.getHeight();
 
     const int btnH = juce::jlimit(20, 30, static_cast<int>(totalH * 0.15f));
-    const int nBtns = waveformButtons.size();
-    const int totalSlots = nBtns * 10 + 14;
-    const int availW = inner.getWidth();
-    const float unitW = static_cast<float>(availW) / static_cast<float>(totalSlots);
-
-    int x = inner.getX();
+    const int syncW = juce::jlimit(50, 70, static_cast<int>(inner.getWidth() * 0.14f));
+    const int pickerW = inner.getWidth() - syncW - PluginLookAndFeel::spacing;
     const int y = inner.getY();
 
-    for (int i = 0; i < nBtns; ++i)
-    {
-        const int bw = (i == nBtns - 1)
-            ? (inner.getRight() - static_cast<int>(unitW * 14.0f) - x)
-            : static_cast<int>(unitW * 10.0f);
-        waveformButtons[i]->setBounds(x, y, bw, btnH);
-        x += bw;
-    }
-    syncToggle.setBounds(x, y, inner.getRight() - x, btnH);
+    waveformPicker->setBounds(inner.getX(), y, pickerW, btnH);
+    syncToggle.setBounds(inner.getX() + pickerW + PluginLookAndFeel::spacing, y, syncW, btnH);
 
     const int knobAreaY = y + btnH + PluginLookAndFeel::spacing;
     const int knobAreaH = inner.getBottom() - knobAreaY;
@@ -96,28 +60,10 @@ void ModDelayComponent::layoutContent(juce::Rectangle<int> area)
     }
 }
 
-void ModDelayComponent::updateWaveformSelection(int index)
-{
-    if (index < 0 || index >= waveformButtons.size()) return;
-
-    selectedWaveform = index;
-    for (int i = 0; i < waveformButtons.size(); ++i)
-    {
-        auto* btn = waveformButtons[i];
-        const bool sel = (i == index);
-        btn->setColour(juce::TextButton::buttonColourId,
-            sel ? PluginLookAndFeel::track : juce::Colours::darkgrey);
-        btn->setAlpha(sel ? 1.0f : 0.7f);
-    }
-
-    if (hiddenCombo)
-        hiddenCombo->setSelectedId(index + 1, juce::sendNotification);
-}
-
 void ModDelayComponent::setModulationType(ModDelay::ModulationType type)
 {
-    const int index = static_cast<int>(type) - 1;
-    if (index != selectedWaveform) updateWaveformSelection(index);
+    if (waveformPicker)
+        waveformPicker->setSelected(static_cast<int>(type) - 1);
 }
 
 void ModDelayComponent::setDelayTime(float v) { PluginLookAndFeel::setKnobValue(knobs, 0, v); }

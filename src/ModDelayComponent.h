@@ -35,14 +35,9 @@ public:
 private:
     juce::GroupComponent group{ "modDelayGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
-    juce::OwnedArray<juce::TextButton> waveformButtons;
-    std::unique_ptr<juce::ComboBox> hiddenCombo;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modulationTypeAttachment;
+    std::unique_ptr<PluginLookAndFeel::ShapePicker> waveformPicker;
     juce::ToggleButton syncToggle;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> syncAttachment;
-    int selectedWaveform = 0;
-
-    void updateWaveformSelection(int index);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModDelayComponent)
 };

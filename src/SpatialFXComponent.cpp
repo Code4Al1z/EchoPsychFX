@@ -18,19 +18,8 @@ SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayL", "Haas L", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayR", "Haas R", *this));
 
-    modShapeSelector = std::make_unique<juce::ComboBox>("modShapeSelector");
-    modShapeSelector->addItem("Sine", 1);
-    modShapeSelector->addItem("Triangle", 2);
-    modShapeSelector->addItem("Square", 3);
-    modShapeSelector->addItem("Random", 4);
-    addAndMakeVisible(*modShapeSelector);
-
-    modShapeLabel = std::make_unique<juce::Label>("modShapeLabel", "Mod Shape");
-    PluginLookAndFeel::configureLabel(*modShapeLabel, "Mod Shape");
-    addAndMakeVisible(*modShapeLabel);
-
-    modShapeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-        state, "modulationShape", *modShapeSelector);
+    const std::vector<juce::String> shapeLabels = { "Sin", "Tri", "Sqr", "Rnd" };
+    modShapePicker = std::make_unique<PluginLookAndFeel::ShapePicker>(state, "modulationShape", shapeLabels, *this);
 
     for (auto& k : knobs)
         k->slider->setNumDecimalPlacesToDisplay(2);
@@ -48,11 +37,7 @@ void SpatialFXComponent::layoutContent(juce::Rectangle<int> area)
     const int totalH = inner.getHeight();
 
     const int headerH = juce::jlimit(20, 28, static_cast<int>(totalH * 0.12f));
-    const int labelW = juce::jlimit(50, 90, static_cast<int>(inner.getWidth() * 0.35f));
-    const int comboW = inner.getWidth() - labelW - PluginLookAndFeel::spacing;
-
-    modShapeLabel->setBounds(inner.getX(), inner.getY(), labelW, headerH);
-    modShapeSelector->setBounds(inner.getX() + labelW + PluginLookAndFeel::spacing, inner.getY(), comboW, headerH);
+    modShapePicker->setBounds(inner.getX(), inner.getY(), inner.getWidth(), headerH);
 
     const int knobAreaY = inner.getY() + headerH + PluginLookAndFeel::spacing;
     const int knobAreaH = inner.getBottom() - knobAreaY;
@@ -93,6 +78,6 @@ void SpatialFXComponent::setHaasDelayMs(float l, float r)
 }
 void SpatialFXComponent::setModShape(SpatialFX::LfoWaveform waveform)
 {
-    if (modShapeSelector)
-        modShapeSelector->setSelectedId(static_cast<int>(waveform));
+    if (modShapePicker)
+        modShapePicker->setSelected(static_cast<int>(waveform) - 1);
 }

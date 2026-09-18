@@ -37,9 +37,7 @@ public:
 private:
     juce::GroupComponent group{ "spatialFXGroup", "" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
-    std::unique_ptr<juce::ComboBox> modShapeSelector;
-    std::unique_ptr<juce::Label> modShapeLabel;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modShapeAttachment;
+    std::unique_ptr<PluginLookAndFeel::ShapePicker> modShapePicker;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SpatialFXComponent)
 };

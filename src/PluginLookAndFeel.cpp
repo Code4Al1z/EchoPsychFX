@@ -119,6 +119,68 @@ void PluginLookAndFeel::KnobWithLabel::setBounds(int x, int y, int width, int he
     slider->setBounds(x, y + lH, width, height - lH);
 }
 
+PluginLookAndFeel::ShapePicker::ShapePicker(juce::AudioProcessorValueTreeState& state,
+    const juce::String& paramID,
+    const std::vector<juce::String>& labels,
+    juce::Component& parent)
+{
+    int idx = 0;
+    for (auto& labelText : labels)
+    {
+        auto* btn = buttons.add(new juce::TextButton(labelText));
+        btn->setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
+        btn->setColour(juce::TextButton::textColourOnId, PluginLookAndFeel::labelText);
+        btn->setColour(juce::TextButton::textColourOffId, PluginLookAndFeel::labelText.withAlpha(0.7f));
+        const int i = idx;
+        btn->onClick = [this, i] { setSelected(i); };
+        parent.addAndMakeVisible(btn);
+        ++idx;
+    }
+
+    hiddenCombo = std::make_unique<juce::ComboBox>();
+    for (int i = 0; i < static_cast<int>(labels.size()); ++i)
+        hiddenCombo->addItem(labels[static_cast<size_t>(i)], i + 1);
+    attachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state, paramID, *hiddenCombo);
+    hiddenCombo->setVisible(false);
+    parent.addAndMakeVisible(*hiddenCombo);
+
+    setSelected(0);
+}
+
+void PluginLookAndFeel::ShapePicker::setSelected(int index)
+{
+    if (index < 0 || index >= buttons.size()) return;
+
+    selectedIndex = index;
+    for (int i = 0; i < buttons.size(); ++i)
+    {
+        auto* btn = buttons[i];
+        const bool sel = (i == index);
+        btn->setColour(juce::TextButton::buttonColourId, sel ? PluginLookAndFeel::track : juce::Colours::darkgrey);
+        btn->setAlpha(sel ? 1.0f : 0.7f);
+    }
+
+    if (hiddenCombo)
+        hiddenCombo->setSelectedId(index + 1, juce::sendNotification);
+}
+
+void PluginLookAndFeel::ShapePicker::setBounds(int x, int y, int width, int height)
+{
+    const int n = buttons.size();
+    if (n == 0) return;
+
+    const int bw = width / n;
+    int cx = x;
+    for (int i = 0; i < n; ++i)
+    {
+        const int w = (i == n - 1) ? (x + width - cx) : bw;
+        buttons[i]->setBounds(cx, y, w, height);
+        cx += w;
+    }
+    if (hiddenCombo)
+        hiddenCombo->setBounds(x, y, 0, 0);
+}
+
 PluginLookAndFeel::GridFitResult PluginLookAndFeel::findBestSquareGridFit(
     int nElements, float totalWidth, float totalHeight,
     float minCellSize, float maxCellSize)
