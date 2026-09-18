@@ -104,6 +104,7 @@ public:
     static void configureKnob(juce::Slider& slider);
     static void configureLabel(juce::Label& label, const juce::String& text);
     static void configureGroup(juce::GroupComponent& group);
+    static void configureComboBox(juce::ComboBox& box);
 
     static void setKnobValue(const std::vector<std::unique_ptr<KnobWithLabel>>& knobs, int index, float value);
 

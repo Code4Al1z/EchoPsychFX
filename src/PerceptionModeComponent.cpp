@@ -1,12 +1,11 @@
 #include "PerceptionModeComponent.h"
+#include "PluginLookAndFeel.h"
 
 PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& presetManager)
     : presetManagerRef(presetManager)
 {
-    titleLabel.setText("Perception Mode", juce::dontSendNotification);
+    PluginLookAndFeel::configureLabel(titleLabel, "Perception Mode");
     titleLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-    titleLabel.setJustificationType(juce::Justification::centred);
-    titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(titleLabel);
 
     // Add all preset names
@@ -22,10 +21,7 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     for (int i = 0; i < presetNames.size(); ++i)
         presetSelector.addItem(presetNames[i], i + 1);
 
-    presetSelector.setColour(juce::ComboBox::backgroundColourId, juce::Colour(31, 31, 31));
-    presetSelector.setColour(juce::ComboBox::textColourId, juce::Colours::white);
-    presetSelector.setColour(juce::ComboBox::outlineColourId, juce::Colours::white.withAlpha(0.4f));
-    presetSelector.setColour(juce::ComboBox::arrowColourId, juce::Colours::deeppink);
+    PluginLookAndFeel::configureComboBox(presetSelector);
 
     presetSelector.onChange = [this]() { comboBoxChanged(&presetSelector); };
     addAndMakeVisible(presetSelector);

@@ -305,6 +305,15 @@ void PluginLookAndFeel::configureGroup(juce::GroupComponent& group)
     group.setColour(juce::GroupComponent::textColourId, juce::Colours::white);
 }
 
+void PluginLookAndFeel::configureComboBox(juce::ComboBox& box)
+{
+    box.setColour(juce::ComboBox::backgroundColourId, knobBackground);
+    box.setColour(juce::ComboBox::textColourId, labelText);
+    box.setColour(juce::ComboBox::outlineColourId, groupOutline);
+    box.setColour(juce::ComboBox::arrowColourId, track);
+    box.setColour(juce::ComboBox::focusedOutlineColourId, track);
+}
+
 void PluginLookAndFeel::setKnobValue(const std::vector<std::unique_ptr<KnobWithLabel>>& knobs, int index, float value)
 {
     if (index >= 0 && index < static_cast<int>(knobs.size()) && knobs[static_cast<size_t>(index)]->slider)
