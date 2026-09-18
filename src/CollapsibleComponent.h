@@ -7,7 +7,7 @@
 class CollapsibleComponent : public juce::Component
 {
 public:
-    enum class CollapseState { Expanded, HCollapsed, VCollapsed };
+    enum class CollapseState { Expanded, HeightCollapsed, WidthCollapsed };
 
     explicit CollapsibleComponent(const juce::String& title);
 

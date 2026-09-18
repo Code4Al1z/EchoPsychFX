@@ -15,6 +15,11 @@ public:
         const juce::String& text, const juce::Justification& justification,
         juce::GroupComponent&) override;
 
+    void drawPopupMenuItem(juce::Graphics&, const juce::Rectangle<int>& area,
+        bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu,
+        const juce::String& text, const juce::String& shortcutKeyText,
+        const juce::Drawable* icon, const juce::Colour* textColour) override;
+
     static const juce::Colour background;
     static const juce::Colour knobThumb;
     static const juce::Colour track;
@@ -25,6 +30,8 @@ public:
     static const juce::Colour groupOutline;
     static const juce::Colour headerBg;
     static const juce::Colour headerText;
+    static const juce::Colour popupRowA;
+    static const juce::Colour popupRowB;
 
     static constexpr int minKnobSize = 50;
     static constexpr int maxKnobSize = 120;

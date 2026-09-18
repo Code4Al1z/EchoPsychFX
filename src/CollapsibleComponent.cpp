@@ -7,14 +7,14 @@ CollapsibleComponent::CollapsibleComponent(const juce::String& title)
 
 int CollapsibleComponent::currentWidth() const
 {
-    return (collapseState_ == CollapseState::VCollapsed)
-        ? PluginLookAndFeel::kHeaderH
+    return (collapseState_ != CollapseState::Expanded)
+        ? juce::jmax(PluginLookAndFeel::kHeaderH, expandedWidth() / 2)
         : expandedWidth();
 }
 
 int CollapsibleComponent::currentHeight() const
 {
-    return (collapseState_ == CollapseState::HCollapsed)
+    return (collapseState_ != CollapseState::Expanded)
         ? PluginLookAndFeel::kHeaderH
         : expandedHeight();
 }
@@ -36,19 +36,21 @@ void CollapsibleComponent::setCollapseState(CollapseState s)
 void CollapsibleComponent::paint(juce::Graphics& g)
 {
     g.fillAll(PluginLookAndFeel::background);
-    paintContent(g);
 
-    const bool hCollapsed = (collapseState_ == CollapseState::HCollapsed);
-    const bool vCollapsed = (collapseState_ == CollapseState::VCollapsed);
+    if (collapseState_ == CollapseState::Expanded)
+        paintContent(g);
 
-    PluginLookAndFeel::drawCollapsibleHeader(g, getHeaderBounds(), title_,
-        hCollapsed || vCollapsed, vCollapsed);
+    const bool isCollapsed = (collapseState_ != CollapseState::Expanded);
+
+    // Header drawn horizontally at the top of the component
+    PluginLookAndFeel::drawCollapsibleHeader(g, getHeaderBounds(), title_, isCollapsed, false);
 }
 
 void CollapsibleComponent::resized()
 {
     const bool expanded = (collapseState_ == CollapseState::Expanded);
 
+    // Hide children when collapsed
     for (int i = 0; i < getNumChildComponents(); ++i)
         getChildComponent(i)->setVisible(expanded);
 
@@ -61,19 +63,17 @@ void CollapsibleComponent::mouseDown(const juce::MouseEvent& e)
     if (!getHeaderBounds().contains(e.getPosition()))
         return;
 
-    if (e.mods.isRightButtonDown())
-        setCollapseState(collapseState_ == CollapseState::VCollapsed
-            ? CollapseState::Expanded : CollapseState::VCollapsed);
-    else
-        setCollapseState(collapseState_ == CollapseState::HCollapsed
-            ? CollapseState::Expanded : CollapseState::HCollapsed);
+    // Normal left-click toggles collapse
+    if (e.mods.isLeftButtonDown())
+    {
+        setCollapseState(collapseState_ == CollapseState::Expanded
+            ? CollapseState::HeightCollapsed : CollapseState::Expanded);
+    }
 }
 
 juce::Rectangle<int> CollapsibleComponent::getHeaderBounds() const
 {
-    if (collapseState_ == CollapseState::VCollapsed)
-        return getLocalBounds();
-    return getLocalBounds().removeFromTop(PluginLookAndFeel::kHeaderH);
+    return juce::Rectangle<int>(0, 0, getWidth(), PluginLookAndFeel::kHeaderH);
 }
 
 juce::Rectangle<int> CollapsibleComponent::getContentBounds() const

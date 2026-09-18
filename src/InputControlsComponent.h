@@ -10,7 +10,7 @@ class InputControlsComponent : public CollapsibleComponent
 public:
     static constexpr int kTiltEQFixedHeight = 130;
     static constexpr int kWidthH = 220;
-    static constexpr int kExpandedW = 2 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+    static constexpr int kExpandedW = 3 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
     static constexpr int kExpandedH = PluginLookAndFeel::kHeaderH + kTiltEQFixedHeight + PluginLookAndFeel::spacing + kWidthH + PluginLookAndFeel::margin * 2;
     static constexpr int kGap = PluginLookAndFeel::margin;
 

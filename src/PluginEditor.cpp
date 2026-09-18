@@ -82,12 +82,20 @@ void AudioPluginAudioProcessorEditor::applyWindowSize()
 
 int AudioPluginAudioProcessorEditor::calculateWindowWidth() const
 {
-    const int col1 = juce::jmax(inputControlsComponent->currentWidth(),
-        microPitchDetuneComponent->currentWidth());
-    const int col2 = juce::jmax(modDelayComponent->currentWidth(),
-        exciterSaturationComponent->currentWidth());
-    const int col3 = juce::jmax(spatialFXComponent->currentWidth(),
-        simpleVerbComponent->currentWidth());
+    // A column shrinks in width ONLY if BOTH components in that column are collapsed
+    auto getColumnWidth = [](const CollapsibleComponent& top, const CollapsibleComponent& bottom) {
+        bool topClosed = (top.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);
+        bool bottomClosed = (bottom.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);
+
+        if (topClosed && bottomClosed)
+            return juce::jmin(top.currentWidth(), bottom.currentWidth());
+
+        return juce::jmax(top.expandedWidth(), bottom.expandedWidth());
+        };
+
+    const int col1 = getColumnWidth(*inputControlsComponent, *microPitchDetuneComponent);
+    const int col2 = getColumnWidth(*modDelayComponent, *exciterSaturationComponent);
+    const int col3 = getColumnWidth(*spatialFXComponent, *simpleVerbComponent);
 
     return L::kEdgePad + col1 + L::kGap + col2 + L::kGap + col3 + L::kEdgePad;
 }
@@ -121,12 +129,19 @@ void AudioPluginAudioProcessorEditor::resized()
     }
     perceptionModeComponent->setVisible(false);
 
-    const int col1W = juce::jmax(inputControlsComponent->currentWidth(),
-        microPitchDetuneComponent->currentWidth());
-    const int col2W = juce::jmax(modDelayComponent->currentWidth(),
-        exciterSaturationComponent->currentWidth());
-    const int col3W = juce::jmax(spatialFXComponent->currentWidth(),
-        simpleVerbComponent->currentWidth());
+    auto getColumnWidth = [](const CollapsibleComponent& top, const CollapsibleComponent& bottom) {
+        bool topClosed = (top.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);
+        bool bottomClosed = (bottom.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);
+
+        if (topClosed && bottomClosed)
+            return juce::jmin(top.currentWidth(), bottom.currentWidth());
+
+        return juce::jmax(top.expandedWidth(), bottom.expandedWidth());
+        };
+
+    const int col1W = getColumnWidth(*inputControlsComponent, *microPitchDetuneComponent);
+    const int col2W = getColumnWidth(*modDelayComponent, *exciterSaturationComponent);
+    const int col3W = getColumnWidth(*spatialFXComponent, *simpleVerbComponent);
 
     const int row1H = juce::jmax(inputControlsComponent->currentHeight(),
         juce::jmax(modDelayComponent->currentHeight(), spatialFXComponent->currentHeight()));

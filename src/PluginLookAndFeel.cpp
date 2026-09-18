@@ -10,11 +10,18 @@ const juce::Colour PluginLookAndFeel::labelText{ 232, 232, 240 };
 const juce::Colour PluginLookAndFeel::groupOutline = juce::Colours::white.withAlpha(0.4f);
 const juce::Colour PluginLookAndFeel::headerBg{ 50, 18, 58 };
 const juce::Colour PluginLookAndFeel::headerText{ 255, 255, 255 };
+const juce::Colour PluginLookAndFeel::popupRowA{ 16, 10, 19 };
+const juce::Colour PluginLookAndFeel::popupRowB{ 46, 29, 54 };
 
 PluginLookAndFeel::PluginLookAndFeel()
 {
     setColour(juce::GroupComponent::outlineColourId, juce::Colours::white.withAlpha(0.5f));
     setColour(juce::GroupComponent::textColourId, juce::Colours::white);
+
+    setColour(juce::PopupMenu::backgroundColourId, popupRowA);
+    setColour(juce::PopupMenu::textColourId, labelText);
+    setColour(juce::PopupMenu::highlightedBackgroundColourId, track);
+    setColour(juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
 }
 
 void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, int height,
@@ -34,6 +41,23 @@ void PluginLookAndFeel::drawGroupComponentOutline(juce::Graphics& g, int width, 
         g.setColour(component.findColour(juce::GroupComponent::textColourId));
         g.drawFittedText(text, 10, 0, textWidth, textHeight, justification, 1);
     }
+}
+
+void PluginLookAndFeel::drawPopupMenuItem(juce::Graphics& g, const juce::Rectangle<int>& area,
+    bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu,
+    const juce::String& text, const juce::String& shortcutKeyText,
+    const juce::Drawable* icon, const juce::Colour* textColour)
+{
+    if (!isSeparator && !(isHighlighted && isActive))
+    {
+        const int rowH = juce::jmax(1, area.getHeight());
+        const int rowIndex = area.getY() / rowH;
+        g.setColour((rowIndex % 2 == 0) ? popupRowA : popupRowB);
+        g.fillRect(area);
+    }
+
+    LookAndFeel_V4::drawPopupMenuItem(g, area, isSeparator, isActive, isHighlighted, isTicked,
+        hasSubMenu, text, shortcutKeyText, icon, textColour);
 }
 
 void PluginLookAndFeel::drawCollapsibleHeader(juce::Graphics& g,
@@ -169,14 +193,37 @@ void PluginLookAndFeel::ShapePicker::setBounds(int x, int y, int width, int heig
     const int n = buttons.size();
     if (n == 0) return;
 
-    const int bw = width / n;
-    int cx = x;
+    // Measure max required width based on text length + padding
+    auto font = juce::Font(13.0f, juce::Font::bold);
+    int maxRequiredTextWidth = 0;
+    for (auto* btn : buttons)
+    {
+        int textW = static_cast<int>(juce::GlyphArrangement::getStringWidth(font, btn->getButtonText())) + 20;
+        if (textW > maxRequiredTextWidth)
+            maxRequiredTextWidth = textW;
+    }
+
+    // Set minimum button width to fit full readable string
+    const int minBtnWidth = juce::jmax(75, maxRequiredTextWidth);
+    int cols = juce::jlimit(1, n, width / minBtnWidth);
+    int rows = (n + cols - 1) / cols;
+
+    int buttonHeight = height / rows;
+    int bw = width / cols;
+
     for (int i = 0; i < n; ++i)
     {
-        const int w = (i == n - 1) ? (x + width - cx) : bw;
-        buttons[i]->setBounds(cx, y, w, height);
-        cx += w;
+        int col = i % cols;
+        int row = i / cols;
+
+        int curX = x + col * bw;
+        int curY = y + row * buttonHeight;
+        int curW = (col == cols - 1) ? (x + width - curX) : bw;
+        int curH = (row == rows - 1) ? (y + height - curY) : buttonHeight;
+
+        buttons[i]->setBounds(curX, curY, curW, curH);
     }
+
     if (hiddenCombo)
         hiddenCombo->setBounds(x, y, 0, 0);
 }
