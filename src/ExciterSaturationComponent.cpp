@@ -85,3 +85,4 @@ void ExciterSaturationComponent::setHarmonicMode(int index)
 {
     harmonicModeBox.setSelectedId(index + 1, juce::sendNotification);
 }
+void ExciterSaturationComponent::setAutoGain(bool enabled) { autoGainToggle.setToggleState(enabled, juce::sendNotification); }

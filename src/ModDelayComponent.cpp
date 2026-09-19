@@ -72,3 +72,4 @@ void ModDelayComponent::setModRate(float v) { PluginLookAndFeel::setKnobValue(kn
 void ModDelayComponent::setMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 3, v); }
 void ModDelayComponent::setFeedbackLeft(float v) { PluginLookAndFeel::setKnobValue(knobs, 4, v); }
 void ModDelayComponent::setFeedbackRight(float v) { PluginLookAndFeel::setKnobValue(knobs, 5, v); }
+void ModDelayComponent::setSyncEnabled(bool shouldSync) { syncToggle.setToggleState(shouldSync, juce::sendNotification); }

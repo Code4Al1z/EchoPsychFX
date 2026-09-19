@@ -31,6 +31,7 @@ public:
     void setMix(float v);
     void setFeedbackLeft(float v);
     void setFeedbackRight(float v);
+    void setSyncEnabled(bool shouldSync);
 
 private:
     juce::GroupComponent group{ "modDelayGroup", "" };

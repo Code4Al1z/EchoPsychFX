@@ -9,6 +9,7 @@
 #include "ModDelayComponent.h"
 #include "SpatialFXComponent.h"
 #include "MicroPitchDetuneComponent.h"
+#include "ExciterSaturation.h"
 #include "ExciterSaturationComponent.h"
 #include "SimpleVerbWithPredelayComponent.h"
 
@@ -80,15 +81,17 @@ private:
 
     /** Helper to apply preset parameters to all components */
     void usePreset(ModDelay::ModulationType type, float delayTime, float feedbackLeft, float feedbackRight,
-        float modMix, float delayModDepth, float delayModRate,
+        float modMix, float delayModDepth, float delayModRate, bool syncEnabled,
         float width, float intensity, float midSideBalance, bool mono, float tiltEQ,
         float phaseOffsetL, float phaseOffsetR, float modulationRateL, float modulationRateR,
         float modulationDepthL, float modulationDepthR,
         float wetDryMix, float lfoPhaseOffset, float allpassFrequency, float leftHaasMs,
         float rightHaasMs, SpatialFX::LfoWaveform modShape,
         float detuneAmount, float lfoRate, float lfoDepth, float delayCentre,
-        float stereoSeparation, float mix,
+        float stereoSeparation, float mix, float detuneFeedback, float diffusion,
         float drive, float exciterMix, float highpass,
+        ExciterSaturation::SaturationType saturationType, ExciterSaturation::HarmonicMode harmonicMode,
+        float toneBrightness, float harmonicBalance, bool autoGainEnabled,
         float predelay, float size, float damping, float wet);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PerceptionPresetManager)

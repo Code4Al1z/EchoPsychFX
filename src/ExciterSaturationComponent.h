@@ -31,6 +31,7 @@ public:
     void setHarmonicBalance(float v);
     void setSaturationType(int index);
     void setHarmonicMode(int index);
+    void setAutoGain(bool enabled);
 
 private:
     juce::GroupComponent group{ "exciterSaturationGroup", "" };
