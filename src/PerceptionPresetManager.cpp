@@ -107,8 +107,8 @@ void PerceptionPresetManager::initializePresets()
             0.08f, -0.05f, 0.3f, 0.3f, 0.6f, 0.6f,
             0.7f, 0.25f, 2500.0f, 0.5f, 0.6f, SpatialFX::LfoWaveform::Sine,
             3.0f, 0.25f, 0.0015f, 0.006f, 0.8f, 0.5f,
-            6.0f, 0.4f, 0.1f,
-            0.08f, 0.85f, 0.5f, 0.4f);
+            6.0f, 0.4f, 100.0f,
+            80.0f, 0.85f, 0.5f, 0.4f);
         };
 
     presets["Panic Room"] = [this]() {
@@ -118,8 +118,8 @@ void PerceptionPresetManager::initializePresets()
             0.15f, -0.18f, 1.2f, 0.8f, 0.85f, 1.1f,
             0.9f, 0.2f, 3200.0f, 0.1f, 0.2f, SpatialFX::LfoWaveform::Triangle,
             -5.0f, 3.0f, 0.0008f, 0.003f, 0.3f, 0.7f,
-            7.5f, 0.65f, 0.2f,
-            0.02f, 0.3f, 0.85f, 0.25f);
+            7.5f, 0.65f, 200.0f,
+            20.0f, 0.3f, 0.85f, 0.25f);
         };
 
     presets["Intimacy"] = [this]() {
@@ -129,8 +129,8 @@ void PerceptionPresetManager::initializePresets()
             0.03f, -0.02f, 0.15f, 0.15f, 0.25f, 0.25f,
             0.35f, 0.1f, 1600.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Sine,
             1.5f, 0.1f, 0.0002f, 0.001f, 0.4f, 0.3f,
-            2.0f, 0.2f, 0.05f,
-            0.015f, 0.25f, 0.3f, 0.3f);
+            2.0f, 0.2f, 50.0f,
+            15.0f, 0.25f, 0.3f, 0.3f);
         };
 
     presets["Blade Runner"] = [this]() {
@@ -140,8 +140,8 @@ void PerceptionPresetManager::initializePresets()
             0.2f, -0.1f, 0.4f, 0.6f, 0.5f, 0.7f,
             0.85f, 0.3f, 4200.0f, 0.7f, 0.3f, SpatialFX::LfoWaveform::Random,
             -2.0f, 0.6f, 0.0018f, 0.004f, 0.75f, 0.6f,
-            4.5f, 0.55f, 0.12f,
-            0.12f, 0.95f, 0.6f, 0.5f);
+            4.5f, 0.55f, 120.0f,
+            100.0f, 0.95f, 0.6f, 0.5f);
         };
 
     presets["Alien Abduction"] = [this]() {
@@ -151,8 +151,8 @@ void PerceptionPresetManager::initializePresets()
             0.18f, -0.22f, 0.9f, 0.9f, 0.7f, 0.7f,
             0.8f, 0.45f, 4200.0f, 0.6f, 0.6f, SpatialFX::LfoWaveform::Sine,
             4.0f, 1.2f, 0.001f, 0.0025f, 0.9f, 0.65f,
-            5.5f, 0.6f, 0.18f,
-            0.1f, 0.9f, 0.4f, 0.55f);
+            5.5f, 0.6f, 180.0f,
+            100.0f, 0.9f, 0.4f, 0.55f);
         };
 
     presets["Glass Tunnel"] = [this]() {
@@ -162,8 +162,8 @@ void PerceptionPresetManager::initializePresets()
             0.05f, -0.08f, 0.25f, 0.25f, 0.4f, 0.4f,
             0.65f, 0.2f, 3200.0f, 0.5f, 0.5f, SpatialFX::LfoWaveform::Triangle,
             1.0f, 0.3f, 0.0005f, 0.0015f, 0.55f, 0.4f,
-            3.5f, 0.35f, 0.08f,
-            0.06f, 0.65f, 0.8f, 0.35f);
+            3.5f, 0.35f, 80.0f,
+            60.0f, 0.65f, 0.8f, 0.35f);
         };
 
     presets["Dream Logic"] = [this]() {
@@ -173,8 +173,8 @@ void PerceptionPresetManager::initializePresets()
             0.06f, -0.04f, 0.35f, 0.35f, 0.48f, 0.48f,
             0.55f, 0.3f, 3000.0f, 0.4f, 0.4f, SpatialFX::LfoWaveform::Sine,
             1.8f, 0.5f, 0.0007f, 0.002f, 0.6f, 0.45f,
-            3.0f, 0.3f, 0.07f,
-            0.09f, 0.75f, 0.45f, 0.45f);
+            3.0f, 0.3f, 70.0f,
+            90.0f, 0.75f, 0.45f, 0.45f);
         };
 
     presets["Womb Space"] = [this]() {
@@ -184,8 +184,8 @@ void PerceptionPresetManager::initializePresets()
             0.02f, -0.015f, 0.08f, 0.08f, 0.15f, 0.15f,
             0.3f, 0.05f, 2000.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Sine,
             0.3f, 0.1f, 0.0001f, 0.0004f, 0.25f, 0.2f,
-            1.0f, 0.15f, 0.01f,
-            0.005f, 0.8f, 0.25f, 0.35f);
+            1.0f, 0.15f, 10.0f,
+            5.0f, 0.8f, 0.25f, 0.35f);
         };
 
     presets["Bipolar Bloom"] = [this]() {
@@ -195,8 +195,8 @@ void PerceptionPresetManager::initializePresets()
             0.18f, -0.12f, 0.7f, 0.7f, 0.65f, 0.65f,
             0.75f, 0.3f, 4200.0f, 0.3f, 0.25f, SpatialFX::LfoWaveform::Random,
             -3.5f, 1.5f, 0.0009f, 0.0022f, 0.95f, 0.68f,
-            6.5f, 0.5f, 0.11f,
-            0.07f, 0.95f, 0.35f, 0.6f);
+            6.5f, 0.5f, 110.0f,
+            70.0f, 0.95f, 0.35f, 0.6f);
         };
 
     presets["Quiet Confidence"] = [this]() {
@@ -206,8 +206,8 @@ void PerceptionPresetManager::initializePresets()
             0.04f, -0.03f, 0.2f, 0.2f, 0.35f, 0.35f,
             0.45f, 0.2f, 2400.0f, 0.15f, 0.2f, SpatialFX::LfoWaveform::Sine,
             1.2f, 0.2f, 0.0004f, 0.0012f, 0.45f, 0.3f,
-            2.8f, 0.2f, 0.06f,
-            0.02f, 0.45f, 0.25f, 0.3f);
+            2.8f, 0.2f, 60.0f,
+            20.0f, 0.45f, 0.25f, 0.3f);
         };
 
     presets["Falling Upwards"] = [this]() {
@@ -218,7 +218,7 @@ void PerceptionPresetManager::initializePresets()
             0.6f, 0.22f, 1800.0f, 0.25f, 0.25f, SpatialFX::LfoWaveform::Triangle,
             2.2f, 0.4f, 0.0006f, 0.0018f, 0.5f, 0.5f,
             4.0f, 0.7f, 100.0f,
-            0.04f, 0.85f, 0.3f, 0.55f);
+            40.0f, 0.85f, 0.3f, 0.55f);
         };
 
     presets["Molten Light"] = [this]() {
@@ -229,7 +229,7 @@ void PerceptionPresetManager::initializePresets()
             0.4f, 0.12f, 4200.0f, 0.5f, 0.3f, SpatialFX::LfoWaveform::Sine,
             3.0f, 0.5f, 0.0007f, 0.002f, 0.75f, 0.55f,
             7.5f, 0.75f, 120.0f,
-            0.06f, 0.7f, 0.2f, 0.7f);
+            60.0f, 0.7f, 0.2f, 0.7f);
         };
 
     presets["Ethereal Echo"] = [this]() {
@@ -239,8 +239,8 @@ void PerceptionPresetManager::initializePresets()
             0.12f, -0.1f, 0.4f, 0.55f, 0.65f, 0.65f,
             0.3f, 0.09f, 4200.0f, 0.4f, 0.3f, SpatialFX::LfoWaveform::Triangle,
             -2.5f, 1.2f, 0.0008f, 0.0025f, 0.75f, 0.6f,
-            5.5f, 0.7f, 0.15f,
-            0.05f, 0.9f, 0.15f, 0.65f);
+            5.5f, 0.7f, 150.0f,
+            50.0f, 0.9f, 0.15f, 0.65f);
         };
 
     presets["Lush Dreamscape"] = [this]() {
@@ -250,8 +250,8 @@ void PerceptionPresetManager::initializePresets()
             0.15f, -0.12f, 0.5f, 0.65f, 0.75f, 0.75f,
             0.2f, 0.06f, 4200.0f, 0.6f, 0.3f, SpatialFX::LfoWaveform::Sine,
             -3.5f, 1.5f, 0.0009f, 0.0022f, 0.8f, 0.7f,
-            6.5f, 0.8f, 0.2f,
-            0.06f, 1.0f, 0.3f, 0.75f);
+            6.5f, 0.8f, 200.0f,
+            60.0f, 1.0f, 0.3f, 0.75f);
         };
 
     presets["Skin Contact"] = [this]() {
@@ -262,7 +262,7 @@ void PerceptionPresetManager::initializePresets()
             0.1f, 0.03f, 4200.0f, 0.4f, 0.3f, SpatialFX::LfoWaveform::Random,
             1.1f, 0.15f, 0.0001f, 0.0004f, 0.4f, 0.25f,
             4.0f, 0.45f, 44.0f,
-            0.01f, 0.35f, 0.1f, 0.2f);
+            10.0f, 0.35f, 0.1f, 0.2f);
         };
 
     presets["Sonic Embrace"] = [this]() {
@@ -273,7 +273,7 @@ void PerceptionPresetManager::initializePresets()
             0.25f, 0.1f, 4200.0f, 0.3f, 0.25f, SpatialFX::LfoWaveform::Sine,
             -1.5f, 0.25f, 0.0003f, 0.0008f, 0.5f, 0.35f,
             4.5f, 0.6f, 120.0f,
-            0.03f, 0.75f, 0.25f, 0.5f);
+            30.0f, 0.75f, 0.25f, 0.5f);
         };
 
     presets["Strobe Heaven"] = [this]() {
@@ -284,7 +284,7 @@ void PerceptionPresetManager::initializePresets()
             1.0f, 0.2f, 4200.0f, 0.7f, 0.7f, SpatialFX::LfoWaveform::Triangle,
             -4.0f, 2.0f, 0.0012f, 0.0025f, 0.6f, 0.7f,
             8.5f, 0.75f, 150.0f,
-            0.02f, 0.6f, 0.1f, 0.9f);
+            20.0f, 0.6f, 0.1f, 0.9f);
         };
 
     presets["Glass Flame"] = [this]() {
@@ -295,7 +295,7 @@ void PerceptionPresetManager::initializePresets()
             0.65f, 0.15f, 3300.0f, 0.4f, 0.4f, SpatialFX::LfoWaveform::Sine,
             2.0f, 0.3f, 0.0004f, 0.0016f, 0.6f, 0.4f,
             5.5f, 0.8f, 110.0f,
-            0.03f, 0.8f, 0.2f, 0.5f);
+            30.0f, 0.8f, 0.2f, 0.5f);
         };
 
     presets["Celestial Vault"] = [this]() {
@@ -305,8 +305,8 @@ void PerceptionPresetManager::initializePresets()
             0.02f, 0.02f, 0.15f, 0.15f, 0.5f, 0.5f,
             0.65f, 0.05f, 2800.0f, 0.5f, 0.5f, SpatialFX::LfoWaveform::Sine,
             2.0f, 0.2f, 0.001f, 0.005f, 0.75f, 0.4f,
-            4.5f, 0.35f, 0.12f,
-            0.12f, 1.0f, 0.45f, 0.7f);
+            4.5f, 0.35f, 120.0f,
+            100.0f, 1.0f, 0.45f, 0.7f);
         };
 
     presets["Deep Illusion"] = [this]() {
@@ -316,8 +316,8 @@ void PerceptionPresetManager::initializePresets()
             -0.02f, 0.03f, 0.2f, 0.2f, 0.35f, 0.35f,
             0.6f, 0.1f, 3600.0f, 0.3f, 0.3f, SpatialFX::LfoWaveform::Triangle,
             2.5f, 0.15f, 0.001f, 0.004f, 0.5f, 0.35f,
-            3.5f, 0.25f, 0.09f,
-            0.06f, 0.9f, 0.6f, 0.5f);
+            3.5f, 0.25f, 90.0f,
+            60.0f, 0.9f, 0.6f, 0.5f);
         };
 
     presets["Ego Dissolve"] = [this]() {
@@ -327,8 +327,8 @@ void PerceptionPresetManager::initializePresets()
             0.1f, -0.1f, 0.35f, 0.35f, 0.5f, 0.5f,
             0.55f, 0.2f, 2400.0f, 0.4f, 0.4f, SpatialFX::LfoWaveform::Sine,
             1.5f, 0.3f, 0.0015f, 0.0065f, 0.75f, 0.45f,
-            5.5f, 0.3f, 0.1f,
-            0.1f, 0.88f, 0.7f, 0.6f);
+            5.5f, 0.3f, 100.0f,
+            100.0f, 0.88f, 0.7f, 0.6f);
         };
 
     presets["Memory Dust"] = [this]() {
@@ -338,8 +338,8 @@ void PerceptionPresetManager::initializePresets()
             0.04f, 0.05f, 0.2f, 0.2f, 0.3f, 0.3f,
             0.5f, 0.15f, 1600.0f, 0.08f, 0.08f, SpatialFX::LfoWaveform::Random,
             2.8f, 0.25f, 0.001f, 0.005f, 0.7f, 0.4f,
-            4.0f, 0.2f, 0.08f,
-            0.07f, 0.9f, 0.55f, 0.45f);
+            4.0f, 0.2f, 80.0f,
+            70.0f, 0.9f, 0.55f, 0.45f);
         };
 
     presets["Gentle Slap"] = [this]() {
@@ -349,8 +349,8 @@ void PerceptionPresetManager::initializePresets()
             0.02f, -0.02f, 0.1f, 0.1f, 0.15f, 0.15f,
             0.25f, 0.2f, 4200.0f, 0.05f, 0.05f, SpatialFX::LfoWaveform::Sine,
             1.2f, 0.1f, 0.0003f, 0.0012f, 0.4f, 0.3f,
-            2.5f, 0.15f, 0.05f,
-            0.02f, 0.35f, 0.2f, 0.3f);
+            2.5f, 0.15f, 50.0f,
+            20.0f, 0.35f, 0.2f, 0.3f);
         };
 
     presets["Moon Dance"] = [this]() {
@@ -361,7 +361,7 @@ void PerceptionPresetManager::initializePresets()
             0.45f, 0.4f, 4200.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Triangle,
             1.5f, 0.25f, 0.0003f, 0.0008f, 0.5f, 0.35f,
             3.0f, 0.5f, 40.0f,
-            0.03f, 0.75f, 0.25f, 0.5f);
+            30.0f, 0.75f, 0.25f, 0.5f);
         };
 
     presets["Biting Lips"] = [this]() {
@@ -371,8 +371,8 @@ void PerceptionPresetManager::initializePresets()
             0.02f, -0.02f, 0.1f, 0.1f, 0.15f, 0.15f,
             0.25f, 0.3f, 4200.0f, 0.1f, 0.1f, SpatialFX::LfoWaveform::Random,
             1.2f, 0.1f, 0.0003f, 0.0012f, 0.4f, 0.3f,
-            2.5f, 0.15f, 0.05f,
-            0.02f, 0.35f, 0.2f, 0.3f);
+            2.5f, 0.15f, 50.0f,
+            20.0f, 0.35f, 0.2f, 0.3f);
         };
 
     presets["Stormy Day"] = [this]() {
@@ -383,7 +383,7 @@ void PerceptionPresetManager::initializePresets()
             0.65f, 0.45f, 4200.0f, 0.3f, 0.3f, SpatialFX::LfoWaveform::Random,
             2.0f, 0.3f, 0.0004f, 0.0016f, 0.6f, 0.4f,
             5.5f, 0.8f, 110.0f,
-            0.03f, 0.8f, 0.2f, 0.5f);
+            30.0f, 0.8f, 0.2f, 0.5f);
         };
 
     presets["Summer Sunset"] = [this]() {
@@ -394,7 +394,7 @@ void PerceptionPresetManager::initializePresets()
             0.75f, 0.15f, 4200.0f, 0.35f, 0.15f, SpatialFX::LfoWaveform::Sine,
             -0.8f, 0.8f, 0.0004f, 0.0015f, 0.6f, 0.5f,
             4.0f, 0.5f, 80.0f,
-            0.06f, 1.0f, 0.3f, 0.75f);
+            60.0f, 1.0f, 0.3f, 0.75f);
         };
 
     presets["Ocean Waves"] = [this]() {
@@ -405,7 +405,7 @@ void PerceptionPresetManager::initializePresets()
             0.55f, 0.12f, 4200.0f, 0.3f, 0.12f, SpatialFX::LfoWaveform::Triangle,
             -1.5f, 0.4f, 0.0006f, 0.0022f, 0.65f, 0.5f,
             4.5f, 0.6f, 120.0f,
-            0.05f, 0.9f, 0.25f, 0.55f);
+            50.0f, 0.9f, 0.25f, 0.55f);
         };
 
     presets["Crystal Clear"] = [this]() {
@@ -416,7 +416,7 @@ void PerceptionPresetManager::initializePresets()
             0.2f, 0.05f, 4200.0f, 0.15f, 0.05f, SpatialFX::LfoWaveform::Sine,
             0.7f, 0.1f, 0.0002f, 0.0008f, 0.5f, 0.2f,
             1.2f, 0.25f, 400.0f,
-            0.01f, 0.4f, 0.3f, 0.3f);
+            10.0f, 0.4f, 0.3f, 0.3f);
         };
 
     presets["Sweetest Memory"] = [this]() {
@@ -427,6 +427,6 @@ void PerceptionPresetManager::initializePresets()
             0.55f, 0.05f, 4200.0f, 0.4f, 0.05f, SpatialFX::LfoWaveform::Sine,
             -1.2f, 0.25f, 0.0003f, 0.0009f, 0.55f, 0.35f,
             3.0f, 0.5f, 90.0f,
-            0.06f, 0.8f, 0.3f, 0.65f);
+            60.0f, 0.8f, 0.3f, 0.65f);
         };
 }
