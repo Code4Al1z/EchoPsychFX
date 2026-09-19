@@ -5,13 +5,16 @@
 void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
     sampleRate = static_cast<float>(spec.sampleRate);
 
-    constexpr size_t maxDelaySamples = 44100;
+    const size_t maxDelaySamples = static_cast<size_t>(std::ceil(2.0 * spec.sampleRate)) + 1;
     delayL.reset();
     delayR.reset();
-    delayL.setMaximumDelayInSamples(maxDelaySamples);
-    delayR.setMaximumDelayInSamples(maxDelaySamples);
-    delayL.prepare(spec);
-    delayR.prepare(spec);
+    delayL.setMaximumDelayInSamples(static_cast<int>(maxDelaySamples));
+    delayR.setMaximumDelayInSamples(static_cast<int>(maxDelaySamples));
+
+    juce::dsp::ProcessSpec monoSpec = spec;
+    monoSpec.numChannels = 1;
+    delayL.prepare(monoSpec);
+    delayR.prepare(monoSpec);
 
     modulationTypeCrossfade.reset(sampleRate, 0.02);
     modulationTypeCrossfade.setCurrentAndTargetValue(0.0f);
@@ -83,11 +86,11 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
 
         // Read from delay lines
         float outL = delayL.popSample(0, delayLInSamples, true);
-        float outR = delayR.popSample(1, delayRInSamples, true);
+        float outR = delayR.popSample(0, delayRInSamples, true);
 
         // Write to delay lines with feedback
         delayL.pushSample(0, inL + outL * fbL);
-        delayR.pushSample(1, inR + outR * fbR);
+        delayR.pushSample(0, inR + outR * fbR);
 
         // Mix dry and wet signals
         left[i] = inL * (1.0f - wetMix) + outL * wetMix;
