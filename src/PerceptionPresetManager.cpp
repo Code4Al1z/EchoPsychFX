@@ -67,6 +67,129 @@ bool PerceptionPresetManager::matchesLastAppliedPreset() const
     return apvtsRef.copyState().isEquivalentTo(lastAppliedPresetState);
 }
 
+juce::String PerceptionPresetManager::generateBreakdown() const
+{
+    auto raw = [this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); };
+
+    juce::StringArray clauses;
+
+    // Stereo image
+    const bool isMono = raw("mono") >= 0.5f;
+    const float width = raw("width");
+    const float midSide = raw("midSideBalance");
+
+    if (isMono)
+        clauses.add("collapsed to mono, no stereo image at all");
+    else if (width > 1.3f)
+        clauses.add("very wide, pushed well beyond the speakers");
+    else if (width > 1.05f)
+        clauses.add("wider than natural");
+    else if (width < 0.7f)
+        clauses.add("narrow, pulled toward the centre");
+    else if (width < 0.95f)
+        clauses.add("slightly narrowed");
+
+    if (!isMono)
+    {
+        if (midSide > 0.3f)
+            clauses.add("weighted toward the centre image");
+        else if (midSide < -0.3f)
+            clauses.add("weighted toward the sides, more diffuse");
+    }
+
+    // Left/right pull, from phase and Haas offsets together
+    const float phaseL = raw("phaseOffsetL");
+    const float phaseR = raw("phaseOffsetR");
+    const float haasL = raw("haasDelayL");
+    const float haasR = raw("haasDelayR");
+    const float pull = (phaseR - phaseL) * 5.0f + (haasR - haasL) * 0.1f;
+
+    if (pull > 0.3f)
+        clauses.add("pulled toward the right");
+    else if (pull < -0.3f)
+        clauses.add("pulled toward the left");
+    else if (haasL > 5.0f || haasR > 5.0f)
+        clauses.add("spread wide with a Haas-style stereo trick");
+
+    // Brightness / tilt
+    const float tilt = raw("tiltEQ");
+    if (tilt > 0.15f)
+        clauses.add("brighter and more forward, tilted up top");
+    else if (tilt < -0.15f)
+        clauses.add("warmer and darker, tilted toward the low end");
+
+    // Delay movement
+    const float modDepth = raw("modDepth");
+    const float modRate = raw("modRate");
+    const float feedbackAvg = (raw("feedbackL") + raw("feedbackR")) * 0.5f;
+
+    if (modDepth > 4.0f && modRate > 0.5f)
+        clauses.add("actively swirling, with fast modulated echoes");
+    else if (modDepth > 4.0f)
+        clauses.add("a slow, deep modulation drifting underneath");
+    else if (modDepth < 0.3f && feedbackAvg < 0.05f)
+        clauses.add("the delay is essentially inaudible, close to bypassed");
+
+    if (feedbackAvg > 0.7f)
+        clauses.add("long, cascading echo trails");
+
+    // Micro-pitch detune
+    const float detune = raw("detuneAmount");
+    const float detuneAbs = detune < 0.0f ? -detune : detune;
+    const float diffusion = raw("diffusion");
+
+    if (detuneAbs > 15.0f)
+        clauses.add("pitch visibly drifting, an unstable shimmer");
+    else if (detuneAbs > 3.0f)
+        clauses.add("a subtle pitch shimmer");
+
+    if (diffusion > 0.5f)
+        clauses.add("blurred and diffuse in pitch");
+
+    // Exciter / saturation character
+    const float exciterMix = raw("exciterMix");
+    const float exciterDrive = raw("exciterDrive");
+
+    if (exciterMix > 0.15f && exciterDrive > 1.0f)
+    {
+        static const char* satWords[] = {
+            "a gentle, soft-clipped warmth", "an aggressive, hard-clipped edge",
+            "a vintage tube warmth", "a lo-fi, tape-worn character",
+            "a weighty, analog-console heft", "a cold, synthetic bite"
+        };
+        const int satType = juce::jlimit(0, 5, juce::roundToInt(raw("exciterSaturationType")));
+        clauses.add(juce::String("harmonically excited with ") + satWords[satType]);
+
+        const int harmMode = juce::roundToInt(raw("exciterHarmonicMode"));
+        if (harmMode == 1)
+            clauses.add("a hollow, reedy harmonic tilt");
+        else if (harmMode == 2)
+            clauses.add("a warm, rounded harmonic tilt");
+    }
+
+    // Reverb space
+    const float size = raw("size");
+    const float wet = raw("wet");
+    const float predelay = raw("predelayMs");
+
+    if (size > 0.65f && wet > 0.45f)
+        clauses.add("a spacious, distant reverb tail");
+    else if (size < 0.25f && wet < 0.25f)
+        clauses.add("close and dry, almost no reverb");
+
+    if (predelay > 40.0f)
+        clauses.add("a distinct gap before the reverb blooms");
+
+    if (clauses.isEmpty())
+        return "Neutral - nothing strongly colored yet.";
+
+    juce::String result = clauses[0].substring(0, 1).toUpperCase() + clauses[0].substring(1);
+    for (int i = 1; i < clauses.size(); ++i)
+        result += (i == clauses.size() - 1 ? ", and " : ", ") + clauses[i];
+    result += ".";
+    return result;
+}
+
 juce::StringArray PerceptionPresetManager::getUserPresetNames() const
 {
     juce::StringArray names;

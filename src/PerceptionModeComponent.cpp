@@ -34,8 +34,15 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     renameButton.onClick = [this] { showRenameDialog(); };
     deleteButton.onClick = [this] { showDeleteConfirmation(); };
 
+    breakdownLabel.setFont(juce::Font(12.5f));
+    breakdownLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::labelText.withAlpha(0.85f));
+    breakdownLabel.setJustificationType(juce::Justification::topLeft);
+    breakdownLabel.setMinimumHorizontalScale(1.0f);
+    addAndMakeVisible(breakdownLabel);
+
     refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
     lastSelectedPresetName = presetSelector.getText();
+    refreshBreakdown();
 
     startTimerHz(10);
 }
@@ -62,6 +69,9 @@ void PerceptionModeComponent::resized()
     renameButton.setBounds(buttonRow.removeFromLeft(buttonW));
     buttonRow.removeFromLeft(8);
     deleteButton.setBounds(buttonRow);
+
+    area.removeFromTop(10); // spacing
+    breakdownLabel.setBounds(area);
 }
 
 void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -76,6 +86,7 @@ void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasCha
         // A real preset was picked, so drop the synthetic "Custom" entry - refreshPresetList
         // rebuilds the list from scratch, which naturally omits it.
         refreshPresetList(selectedName);
+        refreshBreakdown();
     }
 }
 
@@ -100,6 +111,17 @@ void PerceptionModeComponent::timerCallback()
         // and restore its name rather than leaving a stale label showing.
         refreshPresetList(lastSelectedPresetName);
     }
+
+    // Always kept live so it describes whatever's actually playing, factory preset, user
+    // preset, or Custom alike - not just recomputed on preset changes.
+    refreshBreakdown();
+}
+
+void PerceptionModeComponent::refreshBreakdown()
+{
+    const auto newText = presetManagerRef.generateBreakdown();
+    if (breakdownLabel.getText() != newText)
+        breakdownLabel.setText(newText, juce::dontSendNotification);
 }
 
 void PerceptionModeComponent::refreshPresetList(const juce::String& presetToSelect)

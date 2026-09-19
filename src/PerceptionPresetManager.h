@@ -50,6 +50,13 @@ public:
         preset has been applied yet this session (nothing to have drifted from). */
     bool matchesLastAppliedPreset() const;
 
+    /** Builds a plain-language description of what the *current* live parameter values
+        (not any named preset) would sound/feel like - width and pull, brightness, delay
+        movement, pitch drift, exciter character, and reverb space. Always reflects the
+        live APVTS state, so it stays accurate for factory presets, user presets, and
+        "Custom" alike. */
+    juce::String generateBreakdown() const;
+
     /** Saves the current plugin state as a user preset. Fails (returns false) if
         presetName is empty or collides with a read-only factory preset name. */
     bool saveCurrentAsUserPreset(const juce::String& presetName);

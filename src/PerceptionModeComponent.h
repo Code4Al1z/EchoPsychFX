@@ -30,6 +30,7 @@ private:
     juce::TextButton saveAsButton{ "Save As..." };
     juce::TextButton renameButton{ "Rename..." };
     juce::TextButton deleteButton{ "Delete" };
+    juce::Label breakdownLabel;
 
     juce::StringArray factoryPresetNames;
 
@@ -39,6 +40,7 @@ private:
 
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
     void timerCallback() override;
+    void refreshBreakdown();
 
     /** Rebuilds the dropdown from the factory list plus the manager's current user
         presets, and selects presetToSelect if given (otherwise keeps the current text). */
