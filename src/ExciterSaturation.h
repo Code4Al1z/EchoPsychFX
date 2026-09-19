@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_dsp/juce_dsp.h>
 #include <array>
+#include <memory>
 
 class ExciterSaturation
 {
@@ -81,8 +82,8 @@ private:
 
     float sampleRate = 44100.0f;
 
-    // 2x oversampling
-    juce::dsp::Oversampling<float> oversampling;
+    // 2x oversampling - constructed in prepare() once the real channel count is known
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
 
     // Pre-saturation highpass
     juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,

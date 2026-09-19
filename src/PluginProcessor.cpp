@@ -256,10 +256,20 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float drive = *parameters.getRawParameterValue("exciterDrive");
         float exciterMix = *parameters.getRawParameterValue("exciterMix");
         float highpassFreq = *parameters.getRawParameterValue("exciterHighpass");
+        int satTypeValue = juce::roundToInt(parameters.getRawParameterValue("exciterSaturationType")->load());
+        int harmonicModeValue = juce::roundToInt(parameters.getRawParameterValue("exciterHarmonicMode")->load());
+        float toneBrightness = *parameters.getRawParameterValue("exciterToneBrightness");
+        float harmonicBalance = *parameters.getRawParameterValue("exciterHarmonicBalance");
+        bool autoGain = *parameters.getRawParameterValue("exciterAutoGain") >= 0.5f;
 
         exciterSaturation.setDrive(drive);
         exciterSaturation.setMix(exciterMix);
         exciterSaturation.setHighpass(highpassFreq);
+        exciterSaturation.setSaturationType(static_cast<ExciterSaturation::SaturationType>(satTypeValue));
+        exciterSaturation.setHarmonicMode(static_cast<ExciterSaturation::HarmonicMode>(harmonicModeValue));
+        exciterSaturation.setToneBrightness(toneBrightness);
+        exciterSaturation.setHarmonicBalance(harmonicBalance);
+        exciterSaturation.setAutoGainEnabled(autoGain);
         exciterSaturation.process(block);
     }
 
@@ -658,6 +668,41 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{ "exciterSaturationType", 1 },
+        "Exciter Saturation Type",
+        juce::StringArray{ "Soft", "Hard", "Tube", "Tape", "Transformer", "Digital" },
+        0)); // Default: Soft
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{ "exciterHarmonicMode", 1 },
+        "Exciter Harmonic Mode",
+        juce::StringArray{ "Balanced", "Odd Only", "Even Only" },
+        0)); // Default: Balanced
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "exciterToneBrightness", 1 },
+        "Exciter Tone Brightness",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "exciterHarmonicBalance", 1 },
+        "Exciter Harmonic Balance",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{ "exciterAutoGain", 1 },
+        "Exciter Auto Gain",
+        true));
 
     //==============================================================================
     // SimpleVerbWithPredelay Parameters

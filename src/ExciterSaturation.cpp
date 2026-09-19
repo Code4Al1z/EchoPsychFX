@@ -2,7 +2,6 @@
 #include <cmath>
 
 ExciterSaturation::ExciterSaturation()
-    : oversampling(2, 1, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false)
 {
 }
 
@@ -10,8 +9,12 @@ void ExciterSaturation::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float>(spec.sampleRate);
 
-    // Prepare oversampling
-    oversampling.initProcessing(spec.maximumBlockSize);
+    // Construct oversampling here, now that the real channel count is known,
+    // instead of hardcoding 2 (which broke on mono instances)
+    oversampling = std::make_unique<juce::dsp::Oversampling<float>>(
+        static_cast<size_t>(spec.numChannels), 1,
+        juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
+    oversampling->initProcessing(spec.maximumBlockSize);
     juce::dsp::ProcessSpec oversampledSpec = spec;
     oversampledSpec.sampleRate *= 2.0;
     oversampledSpec.maximumBlockSize *= 2;
@@ -50,7 +53,8 @@ void ExciterSaturation::prepare(const juce::dsp::ProcessSpec& spec)
 
 void ExciterSaturation::reset()
 {
-    oversampling.reset();
+    if (oversampling != nullptr)
+        oversampling->reset();
     highpass.reset();
     preEmphasis.reset();
     deEmphasis.reset();
@@ -227,10 +231,13 @@ float ExciterSaturation::transformerSaturation(float x)
 
 float ExciterSaturation::digitalSaturation(float x)
 {
-    // Bit reduction style
+    // Bit reduction style. Clip to unity before quantizing - otherwise the driven
+    // input can be far larger than the quantization step, so rounding barely moves
+    // it and the bit-crush effect quietly disappears as Drive increases.
+    float clipped = juce::jlimit(-1.0f, 1.0f, x);
     float bits = 8.0f;
     float levels = std::pow(2.0f, bits);
-    return std::round(x * levels) / levels;
+    return std::round(clipped * levels) / levels;
 }
 
 float ExciterSaturation::waveshape(float x, SaturationType type, float driveAmount)
@@ -291,14 +298,14 @@ float ExciterSaturation::applyHarmonicMode(float x, HarmonicMode mode)
 
 void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
 {
-    if (block.getNumSamples() == 0)
+    if (block.getNumSamples() == 0 || oversampling == nullptr)
         return;
 
     auto numSamples = static_cast<int>(block.getNumSamples());
     auto numChannels = static_cast<int>(block.getNumChannels());
 
-    // Store dry signal
-    dryBuffer.clear();
+    // Store dry signal - needed below to parallel-mix the excited band back on top of it,
+    // since processSamplesDown() overwrites block with the excited-band-only content
     for (int ch = 0; ch < numChannels; ++ch)
         dryBuffer.copyFrom(ch, 0, block.getChannelPointer(static_cast<size_t>(ch)), numSamples);
 
@@ -315,10 +322,12 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
         }
     }
 
-    // Upsample
-    juce::dsp::AudioBlock<float> oversampledBlock = oversampling.processSamplesUp(block);
+    // Upsample. `block` itself is untouched by this call, so it still holds the
+    // full-band dry signal until processSamplesDown() overwrites it below.
+    juce::dsp::AudioBlock<float> oversampledBlock = oversampling->processSamplesUp(block);
 
-    // Apply highpass filter
+    // From here, oversampledBlock is reworked in place into the excited band only
+    // (highpassed + saturated). Apply highpass filter
     highpass.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
 
     // Apply pre-emphasis
@@ -349,10 +358,10 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
     // DC blocking
     dcBlocker.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
 
-    // Downsample
-    oversampling.processSamplesDown(block);
+    // Downsample - block now holds the excited band only
+    oversampling->processSamplesDown(block);
 
-    // Apply tone filter (at normal sample rate)
+    // Apply tone filter to the excited band (at normal sample rate)
     juce::dsp::ProcessContextReplacing<float> context(block);
     toneFilter.process(context);
 
@@ -372,19 +381,21 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
         gainComp = calculateGainCompensation();
     }
 
-    // Apply gain compensation and mix with dry signal (equal-power crossfade)
+    // Parallel mix: layer the excited (highpassed + saturated) band on top of the
+    // untouched dry signal, rather than crossfading the dry signal away - a crossfade
+    // would replace the full band (including everything below the highpass) with a
+    // band-limited signal as Mix increases, thinning out the low end.
     // Advance mix smoother once per sample across all channels
     for (int i = 0; i < numSamples; ++i)
     {
         float currentMix = smoothedMix.getNextValue();
-        float wetGain = std::sin(currentMix * juce::MathConstants<float>::halfPi) * gainComp;
-        float dryGain = std::cos(currentMix * juce::MathConstants<float>::halfPi);
+        float wetAmount = currentMix * gainComp;
 
         for (int ch = 0; ch < numChannels; ++ch)
         {
             auto* wet = block.getChannelPointer(static_cast<size_t>(ch));
             auto* dry = dryBuffer.getReadPointer(ch);
-            wet[i] = wet[i] * wetGain + dry[i] * dryGain;
+            wet[i] = dry[i] + wet[i] * wetAmount;
         }
     }
 }
