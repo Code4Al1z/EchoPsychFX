@@ -10,8 +10,8 @@
 class SimpleVerbWithPredelayComponent : public CollapsibleComponent
 {
 public:
-    static constexpr int kExpandedW = 4 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
-    static constexpr int kExpandedH = PluginLookAndFeel::kHeaderH + PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+    static constexpr int kExpandedW = 3 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
+    static constexpr int kExpandedH = PluginLookAndFeel::kHeaderH + 2 * PluginLookAndFeel::kKnobCell + PluginLookAndFeel::margin * 2;
 
     explicit SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state);
     ~SimpleVerbWithPredelayComponent() override = default;
