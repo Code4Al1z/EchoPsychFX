@@ -30,7 +30,7 @@ public:
     /** Sets the high shelf frequency (default: 4000 Hz) */
     void setHighShelfFrequency(float freqHz);
 
-    /** Sets the maximum gain range in dB (default: ±6 dB) */
+    /** Sets the maximum gain range in dB (default: ?6 dB) */
     void setGainRange(float rangeDb);
 
     /** Sets the Q factor for both shelves (default: 0.707) */
@@ -87,8 +87,8 @@ private:
     std::atomic<bool> needsUpdate{ true };
 
     //==============================================================================
-    void updateFilters();
-    void updateFiltersIfNeeded();
+    void updateFilters(int numSamples);
+    void updateFiltersIfNeeded(int numSamples);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TiltEQ)
 };

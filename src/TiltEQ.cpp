@@ -11,7 +11,7 @@ void TiltEQ::prepare(const juce::dsp::ProcessSpec& spec) {
     tiltParam.setCurrentAndTargetValue(0.0f);
 
     reset();
-    updateFilters();
+    updateFilters(0);
 }
 
 void TiltEQ::reset() {
@@ -59,10 +59,10 @@ void TiltEQ::setBypassed(bool shouldBeBypassed) {
     bypassed.store(shouldBeBypassed, std::memory_order_relaxed);
 }
 
-void TiltEQ::updateFilters() {
+void TiltEQ::updateFilters(int numSamples) {
     juce::SpinLock::ScopedLockType sl(parameterLock);
 
-    const float currentTilt = tiltParam.getNextValue();
+    const float currentTilt = tiltParam.skip(numSamples);
     const float gain = currentTilt * gainRange;
 
     // Compute coefficients
@@ -85,10 +85,10 @@ void TiltEQ::updateFilters() {
     *highShelf.state = *highCoeffs;
 }
 
-void TiltEQ::updateFiltersIfNeeded() {
+void TiltEQ::updateFiltersIfNeeded(int numSamples) {
     // Check if smoothed parameter is moving or if update is needed
     if (tiltParam.isSmoothing() || needsUpdate.load(std::memory_order_acquire)) {
-        updateFilters();
+        updateFilters(numSamples);
 
         // Only clear the flag if we're not smoothing
         if (!tiltParam.isSmoothing()) {
@@ -101,7 +101,7 @@ void TiltEQ::process(juce::dsp::AudioBlock<float>& block) {
     if (bypassed.load(std::memory_order_relaxed))
         return;
 
-    updateFiltersIfNeeded();
+    updateFiltersIfNeeded(static_cast<int>(block.getNumSamples()));
 
     juce::dsp::ProcessContextReplacing<float> context(block);
     lowShelf.process(context);
@@ -115,7 +115,7 @@ void TiltEQ::process(const juce::dsp::ProcessContextNonReplacing<float>& context
         return;
     }
 
-    updateFiltersIfNeeded();
+    updateFiltersIfNeeded(static_cast<int>(context.getInputBlock().getNumSamples()));
 
     // Process through temporary block
     auto outputBlock = context.getOutputBlock();
