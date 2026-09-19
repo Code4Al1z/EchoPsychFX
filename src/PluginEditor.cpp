@@ -82,7 +82,6 @@ void AudioPluginAudioProcessorEditor::applyWindowSize()
 
 int AudioPluginAudioProcessorEditor::calculateWindowWidth() const
 {
-    // A column shrinks in width ONLY if BOTH components in that column are collapsed
     auto getColumnWidth = [](const CollapsibleComponent& top, const CollapsibleComponent& bottom) {
         bool topClosed = (top.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);
         bool bottomClosed = (bottom.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);
@@ -93,9 +92,9 @@ int AudioPluginAudioProcessorEditor::calculateWindowWidth() const
         return juce::jmax(top.expandedWidth(), bottom.expandedWidth());
         };
 
-    const int col1 = getColumnWidth(*inputControlsComponent, *microPitchDetuneComponent);
+    const int col1 = getColumnWidth(*inputControlsComponent, *simpleVerbComponent);
     const int col2 = getColumnWidth(*modDelayComponent, *exciterSaturationComponent);
-    const int col3 = getColumnWidth(*spatialFXComponent, *simpleVerbComponent);
+    const int col3 = getColumnWidth(*spatialFXComponent, *microPitchDetuneComponent);
 
     return L::kEdgePad + col1 + L::kGap + col2 + L::kGap + col3 + L::kEdgePad;
 }
@@ -139,9 +138,9 @@ void AudioPluginAudioProcessorEditor::resized()
         return juce::jmax(top.expandedWidth(), bottom.expandedWidth());
         };
 
-    const int col1W = getColumnWidth(*inputControlsComponent, *microPitchDetuneComponent);
+    const int col1W = getColumnWidth(*inputControlsComponent, *simpleVerbComponent);
     const int col2W = getColumnWidth(*modDelayComponent, *exciterSaturationComponent);
-    const int col3W = getColumnWidth(*spatialFXComponent, *simpleVerbComponent);
+    const int col3W = getColumnWidth(*spatialFXComponent, *microPitchDetuneComponent);
 
     const int row1H = juce::jmax(inputControlsComponent->currentHeight(),
         juce::jmax(modDelayComponent->currentHeight(), spatialFXComponent->currentHeight()));
@@ -158,7 +157,7 @@ void AudioPluginAudioProcessorEditor::resized()
     modDelayComponent->setBounds(x2, y1, col2W, row1H);
     spatialFXComponent->setBounds(x3, y1, col3W, row1H);
 
-    microPitchDetuneComponent->setBounds(x1, y2, col1W, row2H);
+    simpleVerbComponent->setBounds(x1, y2, col1W, row2H);
     exciterSaturationComponent->setBounds(x2, y2, col2W, row2H);
-    simpleVerbComponent->setBounds(x3, y2, col3W, row2H);
+    microPitchDetuneComponent->setBounds(x3, y2, col3W, row2H);
 }
