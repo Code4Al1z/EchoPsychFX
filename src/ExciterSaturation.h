@@ -53,7 +53,7 @@ public:
     void prepare(const juce::dsp::ProcessSpec& spec);
     void reset();
 
-    void setDrive(float newDrive);              // 0.0 to 1.0
+    void setDrive(float newDrive);              // 0.0 to 10.0 - matches the exciterDrive APVTS parameter
     void setMix(float newMix);                  // 0.0 (dry) to 1.0 (wet)
     void setHighpass(float freqHz);             // Apply saturation above this freq
     void setToneBrightness(float brightness);   // 0.0 to 1.0 - pre/de-emphasis

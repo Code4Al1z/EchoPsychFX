@@ -67,7 +67,12 @@ void ExciterSaturation::reset()
 
 void ExciterSaturation::setDrive(float newDrive)
 {
-    drive = juce::jlimit(0.0f, 1.0f, newDrive);
+    // The exciterDrive APVTS parameter (and the Drive knob) spans 0-10, but this used to
+    // clamp to 0-1 - so anything past the bottom 10% of the knob's travel, and most of the
+    // factory presets' drive values, all collapsed to the same maxed-out internal drive.
+    // That's why turning Drive further (or picking a preset with a "higher" drive value)
+    // barely changed anything.
+    drive = juce::jlimit(0.0f, 10.0f, newDrive);
     smoothedDrive.setTargetValue(drive);
 }
 
@@ -224,9 +229,16 @@ float ExciterSaturation::tapeSaturation(float x)
 
 float ExciterSaturation::transformerSaturation(float x)
 {
-    // Transformer-style saturation (subtle, musical)
-    float x2 = x * x;
-    return x * (1.0f - 0.15f * x2);
+    // Transformer-style saturation (subtle, musical). x*(1-0.15x^2) only approximates a
+    // saturation curve for |x| up to ~1.49 (where it peaks) - past that it curves back
+    // down, crosses zero at |x| ~= 2.58, and then shoots off to +/-infinity for a cubic
+    // in the wrong direction. driveAmount can multiply the input up to 20x, so almost any
+    // real signal pushed it into that unbounded region, which is the "brutal, breaks
+    // everything" behaviour. Clamp into the valid range first so it saturates smoothly
+    // like the other types instead of inverting and exploding.
+    float clamped = juce::jlimit(-1.49f, 1.49f, x);
+    float x2 = clamped * clamped;
+    return clamped * (1.0f - 0.15f * x2);
 }
 
 float ExciterSaturation::digitalSaturation(float x)
@@ -338,8 +350,7 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
         auto oversampledNumSamples = static_cast<int>(oversampledBlock.getNumSamples());
         for (int i = 0; i < oversampledNumSamples; ++i)
         {
-            // Advance smoother once per sample
-            float driveAmount = juce::jmap(smoothedDrive.getNextValue(), 1.0f, 20.0f);
+            float driveAmount = juce::jmap(smoothedDrive.getNextValue(), 0.0f, 10.0f, 1.0f, 20.0f);
 
             for (int ch = 0; ch < numChannels; ++ch)
             {
