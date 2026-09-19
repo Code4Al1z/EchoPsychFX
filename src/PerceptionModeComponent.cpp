@@ -8,8 +8,8 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     titleLabel.setFont(juce::Font(20.0f, juce::Font::bold));
     addAndMakeVisible(titleLabel);
 
-    // Add all preset names
-    const juce::StringArray presetNames = {
+    // Factory preset names - fixed, read-only. User presets are appended dynamically.
+    factoryPresetNames = {
         "Init",
         "Head Trip", "Panic Room", "Intimacy", "Blade Runner", "Alien Abduction",
         "Glass Tunnel", "Dream Logic", "Womb Space", "Bipolar Bloom", "Quiet Confidence",
@@ -19,13 +19,22 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
         "Stormy Day", "Summer Sunset", "Ocean Waves", "Crystal Clear", "Sweetest Memory"
     };
 
-    for (int i = 0; i < presetNames.size(); ++i)
-        presetSelector.addItem(presetNames[i], i + 1);
-
     PluginLookAndFeel::configureComboBox(presetSelector);
-
     presetSelector.onChange = [this]() { comboBoxChanged(&presetSelector); };
     addAndMakeVisible(presetSelector);
+
+    for (auto* button : { &saveAsButton, &renameButton, &deleteButton })
+    {
+        button->setColour(juce::TextButton::buttonColourId, PluginLookAndFeel::knobBackground);
+        button->setColour(juce::TextButton::textColourOffId, PluginLookAndFeel::labelText);
+        addAndMakeVisible(button);
+    }
+
+    saveAsButton.onClick = [this] { showSaveAsDialog(); };
+    renameButton.onClick = [this] { showRenameDialog(); };
+    deleteButton.onClick = [this] { showDeleteConfirmation(); };
+
+    refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
 }
 
 PerceptionModeComponent::~PerceptionModeComponent()
@@ -40,6 +49,15 @@ void PerceptionModeComponent::resized()
     area.removeFromTop(10); // spacing
 
     presetSelector.setBounds(area.removeFromTop(30));
+    area.removeFromTop(8);
+
+    auto buttonRow = area.removeFromTop(26);
+    const int buttonW = (buttonRow.getWidth() - 2 * 8) / 3;
+    saveAsButton.setBounds(buttonRow.removeFromLeft(buttonW));
+    buttonRow.removeFromLeft(8);
+    renameButton.setBounds(buttonRow.removeFromLeft(buttonW));
+    buttonRow.removeFromLeft(8);
+    deleteButton.setBounds(buttonRow);
 }
 
 void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -49,5 +67,120 @@ void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasCha
         const auto selectedName = presetSelector.getText();
         DBG("Selected preset: " + selectedName);
         presetManagerRef.applyPreset(selectedName);
+        updateButtonStates();
     }
+}
+
+void PerceptionModeComponent::refreshPresetList(const juce::String& presetToSelect)
+{
+    const auto previousSelection = presetToSelect.isNotEmpty() ? presetToSelect : presetSelector.getText();
+
+    presetSelector.clear(juce::dontSendNotification);
+
+    int id = 1;
+    for (auto& name : factoryPresetNames)
+        presetSelector.addItem(name, id++);
+
+    auto userNames = presetManagerRef.getUserPresetNames();
+    if (!userNames.isEmpty())
+    {
+        presetSelector.addSeparator();
+        presetSelector.addSectionHeading("User Presets");
+        for (auto& name : userNames)
+            presetSelector.addItem(name, id++);
+    }
+
+    presetSelector.setText(previousSelection, juce::dontSendNotification);
+    updateButtonStates();
+}
+
+void PerceptionModeComponent::updateButtonStates()
+{
+    const bool isUserPreset = !presetManagerRef.isFactoryPreset(presetSelector.getText())
+        && presetSelector.getText().isNotEmpty();
+    renameButton.setEnabled(isUserPreset);
+    deleteButton.setEnabled(isUserPreset);
+}
+
+void PerceptionModeComponent::showSaveAsDialog()
+{
+    auto* aw = new juce::AlertWindow("Save Preset", "Save the current settings as a new preset:",
+        juce::AlertWindow::NoIcon);
+    aw->addTextEditor("name", presetSelector.getText(), "Name:");
+    aw->addButton("Save", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    aw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    aw->enterModalState(true, juce::ModalCallbackFunction::create([this, aw](int result)
+        {
+            if (result == 1)
+            {
+                const auto name = aw->getTextEditorContents("name").trim();
+                if (name.isEmpty())
+                    return;
+
+                if (presetManagerRef.isFactoryPreset(name))
+                {
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                        "Can't Overwrite Factory Preset",
+                        "\"" + name + "\" is a factory preset and can't be overwritten. Choose a different name.");
+                    return;
+                }
+
+                presetManagerRef.saveCurrentAsUserPreset(name);
+                refreshPresetList(name);
+            }
+        }), true);
+}
+
+void PerceptionModeComponent::showRenameDialog()
+{
+    const auto oldName = presetSelector.getText();
+    if (presetManagerRef.isFactoryPreset(oldName) || oldName.isEmpty())
+        return;
+
+    auto* aw = new juce::AlertWindow("Rename Preset", "Enter a new name for \"" + oldName + "\":",
+        juce::AlertWindow::NoIcon);
+    aw->addTextEditor("name", oldName, "Name:");
+    aw->addButton("Rename", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    aw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    aw->enterModalState(true, juce::ModalCallbackFunction::create([this, aw, oldName](int result)
+        {
+            if (result == 1)
+            {
+                const auto newName = aw->getTextEditorContents("name").trim();
+                if (newName.isEmpty() || newName == oldName)
+                    return;
+
+                if (presetManagerRef.isFactoryPreset(newName))
+                {
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                        "Can't Use Factory Preset Name",
+                        "\"" + newName + "\" is a factory preset name. Choose a different name.");
+                    return;
+                }
+
+                if (presetManagerRef.renameUserPreset(oldName, newName))
+                    refreshPresetList(newName);
+            }
+        }), true);
+}
+
+void PerceptionModeComponent::showDeleteConfirmation()
+{
+    const auto name = presetSelector.getText();
+    if (presetManagerRef.isFactoryPreset(name) || name.isEmpty())
+        return;
+
+    juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon, "Delete Preset",
+        "Delete the preset \"" + name + "\"? This can't be undone.",
+        "Delete", "Cancel", this,
+        juce::ModalCallbackFunction::create([this, name](int result)
+            {
+                if (result != 1)
+                    return;
+                presetManagerRef.deleteUserPreset(name);
+                refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
+                presetManagerRef.applyPreset(presetSelector.getText());
+            }));
 }

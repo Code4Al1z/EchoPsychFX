@@ -14,6 +14,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     simpleVerbComponent = std::make_unique<SimpleVerbWithPredelayComponent>(p.parameters);
 
     presetManager = std::make_unique<PerceptionPresetManager>(
+        p.parameters,
         inputControlsComponent->getTiltEQ(),
         inputControlsComponent->getWidthBalancer(),
         *modDelayComponent,

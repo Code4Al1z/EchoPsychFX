@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <juce_audio_processors/juce_audio_processors.h>
 #include <map>
 #include <functional>
 #include "WidthBalancerComponent.h"
@@ -20,7 +21,8 @@
 class PerceptionPresetManager
 {
 public:
-    PerceptionPresetManager(TiltEQComponent& tiltEQ,
+    PerceptionPresetManager(juce::AudioProcessorValueTreeState& apvts,
+        TiltEQComponent& tiltEQ,
         WidthBalancerComponent& width,
         ModDelayComponent& delay,
         SpatialFXComponent& spatial,
@@ -30,10 +32,30 @@ public:
 
     ~PerceptionPresetManager() = default;
 
-    /** Apply a preset by name */
+    /** Apply a preset by name (checks user presets first, then factory presets) */
     void applyPreset(const juce::String& presetName);
 
+    /** True if presetName names one of the built-in, read-only factory presets */
+    bool isFactoryPreset(const juce::String& presetName) const;
+
+    /** Names of all user-saved presets, alphabetically */
+    juce::StringArray getUserPresetNames() const;
+
+    /** Saves the current plugin state as a user preset. Fails (returns false) if
+        presetName is empty or collides with a read-only factory preset name. */
+    bool saveCurrentAsUserPreset(const juce::String& presetName);
+
+    /** Renames a user preset. Fails if oldName isn't a user preset, or newName is
+        empty or collides with a factory preset. */
+    bool renameUserPreset(const juce::String& oldName, const juce::String& newName);
+
+    /** Deletes a user preset. Fails (returns false) if presetName isn't a user preset. */
+    bool deleteUserPreset(const juce::String& presetName);
+
 private:
+    // Live plugin state - user presets are captured from and restored to this directly
+    juce::AudioProcessorValueTreeState& apvtsRef;
+
     // Component references
     TiltEQComponent& tiltEQComponent;
     WidthBalancerComponent& widthComponent;
@@ -43,11 +65,18 @@ private:
     ExciterSaturationComponent& exciterSaturationComponent;
     SimpleVerbWithPredelayComponent& simpleVerbComponent;
 
-    // Preset storage
+    // Factory preset storage
     std::map<juce::String, std::function<void()>> presets;
+
+    // User preset storage, persisted to disk
+    std::map<juce::String, juce::ValueTree> userPresets;
 
     /** Initialize all factory presets */
     void initializePresets();
+
+    juce::File getUserPresetsFile() const;
+    void loadUserPresets();
+    void saveUserPresetsToDisk() const;
 
     /** Helper to apply preset parameters to all components */
     void usePreset(ModDelay::ModulationType type, float delayTime, float feedbackLeft, float feedbackRight,

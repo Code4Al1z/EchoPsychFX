@@ -1,13 +1,15 @@
 #include "PerceptionPresetManager.h"
 
-PerceptionPresetManager::PerceptionPresetManager(TiltEQComponent& tiltEQ,
+PerceptionPresetManager::PerceptionPresetManager(juce::AudioProcessorValueTreeState& apvts,
+    TiltEQComponent& tiltEQ,
     WidthBalancerComponent& width,
     ModDelayComponent& delay,
     SpatialFXComponent& spatial,
     MicroPitchDetuneComponent& microPitch,
     ExciterSaturationComponent& exciterSaturation,
     SimpleVerbWithPredelayComponent& simpleVerb)
-    : tiltEQComponent(tiltEQ)
+    : apvtsRef(apvts)
+    , tiltEQComponent(tiltEQ)
     , widthComponent(width)
     , delayComponent(delay)
     , spatialFXComponent(spatial)
@@ -16,10 +18,19 @@ PerceptionPresetManager::PerceptionPresetManager(TiltEQComponent& tiltEQ,
     , simpleVerbComponent(simpleVerb)
 {
     initializePresets();
+    loadUserPresets();
 }
 
 void PerceptionPresetManager::applyPreset(const juce::String& presetName)
 {
+    auto userIt = userPresets.find(presetName);
+    if (userIt != userPresets.end())
+    {
+        apvtsRef.replaceState(userIt->second.createCopy());
+        DBG("Applied user preset: " + presetName);
+        return;
+    }
+
     auto it = presets.find(presetName);
     if (it != presets.end())
     {
@@ -30,6 +41,100 @@ void PerceptionPresetManager::applyPreset(const juce::String& presetName)
     {
         DBG("Preset not found: " + presetName);
     }
+}
+
+bool PerceptionPresetManager::isFactoryPreset(const juce::String& presetName) const
+{
+    return presets.find(presetName) != presets.end();
+}
+
+juce::StringArray PerceptionPresetManager::getUserPresetNames() const
+{
+    juce::StringArray names;
+    for (auto& entry : userPresets)
+        names.add(entry.first);
+    names.sort(true);
+    return names;
+}
+
+bool PerceptionPresetManager::saveCurrentAsUserPreset(const juce::String& presetName)
+{
+    if (presetName.isEmpty() || isFactoryPreset(presetName))
+        return false;
+
+    userPresets[presetName] = apvtsRef.copyState();
+    saveUserPresetsToDisk();
+    return true;
+}
+
+bool PerceptionPresetManager::renameUserPreset(const juce::String& oldName, const juce::String& newName)
+{
+    if (newName.isEmpty() || isFactoryPreset(newName))
+        return false;
+
+    auto it = userPresets.find(oldName);
+    if (it == userPresets.end())
+        return false;
+
+    auto state = it->second;
+    userPresets.erase(it);
+    userPresets[newName] = state;
+    saveUserPresetsToDisk();
+    return true;
+}
+
+bool PerceptionPresetManager::deleteUserPreset(const juce::String& presetName)
+{
+    auto it = userPresets.find(presetName);
+    if (it == userPresets.end())
+        return false;
+
+    userPresets.erase(it);
+    saveUserPresetsToDisk();
+    return true;
+}
+
+juce::File PerceptionPresetManager::getUserPresetsFile() const
+{
+    auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("EchoPsychFX");
+    dir.createDirectory();
+    return dir.getChildFile("UserPresets.xml");
+}
+
+void PerceptionPresetManager::loadUserPresets()
+{
+    auto file = getUserPresetsFile();
+    if (!file.existsAsFile())
+        return;
+
+    auto root = juce::XmlDocument::parse(file);
+    if (root == nullptr || !root->hasTagName("UserPresets"))
+        return;
+
+    for (auto* presetXml = root->getFirstChildElement(); presetXml != nullptr;
+        presetXml = presetXml->getNextElement())
+    {
+        auto name = presetXml->getStringAttribute("name");
+        auto* stateXml = presetXml->getFirstChildElement();
+        if (name.isEmpty() || stateXml == nullptr)
+            continue;
+
+        userPresets[name] = juce::ValueTree::fromXml(*stateXml);
+    }
+}
+
+void PerceptionPresetManager::saveUserPresetsToDisk() const
+{
+    juce::XmlElement root("UserPresets");
+    for (auto& entry : userPresets)
+    {
+        auto* presetXml = root.createNewChildElement("Preset");
+        presetXml->setAttribute("name", entry.first);
+        if (auto stateXml = entry.second.createXml())
+            presetXml->addChildElement(stateXml.release());
+    }
+    root.writeTo(getUserPresetsFile());
 }
 
 void PerceptionPresetManager::usePreset(ModDelay::ModulationType type, float delayTime, float feedbackLeft, float feedbackRight,

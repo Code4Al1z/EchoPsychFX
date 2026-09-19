@@ -22,10 +22,23 @@ public:
 private:
     juce::Label titleLabel;
     juce::ComboBox presetSelector;
+    juce::TextButton saveAsButton{ "Save As..." };
+    juce::TextButton renameButton{ "Rename..." };
+    juce::TextButton deleteButton{ "Delete" };
+
+    juce::StringArray factoryPresetNames;
 
     PerceptionPresetManager& presetManagerRef;
 
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
+
+    /** Rebuilds the dropdown from the factory list plus the manager's current user
+        presets, and selects presetToSelect if given (otherwise keeps the current text). */
+    void refreshPresetList(const juce::String& presetToSelect = {});
+    void updateButtonStates();
+    void showSaveAsDialog();
+    void showRenameDialog();
+    void showDeleteConfirmation();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PerceptionModeComponent)
 };
