@@ -100,6 +100,19 @@ void PerceptionPresetManager::initializePresets()
     //                drive, exciterMix, highpass,
     //                predelay, size, damping, wet
 
+    // Blank / Init: every effect neutral or fully dry, a clean starting point for
+    // building a custom sound rather than starting from one of the character presets below.
+    presets["Init"] = [this]() {
+        usePreset(ModDelay::ModulationType::Sine,
+            100.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.25f,
+            1.0f, 0.0f, 0.0f, false, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1000.0f, 0.0f, 0.0f, SpatialFX::LfoWaveform::Sine,
+            0.0f, 0.1f, 0.0f, 0.005f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1000.0f,
+            0.0f, 0.0f, 0.3f, 0.0f);
+        };
+
     presets["Head Trip"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
             400.0f, 0.7f, 0.75f, 0.6f, 4.0f, 0.2f,

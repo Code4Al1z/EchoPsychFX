@@ -10,6 +10,7 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
 
     // Add all preset names
     const juce::StringArray presetNames = {
+        "Init",
         "Head Trip", "Panic Room", "Intimacy", "Blade Runner", "Alien Abduction",
         "Glass Tunnel", "Dream Logic", "Womb Space", "Bipolar Bloom", "Quiet Confidence",
         "Falling Upwards", "Molten Light", "Ethereal Echo", "Lush Dreamscape", "Skin Contact",
