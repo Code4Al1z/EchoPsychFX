@@ -79,8 +79,8 @@ private:
     // DSP components
     juce::dsp::IIR::Filter<float> allpassL;
     juce::dsp::IIR::Filter<float> allpassR;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> haasDelayL{ 4410 };
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> haasDelayR{ 4410 };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> haasDelayL;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> haasDelayR;
 
     // Filter management
     float lastAllpassFreq = -1.0f;

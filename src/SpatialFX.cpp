@@ -24,6 +24,10 @@ void SpatialFX::prepare(const juce::dsp::ProcessSpec& spec)
 
     allpassL.prepare(spec);
     allpassR.prepare(spec);
+
+    const int maxHaasDelaySamples = static_cast<int>(std::ceil(0.030 * spec.sampleRate)) + 1;
+    haasDelayL.setMaximumDelayInSamples(maxHaasDelaySamples);
+    haasDelayR.setMaximumDelayInSamples(maxHaasDelaySamples);
     haasDelayL.prepare(spec);
     haasDelayR.prepare(spec);
 
