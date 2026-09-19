@@ -60,7 +60,10 @@ bool AudioPluginAudioProcessor::isMidiEffect() const
 
 double AudioPluginAudioProcessor::getTailLengthSeconds() const
 {
-    return 0.0;
+    if (spec.sampleRate <= 0.0)
+        return 0.0;
+
+    return static_cast<double>(simpleVerbWithPredelay.getTailLengthSamples()) / spec.sampleRate;
 }
 
 int AudioPluginAudioProcessor::getNumPrograms()
@@ -104,9 +107,6 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     microPitchDetune.prepare(spec);
     exciterSaturation.prepare(spec);
     simpleVerbWithPredelay.prepare(spec);
-
-    // Allocate dry buffer for potential future wet/dry mixing
-    dryBuffer.setSize(static_cast<int>(spec.numChannels), static_cast<int>(spec.maximumBlockSize));
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -116,23 +116,23 @@ void AudioPluginAudioProcessor::releaseResources()
 
 bool AudioPluginAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    #if JucePlugin_IsMidiEffect
-        juce::ignoreUnused(layouts);
-        return true;
-    #else
-        // Only support mono or stereo
-        if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-            && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-            return false;
+#if JucePlugin_IsMidiEffect
+    juce::ignoreUnused(layouts);
+    return true;
+#else
+    // Only support mono or stereo
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        return false;
 
-        // Input layout must match output layout
-    #if ! JucePlugin_IsSynth
-        if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-            return false;
-    #endif
+    // Input layout must match output layout
+#if ! JucePlugin_IsSynth
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+        return false;
+#endif
 
-        return true;
-    #endif
+    return true;
+#endif
 }
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
@@ -160,9 +160,6 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     // Wrap the buffer for DSP processing
     juce::dsp::AudioBlock<float> block(buffer);
-
-    // Optional: Copy input to dry buffer for wet/dry mixing
-    // dryBuffer.makeCopyOf(buffer, true);
 
     // Get sync state
     bool syncEnabled = parameters.getRawParameterValue("sync")->load();
@@ -306,7 +303,7 @@ void AudioPluginAudioProcessor::setStateInformation(const void* data, int sizeIn
         if (tree.hasProperty("modulationType"))
         {
             modDelay.setModulationType(
-                static_cast<ModDelay::ModulationType>(static_cast<int>(tree.getProperty("modulationType"))));
+                static_cast<ModDelay::ModulationType>(static_cast<int>(tree.getProperty("modulationType")) + 1));
         }
     }
 }

@@ -85,7 +85,6 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     // Processing state
-    juce::AudioBuffer<float> dryBuffer;
     double bpm = 120.0;
     juce::dsp::ProcessSpec spec;
 
