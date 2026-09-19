@@ -242,9 +242,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float delayCentre = *parameters.getRawParameterValue("delayCentre");
         float stereoSeparation = *parameters.getRawParameterValue("stereoSeparation");
         float mix = *parameters.getRawParameterValue("mix");
+        float detuneFeedback = *parameters.getRawParameterValue("detuneFeedback");
+        float diffusion = *parameters.getRawParameterValue("diffusion");
 
         microPitchDetune.setParams(detuneAmount, lfoRate, lfoDepth,
-            delayCentre, stereoSeparation, mix);
+            delayCentre, stereoSeparation, mix, detuneFeedback, diffusion);
         microPitchDetune.setBpm(static_cast<float>(bpm));
         microPitchDetune.process(block);
     }
@@ -605,6 +607,24 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "detuneFeedback", 1 },
+        "Detune Feedback",
+        juce::NormalisableRange<float>(0.0f, 0.7f, 0.01f),
+        0.0f,
+        juce::AudioParameterFloatAttributes()
+        .withStringFromValueFunction(floatToString2dp)
+        .withValueFromStringFunction(stringToFloat)));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "diffusion", 1 },
+        "Diffusion",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
+        0.0f,
         juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction(floatToString2dp)
         .withValueFromStringFunction(stringToFloat)));

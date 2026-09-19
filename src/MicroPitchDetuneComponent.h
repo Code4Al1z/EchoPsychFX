@@ -28,6 +28,8 @@ public:
     void setDelayCentre(float v);
     void setStereoSeparation(float v);
     void setMix(float v);
+    void setDetuneFeedback(float v);
+    void setDiffusion(float v);
 
 private:
     juce::GroupComponent group{ "microPitchDetuneGroup", "" };

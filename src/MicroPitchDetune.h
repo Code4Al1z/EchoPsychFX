@@ -55,21 +55,16 @@ private:
     struct DelayTap
     {
         juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Lagrange3rd> delay;
-        juce::SmoothedValue<float> smoothedDelay;
-        float feedback = 0.0f;
+        juce::dsp::IIR::Filter<float> dcBlocker;  // per-tap so feedback paths don't corrupt each other
+        juce::SmoothedValue<float> modulationSmoother;  // per-tap anti-aliasing for the vibrato LFO
+        float pitchPhase = 0.0f;  // continuously ramping read-head phase for real pitch shifting
+        float feedbackState = 0.0f;
         float timeOffset = 0.0f;  // Offset from base delay time
         float phaseOffset = 0.0f;  // LFO phase offset
     };
 
     std::array<DelayTap, NUM_TAPS> tapsL;
     std::array<DelayTap, NUM_TAPS> tapsR;
-
-    // DC blocking filters for feedback paths
-    juce::dsp::IIR::Filter<float> dcBlockerL;
-    juce::dsp::IIR::Filter<float> dcBlockerR;
-
-    // One-pole lowpass for anti-aliasing modulation
-    juce::SmoothedValue<float> modulationSmoother;
 
     float sampleRate = 44100.0f;
     float detuneCents = 5.0f;
@@ -93,7 +88,6 @@ private:
     // Improved LFO with multiple shapes
     float lfo(float phase);
     float lfoTriangle(float phase);
-    float centsToDelayOffset(float cents, float baseDelay);
     void updateTapOffsets();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MicroPitchDetune)

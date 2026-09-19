@@ -1,4 +1,4 @@
-#include "MicroPitchDetune.h"
+ï»¿#include "MicroPitchDetune.h"
 #include <cmath>
 #include <algorithm>
 
@@ -12,37 +12,33 @@ void MicroPitchDetune::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = static_cast<float>(spec.sampleRate);
 
-    // Prepare all delay taps
+    juce::dsp::ProcessSpec monoSpec = spec;
+    monoSpec.numChannels = 1;
+
+    auto dcCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, 5.0f);
+    const int maxDelaySamples = static_cast<int>(sampleRate * maxDelayTime) + 1;
+
+    // Prepare all delay taps, each with its own dc blocker and modulation smoother
+    // so the 3 taps x 2 channels don't share (and corrupt) each other's filter state
     for (auto& tap : tapsL)
     {
         tap.delay.prepare(spec);
-        const int maxDelaySamples = static_cast<int>(sampleRate * maxDelayTime) + 1;
         tap.delay.setMaximumDelayInSamples(maxDelaySamples);
-        tap.smoothedDelay.reset(sampleRate, 0.05);  // 50ms smoothing
+        tap.dcBlocker.coefficients = dcCoeffs;
+        tap.dcBlocker.prepare(monoSpec);
+        tap.modulationSmoother.reset(sampleRate, 0.002);  // 2ms for smooth modulation
         tap.phaseOffset = randomDistribution(randomEngine) * juce::MathConstants<float>::twoPi;
     }
 
     for (auto& tap : tapsR)
     {
         tap.delay.prepare(spec);
-        const int maxDelaySamples = static_cast<int>(sampleRate * maxDelayTime) + 1;
         tap.delay.setMaximumDelayInSamples(maxDelaySamples);
-        tap.smoothedDelay.reset(sampleRate, 0.05);
+        tap.dcBlocker.coefficients = dcCoeffs;
+        tap.dcBlocker.prepare(monoSpec);
+        tap.modulationSmoother.reset(sampleRate, 0.002);
         tap.phaseOffset = randomDistribution(randomEngine) * juce::MathConstants<float>::twoPi;
     }
-
-    // Setup DC blockers (high-pass at 5Hz)
-    auto dcCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass(sampleRate, 5.0f);
-    dcBlockerL.coefficients = dcCoeffs;
-    dcBlockerR.coefficients = dcCoeffs;
-
-    juce::dsp::ProcessSpec monoSpec = spec;
-    monoSpec.numChannels = 1;
-    dcBlockerL.prepare(monoSpec);
-    dcBlockerR.prepare(monoSpec);
-
-    // Anti-aliasing smoother for modulation
-    modulationSmoother.reset(sampleRate, 0.002);  // 2ms for smooth modulation
 
     updateTapOffsets();
     reset();
@@ -55,19 +51,20 @@ void MicroPitchDetune::reset()
     for (auto& tap : tapsL)
     {
         tap.delay.reset();
-        tap.feedback = 0.0f;
-        tap.smoothedDelay.setCurrentAndTargetValue(delayCentre * sampleRate);
+        tap.dcBlocker.reset();
+        tap.feedbackState = 0.0f;
+        tap.pitchPhase = 0.0f;
+        tap.modulationSmoother.setCurrentAndTargetValue(0.0f);
     }
 
     for (auto& tap : tapsR)
     {
         tap.delay.reset();
-        tap.feedback = 0.0f;
-        tap.smoothedDelay.setCurrentAndTargetValue(delayCentre * sampleRate);
+        tap.dcBlocker.reset();
+        tap.feedbackState = 0.0f;
+        tap.pitchPhase = 0.0f;
+        tap.modulationSmoother.setCurrentAndTargetValue(0.0f);
     }
-
-    dcBlockerL.reset();
-    dcBlockerR.reset();
 }
 
 void MicroPitchDetune::setParams(float detuneCentsIn, float lfoRateIn, float lfoDepthIn,
@@ -133,13 +130,6 @@ float MicroPitchDetune::lfoTriangle(float phase)
     return (normalizedPhase < 0.5f) ? (4.0f * normalizedPhase - 1.0f) : (3.0f - 4.0f * normalizedPhase);
 }
 
-float MicroPitchDetune::centsToDelayOffset(float cents, float baseDelay)
-{
-    // Convert cents to pitch ratio and calculate delay offset
-    float ratio = std::pow(2.0f, -cents / 1200.0f);
-    return baseDelay * (ratio - 1.0f) * 0.1f;
-}
-
 void MicroPitchDetune::updateTapOffsets()
 {
     // Configure multi-tap delays with diffusion
@@ -149,7 +139,7 @@ void MicroPitchDetune::updateTapOffsets()
 
     for (int i = 0; i < NUM_TAPS; ++i)
     {
-        float tapOffset = (i - 1.0f) * 0.002f * diffusion;  // ±2ms max spread
+        float tapOffset = (i - 1.0f) * 0.002f * diffusion;  // ï¿½2ms max spread
         tapsL[i].timeOffset = tapOffset;
         tapsR[i].timeOffset = tapOffset * 1.1f;  // Slightly different for L/R
     }
@@ -171,9 +161,6 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
         rate = beatsPerSecond * lfoRate;
     }
 
-    // Calculate pitch-based delay offset
-    float detuneOffset = centsToDelayOffset(detuneCents, delayCentre);
-
     for (size_t i = 0; i < numSamples; ++i)
     {
         // Process each channel
@@ -185,9 +172,10 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
             // Determine if left or right processing
             bool isLeft = (ch % 2 == 0);
             auto& taps = isLeft ? tapsL : tapsR;
-            auto& dcBlocker = isLeft ? dcBlockerL : dcBlockerR;
 
-            float channelDetuneOffset = isLeft ? detuneOffset : -detuneOffset;
+            // Detune L and R in opposite directions so the two channels drift apart in pitch
+            const float channelDetuneCents = isLeft ? detuneCents : -detuneCents;
+            const float pitchRatio = std::pow(2.0f, channelDetuneCents / 1200.0f);
             float channelStereoPhase = isLeft ? 0.0f : stereoSeparation;
 
             // Process each tap and sum the results
@@ -195,36 +183,54 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
             {
                 auto& tap = taps[tapIdx];
 
-                // Calculate LFO modulation for this tap
+                // Calculate LFO modulation for this tap (vibrato/chorus character, independent of the pitch shift below)
                 float tapPhase = modPhase + channelStereoPhase + (tapIdx * 0.333f);  // Spread taps in phase
                 float lfoValue = lfo(tapPhase * juce::MathConstants<float>::twoPi + tap.phaseOffset);
 
                 // Anti-alias the modulation
-                modulationSmoother.setTargetValue(lfoValue);
-                float smoothedLfo = modulationSmoother.getNextValue();
+                tap.modulationSmoother.setTargetValue(lfoValue);
+                float smoothedLfo = tap.modulationSmoother.getNextValue();
 
-                // Calculate delay time with all modulations
-                float delayTime = delayCentre + channelDetuneOffset + tap.timeOffset + smoothedLfo * lfoDepth;
-                delayTime = juce::jlimit(0.001f, maxDelayTime, delayTime);
+                float baseDelayTime = delayCentre + tap.timeOffset + smoothedLfo * lfoDepth;
+                baseDelayTime = juce::jlimit(0.0005f, maxDelayTime, baseDelayTime);
 
-                tap.smoothedDelay.setTargetValue(delayTime * sampleRate);
-                tap.delay.setDelay(tap.smoothedDelay.getNextValue());
+                // Real pitch shifting: continuously ramp the read-head position (a fixed offset
+                // does nothing to steady-state pitch) using two crossfaded grains so the ramp can
+                // wrap without a click, classic delay-line pitch shifter.
+                const float headroom = maxDelayTime - baseDelayTime - 0.0005f;
+                const float windowTime = juce::jlimit(0.002f, 0.010f, headroom);
+                const float windowSamples = windowTime * sampleRate;
 
-                // Read from delay line
-                float tapSample = tap.delay.popSample(0);
+                tap.pitchPhase += (1.0f - pitchRatio) / windowSamples;
+                tap.pitchPhase -= std::floor(tap.pitchPhase);  // wrap to [0, 1)
+
+                float grain1Phase = tap.pitchPhase;
+                float grain2Phase = grain1Phase + 0.5f;
+                if (grain2Phase >= 1.0f)
+                    grain2Phase -= 1.0f;
+
+                // Equal-power crossfade window: sin^2 + cos^2 == 1
+                const float gain1 = std::sin(juce::MathConstants<float>::pi * grain1Phase) *
+                    std::sin(juce::MathConstants<float>::pi * grain1Phase);
+                const float gain2 = 1.0f - gain1;
+
+                const float baseDelaySamples = baseDelayTime * sampleRate;
+                const float maxSamples = maxDelayTime * sampleRate;
+                const float delay1Samples = juce::jlimit(1.0f, maxSamples, baseDelaySamples + grain1Phase * windowSamples);
+                const float delay2Samples = juce::jlimit(1.0f, maxSamples, baseDelaySamples + grain2Phase * windowSamples);
+
+                tap.delay.setDelay(delay1Samples);
+                const float tapSample1 = tap.delay.popSample(0);
+                tap.delay.setDelay(delay2Samples);
+                const float tapSample2 = tap.delay.popSample(0);
+
+                const float tapSample = tapSample1 * gain1 + tapSample2 * gain2;
 
                 // Apply DC blocking to feedback path
-                if (feedback > 0.0f)
-                {
-                    tap.feedback = dcBlocker.processSample(tapSample);
-                }
-                else
-                {
-                    tap.feedback = 0.0f;
-                }
+                tap.feedbackState = (feedback > 0.0f) ? tap.dcBlocker.processSample(tapSample) : 0.0f;
 
                 // Write to delay line with feedback
-                tap.delay.pushSample(0, inSample + tap.feedback * feedback);
+                tap.delay.pushSample(0, inSample + tap.feedbackState * feedback);
 
                 // Accumulate tap output (with gain compensation for multiple taps)
                 float tapGain = 1.0f / static_cast<float>(NUM_TAPS);

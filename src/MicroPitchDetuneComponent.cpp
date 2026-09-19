@@ -12,6 +12,8 @@ MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTr
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "delayCentre", "Delay", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "stereoSeparation", "Stereo", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "mix", "Mix", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "detuneFeedback", "Feedback", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "diffusion", "Diffusion", *this));
 }
 
 void MicroPitchDetuneComponent::paintContent(juce::Graphics& g)
@@ -41,3 +43,5 @@ void MicroPitchDetuneComponent::setLfoDepth(float v) { PluginLookAndFeel::setKno
 void MicroPitchDetuneComponent::setDelayCentre(float v) { PluginLookAndFeel::setKnobValue(knobs, 3, v); }
 void MicroPitchDetuneComponent::setStereoSeparation(float v) { PluginLookAndFeel::setKnobValue(knobs, 4, v); }
 void MicroPitchDetuneComponent::setMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 5, v); }
+void MicroPitchDetuneComponent::setDetuneFeedback(float v) { PluginLookAndFeel::setKnobValue(knobs, 6, v); }
+void MicroPitchDetuneComponent::setDiffusion(float v) { PluginLookAndFeel::setKnobValue(knobs, 7, v); }
