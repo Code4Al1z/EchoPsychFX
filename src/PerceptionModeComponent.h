@@ -30,6 +30,8 @@ private:
     juce::TextButton saveAsButton{ "Save As..." };
     juce::TextButton renameButton{ "Rename..." };
     juce::TextButton deleteButton{ "Delete" };
+
+    juce::Label feelingTagsLabel;
     juce::Label breakdownLabel;
 
     juce::StringArray factoryPresetNames;

@@ -34,7 +34,13 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     renameButton.onClick = [this] { showRenameDialog(); };
     deleteButton.onClick = [this] { showDeleteConfirmation(); };
 
-    breakdownLabel.setFont(juce::Font(12.5f));
+    feelingTagsLabel.setFont(juce::Font(22.0f, juce::Font::bold));
+    feelingTagsLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::track);
+    feelingTagsLabel.setJustificationType(juce::Justification::topLeft);
+    feelingTagsLabel.setMinimumHorizontalScale(1.0f);
+    addAndMakeVisible(feelingTagsLabel);
+
+    breakdownLabel.setFont(juce::Font(16.0f));
     breakdownLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::labelText.withAlpha(0.85f));
     breakdownLabel.setJustificationType(juce::Justification::topLeft);
     breakdownLabel.setMinimumHorizontalScale(1.0f);
@@ -70,7 +76,9 @@ void PerceptionModeComponent::resized()
     buttonRow.removeFromLeft(8);
     deleteButton.setBounds(buttonRow);
 
-    area.removeFromTop(10); // spacing
+    area.removeFromTop(14); // spacing
+    feelingTagsLabel.setBounds(area.removeFromTop(76));
+    area.removeFromTop(8);
     breakdownLabel.setBounds(area);
 }
 
@@ -119,6 +127,10 @@ void PerceptionModeComponent::timerCallback()
 
 void PerceptionModeComponent::refreshBreakdown()
 {
+    const auto newTags = presetManagerRef.generateFeelingTags().joinIntoString("   \xc2\xb7   ");
+    if (feelingTagsLabel.getText() != newTags)
+        feelingTagsLabel.setText(newTags, juce::dontSendNotification);
+
     const auto newText = presetManagerRef.generateBreakdown();
     if (breakdownLabel.getText() != newText)
         breakdownLabel.setText(newText, juce::dontSendNotification);

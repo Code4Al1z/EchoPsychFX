@@ -67,11 +67,10 @@ bool PerceptionPresetManager::matchesLastAppliedPreset() const
     return apvtsRef.copyState().isEquivalentTo(lastAppliedPresetState);
 }
 
-juce::String PerceptionPresetManager::generateBreakdown() const
+void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const
 {
     auto raw = [this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); };
-
-    juce::StringArray clauses;
+    auto add = [&](const juce::String& tag, const juce::String& clause) { tags.add(tag); clauses.add(clause); };
 
     // Stereo image
     const bool isMono = raw("mono") >= 0.5f;
@@ -79,22 +78,22 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     const float midSide = raw("midSideBalance");
 
     if (isMono)
-        clauses.add("collapsed to mono, no stereo image at all");
+        add("Mono", "collapsed to mono, feeling boxed-in and claustrophobic");
     else if (width > 1.3f)
-        clauses.add("very wide, pushed well beyond the speakers");
+        add("Very Wide", "very wide, pushed well beyond the speakers - feels expansive and larger-than-life");
     else if (width > 1.05f)
-        clauses.add("wider than natural");
+        add("Wide", "wider than natural, feeling open and airy");
     else if (width < 0.7f)
-        clauses.add("narrow, pulled toward the centre");
+        add("Narrow", "narrow and pulled toward the centre, feeling close and focused");
     else if (width < 0.95f)
-        clauses.add("slightly narrowed");
+        add("Slightly Narrow", "slightly narrowed, a touch more centred");
 
     if (!isMono)
     {
         if (midSide > 0.3f)
-            clauses.add("weighted toward the centre image");
+            add("Centre-Weighted", "weighted toward the centre image, feeling solid and grounded");
         else if (midSide < -0.3f)
-            clauses.add("weighted toward the sides, more diffuse");
+            add("Diffuse Sides", "weighted toward the sides, feeling hazy and enveloping");
     }
 
     // Left/right pull, from phase and Haas offsets together
@@ -105,18 +104,18 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     const float pull = (phaseR - phaseL) * 5.0f + (haasR - haasL) * 0.1f;
 
     if (pull > 0.3f)
-        clauses.add("pulled toward the right");
+        add("Pulled Right", "pulled toward the right, a subtle sense of asymmetry");
     else if (pull < -0.3f)
-        clauses.add("pulled toward the left");
+        add("Pulled Left", "pulled toward the left, a subtle sense of asymmetry");
     else if (haasL > 5.0f || haasR > 5.0f)
-        clauses.add("spread wide with a Haas-style stereo trick");
+        add("Haas Spread", "spread wide with a Haas-style stereo trick, feeling big without losing focus");
 
     // Brightness / tilt
     const float tilt = raw("tiltEQ");
     if (tilt > 0.15f)
-        clauses.add("brighter and more forward, tilted up top");
+        add("Bright", "brighter and more forward, feeling alert and present");
     else if (tilt < -0.15f)
-        clauses.add("warmer and darker, tilted toward the low end");
+        add("Warm & Dark", "warmer and darker, feeling cosy and enclosed");
 
     // Delay movement
     const float modDepth = raw("modDepth");
@@ -124,14 +123,14 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     const float feedbackAvg = (raw("feedbackL") + raw("feedbackR")) * 0.5f;
 
     if (modDepth > 4.0f && modRate > 0.5f)
-        clauses.add("actively swirling, with fast modulated echoes");
+        add("Swirling", "actively swirling with fast modulated echoes, feeling disorienting and dreamlike");
     else if (modDepth > 4.0f)
-        clauses.add("a slow, deep modulation drifting underneath");
+        add("Slow Drift", "a slow, deep modulation drifting underneath, feeling hypnotic");
     else if (modDepth < 0.3f && feedbackAvg < 0.05f)
-        clauses.add("the delay is essentially inaudible, close to bypassed");
+        add("Inert", "the delay is essentially inaudible, feeling static and untouched");
 
     if (feedbackAvg > 0.7f)
-        clauses.add("long, cascading echo trails");
+        add("Cascading Echoes", "long, cascading echo trails, feeling vast and otherworldly");
 
     // Micro-pitch detune
     const float detune = raw("detuneAmount");
@@ -139,12 +138,12 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     const float diffusion = raw("diffusion");
 
     if (detuneAbs > 15.0f)
-        clauses.add("pitch visibly drifting, an unstable shimmer");
+        add("Unstable Shimmer", "pitch visibly drifting, feeling uncanny and unsettling");
     else if (detuneAbs > 3.0f)
-        clauses.add("a subtle pitch shimmer");
+        add("Shimmering", "a subtle pitch shimmer, feeling alive and slightly magical");
 
     if (diffusion > 0.5f)
-        clauses.add("blurred and diffuse in pitch");
+        add("Blurred Pitch", "blurred and diffuse in pitch, feeling hazy and dreamlike");
 
     // Exciter / saturation character
     const float exciterMix = raw("exciterMix");
@@ -152,19 +151,26 @@ juce::String PerceptionPresetManager::generateBreakdown() const
 
     if (exciterMix > 0.15f && exciterDrive > 1.0f)
     {
+        static const char* satTags[] = {
+            "Soft Warmth", "Aggressive Edge", "Tube Warmth",
+            "Lo-Fi Character", "Analog Heft", "Cold & Digital"
+        };
         static const char* satWords[] = {
-            "a gentle, soft-clipped warmth", "an aggressive, hard-clipped edge",
-            "a vintage tube warmth", "a lo-fi, tape-worn character",
-            "a weighty, analog-console heft", "a cold, synthetic bite"
+            "a gentle, soft-clipped warmth that feels comforting",
+            "an aggressive, hard-clipped edge that feels tense and confrontational",
+            "a vintage tube warmth that feels nostalgic and cosy",
+            "a lo-fi, tape-worn character that feels nostalgic and familiar",
+            "a weighty, analog-console heft that feels grounded",
+            "a cold, synthetic bite that feels clinical and futuristic"
         };
         const int satType = juce::jlimit(0, 5, juce::roundToInt(raw("exciterSaturationType")));
-        clauses.add(juce::String("harmonically excited with ") + satWords[satType]);
+        add(satTags[satType], juce::String("harmonically excited with ") + satWords[satType]);
 
         const int harmMode = juce::roundToInt(raw("exciterHarmonicMode"));
         if (harmMode == 1)
-            clauses.add("a hollow, reedy harmonic tilt");
+            add("Hollow", "a hollow, reedy harmonic tilt, feeling thin and eerie");
         else if (harmMode == 2)
-            clauses.add("a warm, rounded harmonic tilt");
+            add("Rounded", "a warm, rounded harmonic tilt, feeling full and inviting");
     }
 
     // Reverb space
@@ -173,15 +179,32 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     const float predelay = raw("predelayMs");
 
     if (size > 0.65f && wet > 0.45f)
-        clauses.add("a spacious, distant reverb tail");
+        add("Spacious", "a spacious, distant reverb tail, feeling immersive and awe-inducing");
     else if (size < 0.25f && wet < 0.25f)
-        clauses.add("close and dry, almost no reverb");
+        add("Close & Dry", "close and dry, feeling intimate and immediate");
 
     if (predelay > 40.0f)
-        clauses.add("a distinct gap before the reverb blooms");
+        add("Detached Echo", "a distinct gap before the reverb blooms, like a held breath before it lands");
+}
+
+juce::StringArray PerceptionPresetManager::generateFeelingTags() const
+{
+    juce::StringArray tags, clauses;
+    computeDescriptors(tags, clauses);
+
+    if (tags.isEmpty())
+        tags.add("Neutral");
+
+    return tags;
+}
+
+juce::String PerceptionPresetManager::generateBreakdown() const
+{
+    juce::StringArray tags, clauses;
+    computeDescriptors(tags, clauses);
 
     if (clauses.isEmpty())
-        return "Neutral - nothing strongly colored yet.";
+        return "Nothing strongly colored yet - close to a neutral, untouched signal.";
 
     juce::String result = clauses[0].substring(0, 1).toUpperCase() + clauses[0].substring(1);
     for (int i = 1; i < clauses.size(); ++i)

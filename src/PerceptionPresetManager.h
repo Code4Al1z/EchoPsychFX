@@ -50,9 +50,16 @@ public:
         preset has been applied yet this session (nothing to have drifted from). */
     bool matchesLastAppliedPreset() const;
 
-    /** Builds a plain-language description of what the *current* live parameter values
-        (not any named preset) would sound/feel like - width and pull, brightness, delay
-        movement, pitch drift, exciter character, and reverb space. Always reflects the
+    /** Short (1-3 word), glance-readable mood/character tags describing the *current* live
+        parameter values - e.g. "Spacious", "Pulled Right", "Unstable Shimmer". Always
+        reflects the live APVTS state, so it stays accurate for factory presets, user
+        presets, and "Custom" alike. Returns {"Neutral"} if nothing stands out. */
+    juce::StringArray generateFeelingTags() const;
+
+    /** Builds a fuller plain-language description of what the *current* live parameter
+        values (not any named preset) would sound and feel like - width and pull,
+        brightness, delay movement, pitch drift, exciter character, and reverb space -
+        each paired with the psychoacoustic feeling it tends to evoke. Always reflects the
         live APVTS state, so it stays accurate for factory presets, user presets, and
         "Custom" alike. */
     juce::String generateBreakdown() const;
@@ -98,6 +105,11 @@ private:
     juce::File getUserPresetsFile() const;
     void loadUserPresets();
     void saveUserPresetsToDisk() const;
+
+    /** Shared logic behind generateFeelingTags()/generateBreakdown(): walks the live APVTS
+        values once and, for each trait that stands out, appends a matching (short tag,
+        full sentence) pair at the same index in both arrays. */
+    void computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const;
 
     /** Helper to apply preset parameters to all components */
     void usePreset(ModDelay::ModulationType type, float delayTime, float feedbackLeft, float feedbackRight,
