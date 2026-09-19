@@ -35,10 +35,14 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     deleteButton.onClick = [this] { showDeleteConfirmation(); };
 
     refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
+    lastSelectedPresetName = presetSelector.getText();
+
+    startTimerHz(10);
 }
 
 PerceptionModeComponent::~PerceptionModeComponent()
 {
+    stopTimer();
 }
 
 void PerceptionModeComponent::resized()
@@ -67,7 +71,34 @@ void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasCha
         const auto selectedName = presetSelector.getText();
         DBG("Selected preset: " + selectedName);
         presetManagerRef.applyPreset(selectedName);
+        lastSelectedPresetName = selectedName;
+
+        // A real preset was picked, so drop the synthetic "Custom" entry - refreshPresetList
+        // rebuilds the list from scratch, which naturally omits it.
+        refreshPresetList(selectedName);
+    }
+}
+
+void PerceptionModeComponent::timerCallback()
+{
+    const bool isShowingCustom = presetSelector.getSelectedId() == kCustomItemId;
+    const bool matches = presetManagerRef.matchesLastAppliedPreset();
+
+    if (!matches && !isShowingCustom)
+    {
+        if (presetSelector.indexOfItemId(kCustomItemId) < 0)
+        {
+            presetSelector.addSeparator();
+            presetSelector.addItem("Custom", kCustomItemId);
+        }
+        presetSelector.setSelectedId(kCustomItemId, juce::dontSendNotification);
         updateButtonStates();
+    }
+    else if (matches && isShowingCustom)
+    {
+        // Parameters drifted back into matching the last applied preset - drop "Custom"
+        // and restore its name rather than leaving a stale label showing.
+        refreshPresetList(lastSelectedPresetName);
     }
 }
 
@@ -96,8 +127,7 @@ void PerceptionModeComponent::refreshPresetList(const juce::String& presetToSele
 
 void PerceptionModeComponent::updateButtonStates()
 {
-    const bool isUserPreset = !presetManagerRef.isFactoryPreset(presetSelector.getText())
-        && presetSelector.getText().isNotEmpty();
+    const bool isUserPreset = presetManagerRef.isUserPreset(presetSelector.getText());
     renameButton.setEnabled(isUserPreset);
     deleteButton.setEnabled(isUserPreset);
 }

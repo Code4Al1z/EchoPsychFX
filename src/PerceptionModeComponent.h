@@ -11,7 +11,8 @@
  * psychoacoustic effect combinations
  */
 class PerceptionModeComponent : public juce::Component,
-    private juce::ComboBox::Listener
+    private juce::ComboBox::Listener,
+    private juce::Timer
 {
 public:
     explicit PerceptionModeComponent(PerceptionPresetManager& presetManager);
@@ -20,6 +21,10 @@ public:
     void resized() override;
 
 private:
+    // Reserved ComboBox item ID for the synthetic "Custom" entry - picked well above any
+    // real preset's ID so it never collides with the factory/user preset list.
+    static constexpr int kCustomItemId = 1 << 20;
+
     juce::Label titleLabel;
     juce::ComboBox presetSelector;
     juce::TextButton saveAsButton{ "Save As..." };
@@ -28,9 +33,12 @@ private:
 
     juce::StringArray factoryPresetNames;
 
+    juce::String lastSelectedPresetName;
+
     PerceptionPresetManager& presetManagerRef;
 
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
+    void timerCallback() override;
 
     /** Rebuilds the dropdown from the factory list plus the manager's current user
         presets, and selects presetToSelect if given (otherwise keeps the current text). */

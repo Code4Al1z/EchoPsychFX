@@ -39,8 +39,16 @@ public:
     /** True if presetName names one of the built-in, read-only factory presets */
     bool isFactoryPreset(const juce::String& presetName) const;
 
+    /** True if presetName names a user-saved preset */
+    bool isUserPreset(const juce::String& presetName) const;
+
     /** Names of all user-saved presets, alphabetically */
     juce::StringArray getUserPresetNames() const;
+
+    /** False once the live APVTS state has drifted from whichever preset was last applied
+        via applyPreset() - the cue the UI uses to switch its label to "Custom". True if no
+        preset has been applied yet this session (nothing to have drifted from). */
+    bool matchesLastAppliedPreset() const;
 
     /** Saves the current plugin state as a user preset. Fails (returns false) if
         presetName is empty or collides with a read-only factory preset name. */
@@ -71,6 +79,11 @@ private:
 
     // User preset storage, persisted to disk
     std::map<juce::String, juce::ValueTree> userPresets;
+
+    // Snapshot of the APVTS state taken just after the most recently applied preset finished
+    // landing in it, for matchesLastAppliedPreset() to diff the live state against. Invalid
+    // until the first applyPreset() call.
+    juce::ValueTree lastAppliedPresetState;
 
     /** Initialize all factory presets */
     void initializePresets();

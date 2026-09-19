@@ -28,6 +28,11 @@ void PerceptionPresetManager::applyPreset(const juce::String& presetName)
     {
         apvtsRef.replaceState(userIt->second.createCopy());
         DBG("Applied user preset: " + presetName);
+
+        // The APVTS only flushes parameter changes into its state ValueTree periodically,
+        // so snapshot the baseline once that's had a chance to happen rather than reading
+        // it back immediately.
+        juce::Timer::callAfterDelay(120, [this]() { lastAppliedPresetState = apvtsRef.copyState(); });
         return;
     }
 
@@ -36,6 +41,7 @@ void PerceptionPresetManager::applyPreset(const juce::String& presetName)
     {
         it->second(); // Call the preset lambda
         DBG("Applied preset: " + presetName);
+        juce::Timer::callAfterDelay(120, [this]() { lastAppliedPresetState = apvtsRef.copyState(); });
     }
     else
     {
@@ -46,6 +52,19 @@ void PerceptionPresetManager::applyPreset(const juce::String& presetName)
 bool PerceptionPresetManager::isFactoryPreset(const juce::String& presetName) const
 {
     return presets.find(presetName) != presets.end();
+}
+
+bool PerceptionPresetManager::isUserPreset(const juce::String& presetName) const
+{
+    return userPresets.find(presetName) != userPresets.end();
+}
+
+bool PerceptionPresetManager::matchesLastAppliedPreset() const
+{
+    if (!lastAppliedPresetState.isValid())
+        return true;
+
+    return apvtsRef.copyState().isEquivalentTo(lastAppliedPresetState);
 }
 
 juce::StringArray PerceptionPresetManager::getUserPresetNames() const
