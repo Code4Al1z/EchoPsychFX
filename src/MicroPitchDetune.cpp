@@ -40,6 +40,18 @@ void MicroPitchDetune::prepare(const juce::dsp::ProcessSpec& spec)
         tap.phaseOffset = randomDistribution(randomEngine) * juce::MathConstants<float>::twoPi;
     }
 
+    constexpr double smoothTime = 0.02; // 20ms, matching the ramps used everywhere else
+    smoothedMix.reset(sampleRate, smoothTime);
+    smoothedDetuneCents.reset(sampleRate, smoothTime);
+    smoothedDelayCentre.reset(sampleRate, smoothTime);
+    smoothedStereoSeparation.reset(sampleRate, smoothTime);
+    smoothedFeedback.reset(sampleRate, smoothTime);
+    smoothedMix.setCurrentAndTargetValue(mix);
+    smoothedDetuneCents.setCurrentAndTargetValue(detuneCents);
+    smoothedDelayCentre.setCurrentAndTargetValue(delayCentre);
+    smoothedStereoSeparation.setCurrentAndTargetValue(stereoSeparation);
+    smoothedFeedback.setCurrentAndTargetValue(feedback);
+
     updateTapOffsets();
     reset();
 }
@@ -72,6 +84,7 @@ void MicroPitchDetune::setParams(float detuneCentsIn, float lfoRateIn, float lfo
     float feedbackIn, float diffusionIn)
 {
     detuneCents = juce::jlimit(-50.0f, 50.0f, detuneCentsIn);
+    smoothedDetuneCents.setTargetValue(detuneCents);
 
     // Calculate depth from detune if lfoDepthIn is not explicitly set
     if (lfoDepthIn <= 0.0f)
@@ -88,10 +101,16 @@ void MicroPitchDetune::setParams(float detuneCentsIn, float lfoRateIn, float lfo
 
     float oldDelayCentre = delayCentre;
     delayCentre = juce::jlimit(0.001f, maxDelayTime * 0.8f, delayCentreIn);
+    smoothedDelayCentre.setTargetValue(delayCentre);
 
     stereoSeparation = juce::jlimit(0.0f, 1.0f, stereoSeparationIn);
+    smoothedStereoSeparation.setTargetValue(stereoSeparation);
+
     mix = juce::jlimit(0.0f, 1.0f, mixIn);
+    smoothedMix.setTargetValue(mix);
+
     feedback = juce::jlimit(0.0f, 0.7f, feedbackIn);
+    smoothedFeedback.setTargetValue(feedback);
 
     float oldDiffusion = diffusion;
     diffusion = juce::jlimit(0.0f, 1.0f, diffusionIn);
@@ -163,6 +182,14 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
 
     for (size_t i = 0; i < numSamples; ++i)
     {
+        // Advance each smoother exactly once per sample (not per channel) so a knob move
+        // ramps in over ~20ms instead of jumping straight to the new value mid-buffer.
+        const float currentMix = smoothedMix.getNextValue();
+        const float currentDetuneCents = smoothedDetuneCents.getNextValue();
+        const float currentDelayCentre = smoothedDelayCentre.getNextValue();
+        const float currentStereoSeparation = smoothedStereoSeparation.getNextValue();
+        const float currentFeedback = smoothedFeedback.getNextValue();
+
         // Process each channel
         for (size_t ch = 0; ch < numChannels; ++ch)
         {
@@ -174,9 +201,9 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
             auto& taps = isLeft ? tapsL : tapsR;
 
             // Detune L and R in opposite directions so the two channels drift apart in pitch
-            const float channelDetuneCents = isLeft ? detuneCents : -detuneCents;
+            const float channelDetuneCents = isLeft ? currentDetuneCents : -currentDetuneCents;
             const float pitchRatio = std::pow(2.0f, channelDetuneCents / 1200.0f);
-            float channelStereoPhase = isLeft ? 0.0f : stereoSeparation;
+            float channelStereoPhase = isLeft ? 0.0f : currentStereoSeparation;
 
             // Process each tap and sum the results
             for (int tapIdx = 0; tapIdx < NUM_TAPS; ++tapIdx)
@@ -191,14 +218,17 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
                 tap.modulationSmoother.setTargetValue(lfoValue);
                 float smoothedLfo = tap.modulationSmoother.getNextValue();
 
-                float baseDelayTime = delayCentre + tap.timeOffset + smoothedLfo * lfoDepth;
+                float baseDelayTime = currentDelayCentre + tap.timeOffset + smoothedLfo * lfoDepth;
                 baseDelayTime = juce::jlimit(0.0005f, maxDelayTime, baseDelayTime);
 
                 // Real pitch shifting: continuously ramp the read-head position (a fixed offset
                 // does nothing to steady-state pitch) using two crossfaded grains so the ramp can
-                // wrap without a click, classic delay-line pitch shifter.
+                // wrap without a click, classic delay-line pitch shifter. A short window means
+                // the grains crossfade (and jump read position) several times a second even at
+                // modest detune amounts, which is audible as a fast, buzzy "brr" - widening it
+                // (see maxDelayTime) slows that repetition down into a smoother, chorus-like swirl.
                 const float headroom = maxDelayTime - baseDelayTime - 0.0005f;
-                const float windowTime = juce::jlimit(0.002f, 0.010f, headroom);
+                const float windowTime = juce::jlimit(0.006f, 0.030f, headroom);
                 const float windowSamples = windowTime * sampleRate;
 
                 tap.pitchPhase += (1.0f - pitchRatio) / windowSamples;
@@ -227,10 +257,10 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
                 const float tapSample = tapSample1 * gain1 + tapSample2 * gain2;
 
                 // Apply DC blocking to feedback path
-                tap.feedbackState = (feedback > 0.0f) ? tap.dcBlocker.processSample(tapSample) : 0.0f;
+                tap.feedbackState = (currentFeedback > 0.0f) ? tap.dcBlocker.processSample(tapSample) : 0.0f;
 
                 // Write to delay line with feedback
-                tap.delay.pushSample(0, inSample + tap.feedbackState * feedback);
+                tap.delay.pushSample(0, inSample + tap.feedbackState * currentFeedback);
 
                 // Accumulate tap output (with gain compensation for multiple taps)
                 float tapGain = 1.0f / static_cast<float>(NUM_TAPS);
@@ -238,8 +268,8 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
             }
 
             // Mix dry and wet signals with equal-power crossfade
-            float wetGain = std::sin(mix * juce::MathConstants<float>::halfPi);
-            float dryGain = std::cos(mix * juce::MathConstants<float>::halfPi);
+            float wetGain = std::sin(currentMix * juce::MathConstants<float>::halfPi);
+            float dryGain = std::cos(currentMix * juce::MathConstants<float>::halfPi);
             float finalSample = inSample * dryGain + wetSample * wetGain;
 
             block.setSample(static_cast<int>(ch), static_cast<int>(i), finalSample);

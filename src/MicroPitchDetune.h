@@ -77,10 +77,20 @@ private:
     float diffusion = 0.0f;  // Controls how much the taps are spread out
 
     float modPhase = 0.0f;
-    float maxDelayTime = 0.02f;
+    // Total time budget for each delay line, in seconds. Needs to comfortably exceed
+    // delayCentre's max (0.015s, set in PluginProcessor's parameter layout) plus the
+    // pitch-shifter's grain crossfade window (up to 0.030s, see process()) so the window
+    // isn't squeezed back down to its short, buzzy minimum by a lack of headroom.
+    float maxDelayTime = 0.06f;
 
     bool syncEnabled = false;
     float bpm = 120.0f;
+
+    juce::SmoothedValue<float> smoothedMix;
+    juce::SmoothedValue<float> smoothedDetuneCents;
+    juce::SmoothedValue<float> smoothedDelayCentre;
+    juce::SmoothedValue<float> smoothedStereoSeparation;
+    juce::SmoothedValue<float> smoothedFeedback;
 
     std::mt19937 randomEngine;
     std::uniform_real_distribution<float> randomDistribution;
