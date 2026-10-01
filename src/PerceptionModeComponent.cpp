@@ -4,10 +4,6 @@
 PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& presetManager)
     : presetManagerRef(presetManager)
 {
-    PluginLookAndFeel::configureLabel(titleLabel, "Perception Mode");
-    titleLabel.setFont(juce::Font(20.0f, juce::Font::bold));
-    addAndMakeVisible(titleLabel);
-
     // Factory preset names - fixed, read-only. User presets are appended dynamically.
     factoryPresetNames = {
         "Init",
@@ -23,28 +19,34 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     presetSelector.onChange = [this]() { comboBoxChanged(&presetSelector); };
     addAndMakeVisible(presetSelector);
 
-    for (auto* button : { &saveAsButton, &renameButton, &deleteButton })
+    for (auto* button : { &saveAsButton, &renameButton, &deleteButton, &prevButton, &nextButton, &insightButton })
     {
-        button->setColour(juce::TextButton::buttonColourId, PluginLookAndFeel::knobBackground);
+        button->setColour(juce::TextButton::buttonColourId, PluginLookAndFeel::panelRaised);
         button->setColour(juce::TextButton::textColourOffId, PluginLookAndFeel::labelText);
+        button->setColour(juce::TextButton::textColourOnId, juce::Colours::white);
         addAndMakeVisible(button);
     }
+    insightButton.setClickingTogglesState(true);
+    insightButton.setColour(juce::TextButton::buttonOnColourId, PluginLookAndFeel::accentSpatial.withAlpha(0.8f));
+    insightButton.setTooltip("Explain what this sound does to perception");
 
     saveAsButton.onClick = [this] { showSaveAsDialog(); };
     renameButton.onClick = [this] { showRenameDialog(); };
     deleteButton.onClick = [this] { showDeleteConfirmation(); };
+    prevButton.onClick = [this] { stepPreset(-1); };
+    nextButton.onClick = [this] { stepPreset(+1); };
+    insightButton.onClick = [this]
+    {
+        breakdownLabel.setVisible(insightButton.getToggleState());
+        if (onHeightChanged)
+            onHeightChanged();
+    };
 
-    feelingTagsLabel.setFont(juce::Font(22.0f, juce::Font::bold));
-    feelingTagsLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::track);
-    feelingTagsLabel.setJustificationType(juce::Justification::topLeft);
-    feelingTagsLabel.setMinimumHorizontalScale(1.0f);
-    addAndMakeVisible(feelingTagsLabel);
-
-    breakdownLabel.setFont(juce::Font(16.0f));
+    breakdownLabel.setFont(juce::Font(14.0f));
     breakdownLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::labelText.withAlpha(0.85f));
     breakdownLabel.setJustificationType(juce::Justification::topLeft);
     breakdownLabel.setMinimumHorizontalScale(1.0f);
-    addAndMakeVisible(breakdownLabel);
+    addChildComponent(breakdownLabel);
 
     refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
     lastSelectedPresetName = presetSelector.getText();
@@ -58,28 +60,109 @@ PerceptionModeComponent::~PerceptionModeComponent()
     stopTimer();
 }
 
+int PerceptionModeComponent::getPreferredHeight() const
+{
+    return PluginLookAndFeel::kPresetBarH
+        + (insightButton.getToggleState() ? PluginLookAndFeel::kInsightDrawerH : 0);
+}
+
 void PerceptionModeComponent::resized()
 {
-    auto area = getLocalBounds().reduced(10);
+    auto area = getLocalBounds().reduced(12, 10);
+    auto row = area.removeFromTop(32);
 
-    titleLabel.setBounds(area.removeFromTop(30));
-    area.removeFromTop(10); // spacing
+    row.removeFromLeft(196);   // brand wordmark is painted here
 
-    presetSelector.setBounds(area.removeFromTop(30));
-    area.removeFromTop(8);
+    insightButton.setBounds(row.removeFromRight(78));
+    row.removeFromRight(14);
+    deleteButton.setBounds(row.removeFromRight(64));
+    row.removeFromRight(6);
+    renameButton.setBounds(row.removeFromRight(70));
+    row.removeFromRight(6);
+    saveAsButton.setBounds(row.removeFromRight(60));
+    row.removeFromRight(14);
 
-    auto buttonRow = area.removeFromTop(26);
-    const int buttonW = (buttonRow.getWidth() - 2 * 8) / 3;
-    saveAsButton.setBounds(buttonRow.removeFromLeft(buttonW));
-    buttonRow.removeFromLeft(8);
-    renameButton.setBounds(buttonRow.removeFromLeft(buttonW));
-    buttonRow.removeFromLeft(8);
-    deleteButton.setBounds(buttonRow);
+    prevButton.setBounds(row.removeFromLeft(32));
+    row.removeFromLeft(6);
+    nextButton.setBounds(row.removeFromRight(32));
+    row.removeFromRight(6);
+    presetSelector.setBounds(row);
 
-    area.removeFromTop(14); // spacing
-    feelingTagsLabel.setBounds(area.removeFromTop(76));
-    area.removeFromTop(8);
-    breakdownLabel.setBounds(area);
+    area.removeFromTop(10);
+    chipsArea = area.removeFromTop(26);
+
+    if (breakdownLabel.isVisible())
+    {
+        area.removeFromTop(8);
+        breakdownLabel.setBounds(area);
+    }
+}
+
+void PerceptionModeComponent::paint(juce::Graphics& g)
+{
+    using L = PluginLookAndFeel;
+    L::drawPanel(g, getLocalBounds().withHeight(L::kPresetBarH), L::panel);
+
+    // Wordmark
+    g.setFont(juce::Font(22.0f, juce::Font::bold));
+    const int y = 10, h = 32;
+    int x = 18;
+    for (auto [text, colour] : { std::pair<const char*, juce::Colour>{ "Echo", L::labelText },
+                                  { "Psych", L::accentSpatial }, { "FX", L::accentMotion } })
+    {
+        const int w = juce::roundToInt(juce::GlyphArrangement::getStringWidthInt(g.getCurrentFont(), text)) + 1;
+        g.setColour(colour);
+        g.drawText(text, x, y, w, h, juce::Justification::centredLeft, false);
+        x += w;
+    }
+
+    // Live "feeling" chips
+    static const juce::Colour palette[] = { L::accentInput, L::accentMotion, L::accentSpatial,
+                                            L::accentMicroPitch, L::accentExciter, L::accentReverb };
+    g.setFont(juce::Font(13.0f, juce::Font::bold));
+    int cx = chipsArea.getX();
+    for (int i = 0; i < currentTags.size(); ++i)
+    {
+        const auto& tag = currentTags[i];
+        const int w = juce::roundToInt(juce::GlyphArrangement::getStringWidthInt(g.getCurrentFont(), tag)) + 22;
+        if (cx + w > chipsArea.getRight())
+        {
+            g.setColour(L::mutedText);
+            g.drawText("+" + juce::String(currentTags.size() - i), cx, chipsArea.getY(), 40, chipsArea.getHeight(),
+                juce::Justification::centredLeft, false);
+            break;
+        }
+
+        const auto colour = palette[static_cast<size_t>(tag.hashCode() & 0x7fffffff) % 6];
+        const auto chip = juce::Rectangle<float>((float)cx, (float)chipsArea.getY(), (float)w, (float)chipsArea.getHeight());
+        g.setColour(colour.withAlpha(0.16f));
+        g.fillRoundedRectangle(chip, chip.getHeight() * 0.5f);
+        g.setColour(colour.withAlpha(0.7f));
+        g.drawRoundedRectangle(chip.reduced(0.5f), chip.getHeight() * 0.5f, 1.0f);
+        g.setColour(juce::Colours::white.withAlpha(0.92f));
+        g.drawText(tag, chip.toNearestInt(), juce::Justification::centred, false);
+        cx += w + 8;
+    }
+}
+
+void PerceptionModeComponent::stepPreset(int direction)
+{
+    const int total = presetSelector.getNumItems();
+    if (total == 0)
+        return;
+
+    // Step from the last real preset so stepping works while "Custom" is showing.
+    int index = 0;
+    for (int i = 0; i < total; ++i)
+        if (presetSelector.getItemText(i) == lastSelectedPresetName) { index = i; break; }
+
+    for (int tries = 0; tries < total; ++tries)
+    {
+        index = (index + direction + total) % total;
+        if (presetSelector.getItemId(index) != kCustomItemId)
+            break;
+    }
+    presetSelector.setSelectedItemIndex(index, juce::sendNotification);
 }
 
 void PerceptionModeComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -127,9 +210,12 @@ void PerceptionModeComponent::timerCallback()
 
 void PerceptionModeComponent::refreshBreakdown()
 {
-    const auto newTags = presetManagerRef.generateFeelingTags().joinIntoString("   \xc2\xb7   ");
-    if (feelingTagsLabel.getText() != newTags)
-        feelingTagsLabel.setText(newTags, juce::dontSendNotification);
+    const auto newTags = presetManagerRef.generateFeelingTags();
+    if (newTags != currentTags)
+    {
+        currentTags = newTags;
+        repaint();
+    }
 
     const auto newText = presetManagerRef.generateBreakdown();
     if (breakdownLabel.getText() != newText)

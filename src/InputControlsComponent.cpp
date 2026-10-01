@@ -9,7 +9,7 @@ InputControlsComponent::InputControlsComponent(juce::AudioProcessorValueTreeStat
 
 void InputControlsComponent::paintContent(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
+    juce::ignoreUnused(g);
 }
 
 void InputControlsComponent::layoutContent(juce::Rectangle<int> area)

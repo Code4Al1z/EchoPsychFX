@@ -15,6 +15,24 @@ public:
         const juce::String& text, const juce::Justification& justification,
         juce::GroupComponent&) override;
 
+    void drawRotarySlider(juce::Graphics&, int x, int y, int width, int height, float sliderPos,
+        float rotaryStartAngle, float rotaryEndAngle, juce::Slider&) override;
+
+    void drawLinearSlider(juce::Graphics&, int x, int y, int width, int height, float sliderPos,
+        float minSliderPos, float maxSliderPos, juce::Slider::SliderStyle, juce::Slider&) override;
+
+    juce::Label* createSliderTextBox(juce::Slider&) override;
+
+    void drawToggleButton(juce::Graphics&, juce::ToggleButton&, bool highlighted, bool down) override;
+
+    void drawButtonBackground(juce::Graphics&, juce::Button&, const juce::Colour& backgroundColour,
+        bool highlighted, bool down) override;
+
+    void drawComboBox(juce::Graphics&, int width, int height, bool isButtonDown,
+        int buttonX, int buttonY, int buttonW, int buttonH, juce::ComboBox&) override;
+
+    juce::Font getComboBoxFont(juce::ComboBox&) override;
+
     void drawPopupMenuItem(juce::Graphics&, const juce::Rectangle<int>& area,
         bool isSeparator, bool isActive, bool isHighlighted, bool isTicked, bool hasSubMenu,
         const juce::String& text, const juce::String& shortcutKeyText,
@@ -33,6 +51,23 @@ public:
     static const juce::Colour popupRowA;
     static const juce::Colour popupRowB;
 
+    // Surfaces and text
+    static const juce::Colour panel;
+    static const juce::Colour panelRaised;
+    static const juce::Colour mutedText;
+    static const juce::Colour knobTrack;
+
+    // One accent per processing stage, in signal-flow order
+    static const juce::Colour accentInput;
+    static const juce::Colour accentMotion;
+    static const juce::Colour accentSpatial;
+    static const juce::Colour accentMicroPitch;
+    static const juce::Colour accentExciter;
+    static const juce::Colour accentReverb;
+
+    /** Recursively tints every control under `root` with the given accent. */
+    static void applyAccent(juce::Component& root, juce::Colour accent);
+
     static constexpr int minKnobSize = 50;
     static constexpr int maxKnobSize = 120;
     static constexpr int margin = 10;
@@ -45,6 +80,8 @@ public:
     static constexpr int kGap = 10;
     static constexpr int kEdgePad = 10;
     static constexpr int kModeToggleH = 36;
+    static constexpr int kPresetBarH = 84;
+    static constexpr int kInsightDrawerH = 62;
 
     struct KnobWithLabel
     {
@@ -78,6 +115,9 @@ public:
 
         void setSelected(int index);
         void setBounds(int x, int y, int width, int height);
+
+    private:
+        void updateVisuals(int index);
     };
 
     struct GridFitResult
@@ -106,7 +146,11 @@ public:
         juce::Rectangle<int> bounds,
         const juce::String& title,
         bool isCollapsed,
-        bool isVerticalCollapse);
+        bool isVerticalCollapse,
+        juce::Colour accent = juce::Colour(255, 46, 136));
+
+    /** Draws a rounded panel card (used behind every section). */
+    static void drawPanel(juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour fill, float corner = 8.0f);
 
     static void configureKnob(juce::Slider& slider);
     static void configureLabel(juce::Label& label, const juce::String& text);

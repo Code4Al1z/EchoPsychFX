@@ -22,6 +22,10 @@ public:
     CollapseState getCollapseState() const;
     void setCollapseState(CollapseState s);
 
+    /** Sets the section's accent colour and tints its header and every control inside it. */
+    void setAccent(juce::Colour accent);
+    juce::Colour getAccent() const { return accent_; }
+
     std::function<void()> onCollapseChanged;
 
     void paint(juce::Graphics& g) override;
@@ -34,6 +38,7 @@ protected:
 
 private:
     juce::String title_;
+    juce::Colour accent_{ PluginLookAndFeel::track };
     CollapseState collapseState_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CollapsibleComponent)

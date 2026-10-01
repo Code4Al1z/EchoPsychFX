@@ -18,7 +18,7 @@ public:
     void setTilt(float v);
 
 private:
-    juce::GroupComponent group{ "tiltEQGroup", "TiltEQ" };
+    juce::GroupComponent group{ "tiltEQGroup", "Tilt EQ" };
     std::vector<std::unique_ptr<PluginLookAndFeel::KnobWithLabel>> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TiltEQComponent)

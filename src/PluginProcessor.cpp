@@ -1,6 +1,73 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+namespace
+{
+    using Attr = juce::AudioParameterFloatAttributes;
+
+    // Display `value * scale` with `dp` decimals; the unit is added by the knob/host from the label.
+    Attr numeric(const juce::String& unit, int dp, float scale = 1.0f, bool showSign = false)
+    {
+        return Attr()
+            .withLabel(unit)
+            .withStringFromValueFunction([=](float v, int)
+                {
+                    const float shown = v * scale;
+                    return (showSign && shown > 0.0f ? juce::String("+") : juce::String())
+                        + (dp == 0 ? juce::String(juce::roundToInt(shown)) : juce::String(shown, dp));
+                })
+            .withValueFromStringFunction([=](const juce::String& text)
+                {
+                    return text.getFloatValue() / scale;
+                });
+    }
+
+    // Frequencies read better as "1.2 k" once past 1000 Hz.
+    Attr frequency()
+    {
+        return Attr()
+            .withLabel("Hz")
+            .withStringFromValueFunction([](float v, int)
+                {
+                    return v >= 1000.0f ? juce::String(v / 1000.0f, 2) + " k" : juce::String(juce::roundToInt(v));
+                })
+            .withValueFromStringFunction([](const juce::String& text)
+                {
+                    const float n = text.getFloatValue();
+                    return text.containsIgnoreCase("k") ? n * 1000.0f : n;
+                });
+    }
+
+    constexpr float kRadToDeg = 57.29578f;
+
+    Attr attributesFor(const juce::String& id)
+    {
+        if (id == "width" || id == "intensity" || id == "modMix" || id == "feedbackL" || id == "feedbackR"
+            || id == "sfxModDepthL" || id == "sfxModDepthR" || id == "sfxWetDryMix" || id == "stereoSeparation"
+            || id == "mix" || id == "detuneFeedback" || id == "diffusion" || id == "exciterMix"
+            || id == "exciterToneBrightness" || id == "exciterHarmonicBalance" || id == "size" || id == "damping"
+            || id == "wet")
+            return numeric("%", 0, 100.0f);
+        if (id == "midSideBalance")       return numeric("", 2, 1.0f, true);
+        if (id == "tiltEQ")               return numeric("dB", 1, 6.0f, true);      // TiltEQ gain range is +/-6 dB
+        if (id == "delayTime")            return numeric("ms", 1);
+        if (id == "modDepth")             return numeric("ms", 2);
+        if (id == "modRate" || id == "sfxModRateL" || id == "sfxModRateR" || id == "lfoRate")
+            return numeric("Hz", 2);
+        if (id == "phaseOffsetL" || id == "phaseOffsetR")
+            return numeric(juce::String::fromUTF8("\xc2\xb0"), 1, kRadToDeg, true);
+        if (id == "sfxLfoPhaseOffset")    return numeric(juce::String::fromUTF8("\xc2\xb0"), 0, kRadToDeg);
+        if (id == "sfxAllpassFreq" || id == "exciterHighpass") return frequency();
+        if (id == "haasDelayL" || id == "haasDelayR") return numeric("ms", 1);
+        if (id == "detuneAmount")         return numeric("ct", 1, 1.0f, true);
+        if (id == "lfoDepth")             return numeric("ms", 2, 1000.0f);        // stored in seconds
+        if (id == "delayCentre")          return numeric("ms", 1, 1000.0f);        // stored in seconds
+        if (id == "exciterDrive")         return numeric("", 1);
+        if (id == "predelayMs")           return numeric("ms", 1);
+        return numeric("", 2);
+    }
+}
+
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     : AudioProcessor(BusesProperties()
@@ -220,7 +287,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float allpassFreq = *parameters.getRawParameterValue("sfxAllpassFreq");
         float haasDelayL = *parameters.getRawParameterValue("haasDelayL");
         float haasDelayR = *parameters.getRawParameterValue("haasDelayR");
-        int modulationShapeValue = juce::roundToInt(parameters.getRawParameterValue("modulationShape")->load());
+        // Choice index 0..3 -> LfoWaveform Sine..Random, which starts at 1
+        int modulationShapeValue = juce::roundToInt(parameters.getRawParameterValue("modulationShape")->load()) + 1;
 
         SpatialFX::LfoWaveform modulationShape = static_cast<SpatialFX::LfoWaveform>(modulationShapeValue);
         spatialFX.setPhaseAmount(phaseOffsetL, phaseOffsetR);
@@ -331,13 +399,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-    // Helper lambdas for consistent float parameter formatting
-    auto floatToString2dp = [](float value, int) {
-        return juce::String(value, 2);
-        };
-    auto stringToFloat = [](const juce::String& text) {
-        return text.getFloatValue();
-        };
 
     //==============================================================================
     // WidthBalancer Parameters
@@ -347,18 +408,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Width",
         juce::NormalisableRange<float>(0.0f, 2.0f, 0.01f),
         1.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("width")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "midSideBalance", 1 },
         "Mid/Side Balance",
         juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("midSideBalance")));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{ "mono", 1 },
@@ -370,9 +427,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Intensity",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("intensity")));
 
     //==============================================================================
     // TiltEQ Parameters
@@ -382,9 +437,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Tilt EQ",
         juce::NormalisableRange<float>(-1.0f, 1.0f, 0.01f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("tiltEQ")));
 
     //==============================================================================
     // ModDelay Parameters
@@ -394,56 +447,42 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Delay Time",
         juce::NormalisableRange<float>(1.0f, 2000.0f, 0.1f),
         400.0f,
-        juce::AudioParameterFloatAttributes()
-        .withLabel("ms")
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("delayTime")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "feedbackL", 1 },
         "Feedback L",
         juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
         0.4f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("feedbackL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "feedbackR", 1 },
         "Feedback R",
         juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
         0.4f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("feedbackR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "modMix", 1 },
         "Mod Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("modMix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "modDepth", 1 },
         "Mod Depth",
         juce::NormalisableRange<float>(0.0f, 10.0f, 0.01f),
         2.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("modDepth")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "modRate", 1 },
         "Mod Rate",
         juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
         0.25f,
-        juce::AudioParameterFloatAttributes()
-        .withLabel("Hz")
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("modRate")));
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{ "modulationType", 1 },
@@ -464,99 +503,77 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Phase L Offset",
         juce::NormalisableRange<float>(-0.1f, 0.1f, 0.001f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("phaseOffsetL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "phaseOffsetR", 1 },
         "Phase R Offset",
         juce::NormalisableRange<float>(-0.1f, 0.1f, 0.001f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("phaseOffsetR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModRateL", 1 },
         "SFX Rate L",
         juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
         0.1f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxModRateL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModRateR", 1 },
         "SFX Rate R",
         juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
         0.1f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxModRateR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModDepthL", 1 },
         "SFX Depth L",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxModDepthL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModDepthR", 1 },
         "SFX Depth R",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxModDepthR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxWetDryMix", 1 },
         "SFX Wet/Dry",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxWetDryMix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxLfoPhaseOffset", 1 },
         "LFO Phase",
         juce::NormalisableRange<float>(0.0f, juce::MathConstants<float>::twoPi, 0.01f),
         juce::MathConstants<float>::halfPi,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxLfoPhaseOffset")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxAllpassFreq", 1 },
         "Allpass Freq",
         juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f),
         1000.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("sfxAllpassFreq")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "haasDelayL", 1 },
         "Haas Delay L",
         juce::NormalisableRange<float>(0.0f, 40.0f, 0.1f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("haasDelayL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "haasDelayR", 1 },
         "Haas Delay R",
         juce::NormalisableRange<float>(0.0f, 40.0f, 0.1f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("haasDelayR")));
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{ "modulationShape", 1 },
@@ -572,72 +589,56 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Detune Amount",
         juce::NormalisableRange<float>(-50.0f, 50.0f, 0.1f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("detuneAmount")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "lfoRate", 1 },
         "LFO Rate",
         juce::NormalisableRange<float>(0.01f, 20.0f, 0.01f),
         0.3f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("lfoRate")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "lfoDepth", 1 },
         "LFO Depth",
         juce::NormalisableRange<float>(0.0f, 0.01f, 0.0001f),
         0.002f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("lfoDepth")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "delayCentre", 1 },
         "Delay Centre",
         juce::NormalisableRange<float>(0.001f, 0.015f, 0.0001f),
         0.005f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("delayCentre")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "stereoSeparation", 1 },
         "Stereo Separation",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("stereoSeparation")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "mix", 1 },
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("mix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "detuneFeedback", 1 },
         "Detune Feedback",
         juce::NormalisableRange<float>(0.0f, 0.7f, 0.01f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("detuneFeedback")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "diffusion", 1 },
         "Diffusion",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("diffusion")));
 
     //==============================================================================
     // ExciterSaturation Parameters
@@ -647,27 +648,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Exciter Drive",
         juce::NormalisableRange<float>(0.0f, 10.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("exciterDrive")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "exciterMix", 1 },
         "Exciter Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("exciterMix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "exciterHighpass", 1 },
         "Exciter Highpass",
         juce::NormalisableRange<float>(20.0f, 8000.0f, 1.0f),
         1000.0f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("exciterHighpass")));
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{ "exciterSaturationType", 1 },
@@ -686,18 +681,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Exciter Tone Brightness",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("exciterToneBrightness")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "exciterHarmonicBalance", 1 },
         "Exciter Harmonic Balance",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("exciterHarmonicBalance")));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{ "exciterAutoGain", 1 },
@@ -712,37 +703,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         "Pre-delay",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
         20.0f,
-        juce::AudioParameterFloatAttributes()
-        .withLabel("ms")
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("predelayMs")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "size", 1 },
         "Reverb Size",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("size")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "damping", 1 },
         "Damping",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.3f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("damping")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "wet", 1 },
         "Wet Level",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
-        juce::AudioParameterFloatAttributes()
-        .withStringFromValueFunction(floatToString2dp)
-        .withValueFromStringFunction(stringToFloat)));
+        attributesFor("wet")));
 
     return { params.begin(), params.end() };
 }

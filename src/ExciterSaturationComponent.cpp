@@ -38,7 +38,7 @@ ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValue
 
 void ExciterSaturationComponent::paintContent(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
+    juce::ignoreUnused(g);
 }
 
 void ExciterSaturationComponent::layoutContent(juce::Rectangle<int> area)
@@ -47,7 +47,7 @@ void ExciterSaturationComponent::layoutContent(juce::Rectangle<int> area)
     auto inner = area.reduced(PluginLookAndFeel::margin);
 
     const int btnH = juce::jlimit(20, 30, static_cast<int>(inner.getHeight() * 0.15f));
-    const int toggleW = juce::jlimit(70, 100, static_cast<int>(inner.getWidth() * 0.22f));
+    const int toggleW = juce::jlimit(104, 120, static_cast<int>(inner.getWidth() * 0.3f));
     const int pickerW = (inner.getWidth() - toggleW - PluginLookAndFeel::spacing * 2) / 2;
     const int y = inner.getY();
 

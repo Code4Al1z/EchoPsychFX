@@ -24,7 +24,7 @@ public:
 private:
     AudioPluginAudioProcessor& processorRef;
     PluginLookAndFeel pluginLookAndFeel;
-    juce::ToggleButton modeToggle;
+    juce::TooltipWindow tooltipWindow{ this, 500 };
 
     std::unique_ptr<InputControlsComponent> inputControlsComponent;
     std::unique_ptr<ModDelayComponent> modDelayComponent;

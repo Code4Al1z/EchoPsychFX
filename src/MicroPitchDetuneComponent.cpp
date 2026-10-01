@@ -18,7 +18,7 @@ MicroPitchDetuneComponent::MicroPitchDetuneComponent(juce::AudioProcessorValueTr
 
 void MicroPitchDetuneComponent::paintContent(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
+    juce::ignoreUnused(g);
 }
 
 void MicroPitchDetuneComponent::layoutContent(juce::Rectangle<int> area)

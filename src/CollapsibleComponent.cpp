@@ -33,17 +33,24 @@ void CollapsibleComponent::setCollapseState(CollapseState s)
         onCollapseChanged();
 }
 
+void CollapsibleComponent::setAccent(juce::Colour accent)
+{
+    accent_ = accent;
+    PluginLookAndFeel::applyAccent(*this, accent);
+    repaint();
+}
+
 void CollapsibleComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
-
-    if (collapseState_ == CollapseState::Expanded)
-        paintContent(g);
-
     const bool isCollapsed = (collapseState_ != CollapseState::Expanded);
 
+    PluginLookAndFeel::drawPanel(g, isCollapsed ? getHeaderBounds() : getLocalBounds(), PluginLookAndFeel::panel);
+
+    if (!isCollapsed)
+        paintContent(g);
+
     // Header drawn horizontally at the top of the component
-    PluginLookAndFeel::drawCollapsibleHeader(g, getHeaderBounds(), title_, isCollapsed, false);
+    PluginLookAndFeel::drawCollapsibleHeader(g, getHeaderBounds(), title_, isCollapsed, false, accent_);
 }
 
 void CollapsibleComponent::resized()
