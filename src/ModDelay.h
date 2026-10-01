@@ -24,6 +24,13 @@ public:
     void setSyncEnabled(bool shouldSync);
     void setTempo(float newBpm);
 
+    // When Sync is on the Rate control selects one of kNumSyncDivisions tempo-locked LFO speeds
+    // instead of a frequency in Hz. Shared by the DSP and the UI so what is displayed is what runs.
+    static constexpr int kNumSyncDivisions = 6;
+    static int getSyncDivisionIndex(float rawRate);
+    static float getSyncCyclesPerBeat(int divisionIndex);
+    static juce::String getSyncDivisionName(float rawRate);
+
 private:
     struct ModDelayParameters {
         juce::LinearSmoothedValue<float> delayMs;

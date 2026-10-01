@@ -22,6 +22,23 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
     syncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         state, "sync", syncToggle);
     addAndMakeVisible(syncToggle);
+
+    // With Sync on, the Rate knob picks a tempo division rather than a frequency, so show that
+    // ("1 bar") instead of a misleading "0.25 Hz", and refresh the readout whenever Sync flips.
+    if (auto* rateParam = state.getParameter("modRate"))
+    {
+        auto* rateSlider = knobs[2]->slider.get();
+        rateSlider->textFromValueFunction = [this, rateParam](double v)
+            {
+                if (syncToggle.getToggleState())
+                    return ModDelay::getSyncDivisionName(static_cast<float>(v));
+
+                return rateParam->getText(rateParam->convertTo0to1(static_cast<float>(v)), 0)
+                    + " " + rateParam->getLabel();
+            };
+        syncToggle.onStateChange = [rateSlider] { rateSlider->updateText(); };
+        rateSlider->updateText();
+    }
 }
 
 void ModDelayComponent::paintContent(juce::Graphics& g)

@@ -149,22 +149,28 @@ float ModDelay::calculateModulation(float currentPhase, float depth, ModulationT
     }
 }
 
+int ModDelay::getSyncDivisionIndex(float rawRate) {
+    // Rate knob range (0.01 .. 10) mapped linearly onto the available divisions
+    const float normalizedRate = (rawRate - 0.01f) / (10.0f - 0.01f);
+    return juce::jlimit(0, kNumSyncDivisions - 1, juce::roundToInt(normalizedRate * (kNumSyncDivisions - 1)));
+}
+
+float ModDelay::getSyncCyclesPerBeat(int divisionIndex) {
+    // LFO cycles per beat, slowest to fastest: one cycle every 16, 8, 4, 2, 1 and 1/2 beats
+    static constexpr float cyclesPerBeat[kNumSyncDivisions] = { 0.0625f, 0.125f, 0.25f, 0.5f, 1.0f, 2.0f };
+    return cyclesPerBeat[juce::jlimit(0, kNumSyncDivisions - 1, divisionIndex)];
+}
+
+juce::String ModDelay::getSyncDivisionName(float rawRate) {
+    // Length of one LFO cycle in musical terms (4/4): 16 beats = 4 bars ... 1/2 beat = an eighth note
+    static const char* names[kNumSyncDivisions] = { "4 bars", "2 bars", "1 bar", "1/2 note", "1/4 note", "1/8 note" };
+    return names[getSyncDivisionIndex(rawRate)];
+}
+
 float ModDelay::getEffectiveRateHz() const {
     if (syncEnabled) {
-        // Note divisions as fractions of a beat: 1/16=0.0625, 1/8=0.125, 1/4=0.25, 1/2=0.5, 1 bar=1.0, 2 bars=2.0
-        const float noteDivisions[] = { 0.0625f, 0.125f, 0.25f, 0.5f, 1.0f, 2.0f };
-        const int numDivisions = 6;
-
-        // 1. Convert rawRate (0.01 to 10.0 Hz) down to a normalized 0.0 to 1.0 range
-        float normalizedRate = (rawRate - 0.01f) / (10.0f - 0.01f);
-
-        // 2. Map that 0.0-1.0 range smoothly across the 6 available array choices (indices 0 to 5)
-        int index = juce::jlimit(0, numDivisions - 1, juce::roundToInt(normalizedRate * (numDivisions - 1)));
-        float bestDiv = noteDivisions[index];
-
-        // 3. Scale by the host BPM
-        float beatsPerSecond = bpm / 60.0f;
-        return beatsPerSecond * bestDiv;
+        const float beatsPerSecond = bpm / 60.0f;
+        return beatsPerSecond * getSyncCyclesPerBeat(getSyncDivisionIndex(rawRate));
     }
 
     return juce::jlimit(0.01f, 20.0f, rawRate);
