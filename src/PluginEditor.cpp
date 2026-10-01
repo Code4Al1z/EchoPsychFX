@@ -43,23 +43,14 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     exciterSaturationComponent->onCollapseChanged = collapseCallback;
     simpleVerbComponent->onCollapseChanged = collapseCallback;
 
-    addAndMakeVisible(modeToggle);
-    modeToggle.setButtonText("Perception Modes");
-    modeToggle.setColour(juce::ToggleButton::textColourId, juce::Colours::white);
-    modeToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::deeppink);
-    modeToggle.onClick = [this]
-        {
-            const bool pm = modeToggle.getToggleState();
-            perceptionModeComponent->setVisible(pm);
-            inputControlsComponent->setVisible(!pm);
-            modDelayComponent->setVisible(!pm);
-            spatialFXComponent->setVisible(!pm);
-            microPitchDetuneComponent->setVisible(!pm);
-            exciterSaturationComponent->setVisible(!pm);
-            simpleVerbComponent->setVisible(!pm);
-            resized();
-        };
-    modeToggle.setToggleState(false, juce::dontSendNotification);
+    perceptionModeComponent->onHeightChanged = collapseCallback;
+
+    inputControlsComponent->setAccent(L::accentInput);
+    modDelayComponent->setAccent(L::accentMotion);
+    spatialFXComponent->setAccent(L::accentSpatial);
+    microPitchDetuneComponent->setAccent(L::accentMicroPitch);
+    exciterSaturationComponent->setAccent(L::accentExciter);
+    simpleVerbComponent->setAccent(L::accentReverb);
 
     setResizable(false, false);
     applyWindowSize();
@@ -107,7 +98,7 @@ int AudioPluginAudioProcessorEditor::calculateWindowHeight() const
     const int row2 = juce::jmax(microPitchDetuneComponent->currentHeight(),
         juce::jmax(exciterSaturationComponent->currentHeight(), simpleVerbComponent->currentHeight()));
 
-    return L::kEdgePad + L::kModeToggleH + L::kGap + row1 + L::kGap + row2 + L::kEdgePad;
+    return L::kEdgePad + perceptionModeComponent->getPreferredHeight() + L::kGap + row1 + L::kGap + row2 + L::kEdgePad;
 }
 
 void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
@@ -119,15 +110,8 @@ void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds().reduced(L::kEdgePad);
 
-    modeToggle.setBounds(bounds.removeFromTop(L::kModeToggleH));
+    perceptionModeComponent->setBounds(bounds.removeFromTop(perceptionModeComponent->getPreferredHeight()));
     bounds.removeFromTop(L::kGap);
-
-    if (modeToggle.getToggleState())
-    {
-        perceptionModeComponent->setBounds(bounds);
-        return;
-    }
-    perceptionModeComponent->setVisible(false);
 
     auto getColumnWidth = [](const CollapsibleComponent& top, const CollapsibleComponent& bottom) {
         bool topClosed = (top.getCollapseState() != CollapsibleComponent::CollapseState::Expanded);

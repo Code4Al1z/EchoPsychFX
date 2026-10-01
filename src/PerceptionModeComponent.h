@@ -2,6 +2,7 @@
 #define ECHOPSYCHFX_PERCEPTIONMODECOMPONENT_H_INCLUDED
 
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <functional>
 #include "PerceptionPresetManager.h"
 
 /**
@@ -19,20 +20,32 @@ public:
     ~PerceptionModeComponent() override;
 
     void resized() override;
+    void paint(juce::Graphics& g) override;
+
+    /** Height the bar wants right now: the compact strip, plus the insight drawer when open. */
+    int getPreferredHeight() const;
+
+    /** Called when the insight drawer opens or closes so the editor can resize the window. */
+    std::function<void()> onHeightChanged;
 
 private:
     // Reserved ComboBox item ID for the synthetic "Custom" entry - picked well above any
     // real preset's ID so it never collides with the factory/user preset list.
     static constexpr int kCustomItemId = 1 << 20;
 
-    juce::Label titleLabel;
     juce::ComboBox presetSelector;
-    juce::TextButton saveAsButton{ "Save As..." };
-    juce::TextButton renameButton{ "Rename..." };
+    juce::TextButton prevButton{ "<" };
+    juce::TextButton nextButton{ ">" };
+    juce::TextButton saveAsButton{ "Save" };
+    juce::TextButton renameButton{ "Rename" };
     juce::TextButton deleteButton{ "Delete" };
+    juce::TextButton insightButton{ "Insight" };
 
-    juce::Label feelingTagsLabel;
+    juce::StringArray currentTags;
+    juce::Rectangle<int> chipsArea;
     juce::Label breakdownLabel;
+
+    void stepPreset(int direction);
 
     juce::StringArray factoryPresetNames;
 

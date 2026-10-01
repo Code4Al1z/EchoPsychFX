@@ -12,22 +12,22 @@ SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxModRateR", "Rate R", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxModDepthL", "Depth L", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxModDepthR", "Depth R", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayL", "Haas L", *this));
+    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayR", "Haas R", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxWetDryMix", "Mix", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxLfoPhaseOffset", "LFO Phase", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxAllpassFreq", "Allpass", *this));
-    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayL", "Haas L", *this));
-    knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayR", "Haas R", *this));
 
     const std::vector<juce::String> shapeLabels = { "Sin", "Tri", "Sqr", "Rnd" };
     modShapePicker = std::make_unique<PluginLookAndFeel::ShapePicker>(state, "modulationShape", shapeLabels, *this);
 
     for (auto& k : knobs)
-        k->slider->setNumDecimalPlacesToDisplay(2);
+        (void)k;
 }
 
 void SpatialFXComponent::paintContent(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
+    juce::ignoreUnused(g);
 }
 
 void SpatialFXComponent::layoutContent(juce::Rectangle<int> area)
@@ -68,13 +68,13 @@ void SpatialFXComponent::setModulationDepth(float l, float r)
     PluginLookAndFeel::setKnobValue(knobs, 4, l);
     PluginLookAndFeel::setKnobValue(knobs, 5, r);
 }
-void SpatialFXComponent::setWetDryMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 6, v); }
-void SpatialFXComponent::setLfoPhaseOffset(float v) { PluginLookAndFeel::setKnobValue(knobs, 7, v); }
-void SpatialFXComponent::setAllpassFrequency(float v) { PluginLookAndFeel::setKnobValue(knobs, 8, v); }
+void SpatialFXComponent::setWetDryMix(float v) { PluginLookAndFeel::setKnobValue(knobs, 8, v); }
+void SpatialFXComponent::setLfoPhaseOffset(float v) { PluginLookAndFeel::setKnobValue(knobs, 9, v); }
+void SpatialFXComponent::setAllpassFrequency(float v) { PluginLookAndFeel::setKnobValue(knobs, 10, v); }
 void SpatialFXComponent::setHaasDelayMs(float l, float r)
 {
-    PluginLookAndFeel::setKnobValue(knobs, 9, l);
-    PluginLookAndFeel::setKnobValue(knobs, 10, r);
+    PluginLookAndFeel::setKnobValue(knobs, 6, l);
+    PluginLookAndFeel::setKnobValue(knobs, 7, r);
 }
 void SpatialFXComponent::setModShape(SpatialFX::LfoWaveform waveform)
 {

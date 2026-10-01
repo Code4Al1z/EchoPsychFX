@@ -65,7 +65,7 @@ void WidthBalancerComponent::resized()
 
     const int labelH = 16;
     const int trackH = juce::jmax(18, static_cast<int>(h * 0.16f));
-    const int monoW = juce::jlimit(40, 60, static_cast<int>(w * 0.20f));
+    const int monoW = juce::jlimit(76, 90, static_cast<int>(w * 0.26f));
     const int sliderW = w - monoW - gap;
     const int valueW = 44;
 

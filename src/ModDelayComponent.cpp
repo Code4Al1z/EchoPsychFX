@@ -26,7 +26,7 @@ ModDelayComponent::ModDelayComponent(juce::AudioProcessorValueTreeState& state)
 
 void ModDelayComponent::paintContent(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
+    juce::ignoreUnused(g);
 }
 
 void ModDelayComponent::layoutContent(juce::Rectangle<int> area)
@@ -36,7 +36,7 @@ void ModDelayComponent::layoutContent(juce::Rectangle<int> area)
     const int totalH = inner.getHeight();
 
     const int btnH = juce::jlimit(20, 30, static_cast<int>(totalH * 0.15f));
-    const int syncW = juce::jlimit(50, 70, static_cast<int>(inner.getWidth() * 0.14f));
+    const int syncW = juce::jlimit(76, 92, static_cast<int>(inner.getWidth() * 0.2f));
     const int pickerW = inner.getWidth() - syncW - PluginLookAndFeel::spacing;
     const int y = inner.getY();
 

@@ -1,7 +1,7 @@
 #include "SimpleVerbWithPredelayComponent.h"
 
 SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProcessorValueTreeState& state)
-    : CollapsibleComponent("Simple Verb With Predelay")
+    : CollapsibleComponent("Reverb + Predelay")
 {
     addAndMakeVisible(group);
     PluginLookAndFeel::configureGroup(group);
@@ -14,7 +14,7 @@ SimpleVerbWithPredelayComponent::SimpleVerbWithPredelayComponent(juce::AudioProc
 
 void SimpleVerbWithPredelayComponent::paintContent(juce::Graphics& g)
 {
-    g.fillAll(PluginLookAndFeel::background);
+    juce::ignoreUnused(g);
 }
 
 void SimpleVerbWithPredelayComponent::layoutContent(juce::Rectangle<int> area)
