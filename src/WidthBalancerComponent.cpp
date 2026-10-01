@@ -22,7 +22,7 @@ WidthBalancerComponent::WidthBalancerComponent(juce::AudioProcessorValueTreeStat
     midSideSlider.setColour(juce::Slider::backgroundColourId, PluginLookAndFeel::knobBackground);
     addAndMakeVisible(midSideSlider);
 
-    PluginLookAndFeel::configureLabel(midSideLabel, "Mid/Side");
+    PluginLookAndFeel::configureLabel(midSideLabel, "Mid  <  Balance  >  Side");
     addAndMakeVisible(midSideLabel);
 
     midSideValueLabel.setJustificationType(juce::Justification::centredRight);

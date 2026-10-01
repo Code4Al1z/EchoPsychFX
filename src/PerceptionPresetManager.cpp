@@ -90,9 +90,10 @@ void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::
 
     if (!isMono)
     {
-        if (midSide > 0.3f)
+        // Mid/Side Balance: -1 = all mid (centre), +1 = all side. Matches the slider's left/right ends.
+        if (midSide < -0.3f)
             add("Centre-Weighted", "weighted toward the centre image, feeling solid and grounded");
-        else if (midSide < -0.3f)
+        else if (midSide > 0.3f)
             add("Diffuse Sides", "weighted toward the sides, feeling hazy and enveloping");
     }
 
