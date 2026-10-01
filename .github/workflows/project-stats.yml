@@ -40,9 +40,14 @@ jobs:
               f.write("\n")
           PY
 
-      - name: Commit project-stats.json
+      - name: Publish to project-stats branch
         run: |
+          mkdir /tmp/stats
+          cp project-stats.json /tmp/stats/
+          cd /tmp/stats
+          git init -q -b project-stats
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add project-stats.json
-          git diff --cached --quiet || (git commit -m "Update project stats" && git push)
+          git commit -q -m "Update project stats"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" project-stats
