@@ -389,7 +389,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Sine,
             100.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.25f, false,
             1.0f, 0.0f, 0.0f, false, 0.0f,
-            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.01f, 0.01f, 0.0f, 0.0f,
             0.0f, 0.0f, 1000.0f, 0.0f, 0.0f, SpatialFX::LfoWaveform::Sine,
             0.0f, 0.1f, 0.0f, 0.005f, 0.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 0.0f, 1000.0f, Sat::Soft, Harm::Balanced, 0.5f, 0.5f, true,
@@ -413,7 +413,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Square,
             150.0f, 0.8f, 0.7f, 0.9f, 6.0f, 1.5f, true,
             0.3f, 0.2f, 0.2f, false, -0.15f,
-            0.15f, -0.18f, 1.2f, 0.8f, 0.85f, 1.1f,
+            0.1f, -0.1f, 1.2f, 0.8f, 0.85f, 1.1f,
             0.9f, 0.2f, 3200.0f, 0.1f, 0.2f, SpatialFX::LfoWaveform::Triangle,
             -5.0f, 3.0f, 0.0008f, 0.003f, 0.3f, 0.7f, 0.15f, 0.15f,
             7.5f, 0.65f, 200.0f, Sat::Hard, Harm::OddOnly, 0.75f, 0.6f, false,
@@ -437,7 +437,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::SawtoothDown,
             550.0f, 0.65f, 0.6f, 0.7f, 3.0f, 0.3f, true,
             1.2f, 0.7f, 0.1f, false, -0.08f,
-            0.2f, -0.1f, 0.4f, 0.6f, 0.5f, 0.7f,
+            0.1f, -0.1f, 0.4f, 0.6f, 0.5f, 0.7f,
             0.85f, 0.3f, 4200.0f, 0.7f, 0.3f, SpatialFX::LfoWaveform::Random,
             -2.0f, 0.6f, 0.0018f, 0.004f, 0.75f, 0.6f, 0.35f, 0.5f,
             4.5f, 0.55f, 120.0f, Sat::Digital, Harm::OddOnly, 0.65f, 0.5f, true,
@@ -449,7 +449,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Sine,
             350.0f, 0.55f, 0.6f, 0.85f, 4.5f, 0.6f, false,
             0.9f, 0.75f, 0.05f, false, -0.07f,
-            0.18f, -0.22f, 0.9f, 0.9f, 0.7f, 0.7f,
+            0.1f, -0.1f, 0.9f, 0.9f, 0.7f, 0.7f,
             0.8f, 0.45f, 4200.0f, 0.6f, 0.6f, SpatialFX::LfoWaveform::Sine,
             4.0f, 1.2f, 0.001f, 0.0025f, 0.9f, 0.65f, 0.5f, 0.55f,
             5.5f, 0.6f, 180.0f, Sat::Transformer, Harm::EvenOnly, 0.7f, 0.6f, true,
@@ -487,8 +487,8 @@ void PerceptionPresetManager::initializePresets()
             0.55f, 1.0f, -0.25f, true, -0.12f,
             0.02f, -0.015f, 0.08f, 0.08f, 0.15f, 0.15f,
             0.3f, 0.05f, 2000.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Sine,
-            0.3f, 0.1f, 0.0001f, 0.0004f, 0.25f, 0.2f, 0.1f, 0.3f,
-            1.0f, 0.15f, 10.0f, Sat::Tube, Harm::EvenOnly, 0.15f, 0.4f, true,
+            0.3f, 0.1f, 0.0001f, 0.001f, 0.25f, 0.2f, 0.1f, 0.3f,
+            1.0f, 0.15f, 20.0f, Sat::Tube, Harm::EvenOnly, 0.15f, 0.4f, true,
             5.0f, 0.8f, 0.25f, 0.35f);
         };
 
@@ -497,7 +497,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Triangle,
             450.0f, 0.9f, 0.5f, 0.8f, 4.0f, 0.35f, false,
             1.1f, 0.65f, 0.15f, false, 0.08f,
-            0.18f, -0.12f, 0.7f, 0.7f, 0.65f, 0.65f,
+            0.1f, -0.1f, 0.7f, 0.7f, 0.65f, 0.65f,
             0.75f, 0.3f, 4200.0f, 0.3f, 0.25f, SpatialFX::LfoWaveform::Random,
             -3.5f, 1.5f, 0.0009f, 0.0022f, 0.95f, 0.68f, 0.4f, 0.45f,
             6.5f, 0.5f, 110.0f, Sat::Hard, Harm::OddOnly, 0.6f, 0.55f, false,
@@ -533,7 +533,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Sine,
             270.0f, 0.8f, 0.75f, 0.7f, 3.8f, 0.25f, false,
             1.3f, 0.9f, 0.1f, false, 0.06f,
-            0.18f, -0.15f, 0.5f, 0.65f, 0.75f, 0.75f,
+            0.1f, -0.1f, 0.5f, 0.65f, 0.75f, 0.75f,
             0.4f, 0.12f, 4200.0f, 0.5f, 0.3f, SpatialFX::LfoWaveform::Sine,
             3.0f, 0.5f, 0.0007f, 0.002f, 0.75f, 0.55f, 0.35f, 0.55f,
             7.5f, 0.75f, 120.0f, Sat::Tube, Harm::EvenOnly, 0.55f, 0.6f, true,
@@ -545,7 +545,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Sine,
             350.0f, 0.6f, 0.65f, 0.75f, 2.5f, 0.3f, false,
             1.1f, 0.85f, -0.05f, false, 0.04f,
-            0.12f, -0.1f, 0.4f, 0.55f, 0.65f, 0.65f,
+            0.1f, -0.1f, 0.4f, 0.55f, 0.65f, 0.65f,
             0.3f, 0.09f, 4200.0f, 0.4f, 0.3f, SpatialFX::LfoWaveform::Triangle,
             -2.5f, 1.2f, 0.0008f, 0.0025f, 0.75f, 0.6f, 0.2f, 0.7f,
             5.5f, 0.7f, 150.0f, Sat::Soft, Harm::EvenOnly, 0.75f, 0.5f, true,
@@ -557,7 +557,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Triangle,
             400.0f, 0.7f, 0.75f, 0.8f, 3.0f, 0.35f, false,
             1.2f, 0.9f, 0.1f, false, 0.05f,
-            0.15f, -0.12f, 0.5f, 0.65f, 0.75f, 0.75f,
+            0.1f, -0.1f, 0.5f, 0.65f, 0.75f, 0.75f,
             0.2f, 0.06f, 4200.0f, 0.6f, 0.3f, SpatialFX::LfoWaveform::Sine,
             -3.5f, 1.5f, 0.0009f, 0.0022f, 0.8f, 0.7f, 0.4f, 0.75f,
             6.5f, 0.8f, 200.0f, Sat::Tape, Harm::Balanced, 0.6f, 0.55f, true,
@@ -571,7 +571,7 @@ void PerceptionPresetManager::initializePresets()
             0.75f, 0.95f, -0.12f, false, 0.02f,
             0.02f, -0.018f, 0.12f, 0.2f, 0.5f, 0.5f,
             0.1f, 0.03f, 4200.0f, 0.4f, 0.3f, SpatialFX::LfoWaveform::Random,
-            1.1f, 0.15f, 0.0001f, 0.0004f, 0.4f, 0.25f, 0.1f, 0.15f,
+            1.1f, 0.15f, 0.0001f, 0.001f, 0.4f, 0.25f, 0.1f, 0.15f,
             4.0f, 0.45f, 44.0f, Sat::Tube, Harm::EvenOnly, 0.35f, 0.45f, true,
             10.0f, 0.35f, 0.1f, 0.2f);
         };
@@ -583,7 +583,7 @@ void PerceptionPresetManager::initializePresets()
             0.8f, 0.9f, -0.08f, false, 0.03f,
             0.08f, -0.06f, 0.25f, 0.35f, 0.45f, 0.45f,
             0.25f, 0.1f, 4200.0f, 0.3f, 0.25f, SpatialFX::LfoWaveform::Sine,
-            -1.5f, 0.25f, 0.0003f, 0.0008f, 0.5f, 0.35f, 0.2f, 0.5f,
+            -1.5f, 0.25f, 0.0003f, 0.001f, 0.5f, 0.35f, 0.2f, 0.5f,
             4.5f, 0.6f, 120.0f, Sat::Transformer, Harm::Balanced, 0.5f, 0.5f, true,
             30.0f, 0.75f, 0.25f, 0.5f);
         };
@@ -593,7 +593,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Square,
             90.0f, 0.7f, 0.7f, 0.85f, 3.2f, 1.6f, true,
             0.4f, 0.6f, 0.3f, false, -0.1f,
-            0.2f, -0.2f, 1.4f, 1.4f, 0.9f, 0.9f,
+            0.1f, -0.1f, 1.4f, 1.4f, 0.9f, 0.9f,
             1.0f, 0.2f, 4200.0f, 0.7f, 0.7f, SpatialFX::LfoWaveform::Triangle,
             -4.0f, 2.0f, 0.0012f, 0.0025f, 0.6f, 0.7f, 0.3f, 0.35f,
             8.5f, 0.75f, 150.0f, Sat::Digital, Harm::OddOnly, 0.85f, 0.55f, false,
@@ -679,7 +679,7 @@ void PerceptionPresetManager::initializePresets()
             1.2f, 0.7f, -0.05f, false, 0.02f,
             0.05f, -0.05f, 0.25f, 0.25f, 0.35f, 0.35f,
             0.45f, 0.4f, 4200.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Triangle,
-            1.5f, 0.25f, 0.0003f, 0.0008f, 0.5f, 0.35f, 0.2f, 0.45f,
+            1.5f, 0.25f, 0.0003f, 0.001f, 0.5f, 0.35f, 0.2f, 0.45f,
             3.0f, 0.5f, 40.0f, Sat::Digital, Harm::EvenOnly, 0.6f, 0.5f, true,
             30.0f, 0.75f, 0.25f, 0.5f);
         };
@@ -713,7 +713,7 @@ void PerceptionPresetManager::initializePresets()
         usePreset(ModDelay::ModulationType::Sine,
             400.0f, 0.6f, 0.6f, 0.6f, 1.5f, 0.15f, false,
             1.1f, 0.8f, 0.1f, false, -0.04f,
-            0.15f, -0.12f, 0.25f, 0.25f, 0.4f, 0.4f,
+            0.1f, -0.1f, 0.25f, 0.25f, 0.4f, 0.4f,
             0.75f, 0.15f, 4200.0f, 0.35f, 0.15f, SpatialFX::LfoWaveform::Sine,
             -0.8f, 0.8f, 0.0004f, 0.0015f, 0.6f, 0.5f, 0.15f, 0.4f,
             4.0f, 0.5f, 80.0f, Sat::Tube, Harm::EvenOnly, 0.55f, 0.5f, true,
@@ -739,7 +739,7 @@ void PerceptionPresetManager::initializePresets()
             0.6f, 0.6f, -0.15f, false, 0.01f,
             0.01f, -0.01f, 0.05f, 0.05f, 0.1f, 0.1f,
             0.2f, 0.05f, 4200.0f, 0.15f, 0.05f, SpatialFX::LfoWaveform::Sine,
-            0.7f, 0.1f, 0.0002f, 0.0008f, 0.5f, 0.2f, 0.0f, 0.05f,
+            0.7f, 0.1f, 0.0002f, 0.001f, 0.5f, 0.2f, 0.0f, 0.05f,
             1.2f, 0.25f, 400.0f, Sat::Soft, Harm::Balanced, 0.8f, 0.5f, true,
             10.0f, 0.4f, 0.3f, 0.3f);
         };
@@ -751,7 +751,7 @@ void PerceptionPresetManager::initializePresets()
             1.2f, 0.65f, -0.05f, false, 0.02f,
             0.07f, -0.04f, 0.28f, 0.28f, 0.38f, 0.38f,
             0.55f, 0.05f, 4200.0f, 0.4f, 0.05f, SpatialFX::LfoWaveform::Sine,
-            -1.2f, 0.25f, 0.0003f, 0.0009f, 0.55f, 0.35f, 0.15f, 0.45f,
+            -1.2f, 0.25f, 0.0003f, 0.001f, 0.55f, 0.35f, 0.15f, 0.45f,
             3.0f, 0.5f, 90.0f, Sat::Tape, Harm::EvenOnly, 0.5f, 0.5f, true,
             60.0f, 0.8f, 0.3f, 0.65f);
         };
