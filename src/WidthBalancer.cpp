@@ -79,8 +79,11 @@ void WidthBalancer::updateBalanceGains(float balance)
 {
     const float balanceAngle = (balance * 0.5f + 0.5f) * juce::MathConstants<float>::halfPi;
 
-    cachedMidGain = std::cos(balanceAngle);
-    cachedSideGain = std::sin(balanceAngle);
+    // Scaled by sqrt(2) so that Balance = 0 gives unity gain on both mid and side. Without this,
+    // the default setting attenuated the side channel by ~3 dB and "neutral" was not neutral.
+    constexpr float kUnityAtCentre = juce::MathConstants<float>::sqrt2;
+    cachedMidGain = kUnityAtCentre * std::cos(balanceAngle);
+    cachedSideGain = kUnityAtCentre * std::sin(balanceAngle);
 
     lastBalanceForCache = balance;
 }
@@ -96,7 +99,7 @@ void WidthBalancer::updateProcessCache()
 
     cache.effectiveWidth = 1.0f + (cache.width - 1.0f) * cache.intensity;
     cache.effectiveMidGain = 1.0f + (cachedMidGain - 1.0f) * cache.intensity;
-    cache.effectiveSideGain = cachedSideGain * cache.intensity;
+    cache.effectiveSideGain = 1.0f + (cachedSideGain - 1.0f) * cache.intensity;
     cache.paramsStable = true;
 }
 
@@ -172,7 +175,7 @@ void WidthBalancer::process(juce::dsp::AudioBlock<float>& block)
 
             const float effectiveWidth = 1.0f + (currentWidth - 1.0f) * currentIntensity;
             const float effectiveMidGain = 1.0f + (cachedMidGain - 1.0f) * currentIntensity;
-            const float effectiveSideGain = cachedSideGain * currentIntensity;
+            const float effectiveSideGain = 1.0f + (cachedSideGain - 1.0f) * currentIntensity;
 
             // Mid-side encoding
             const float l = left[i];

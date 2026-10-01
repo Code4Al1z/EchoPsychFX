@@ -54,7 +54,7 @@ private:
     float smoothingTimeMs = 20.0f;
 
     float cachedMidGain = 1.0f;
-    float cachedSideGain = 0.0f;
+    float cachedSideGain = 1.0f;
     float lastBalanceForCache = 0.0f;
 
     // Cache for optimization
@@ -65,7 +65,7 @@ private:
         float intensity = 1.0f;
         float effectiveWidth = 1.0f;
         float effectiveMidGain = 1.0f;
-        float effectiveSideGain = 0.0f;
+        float effectiveSideGain = 1.0f;
     } cache;
 
     void updateBalanceGains(float balance);
