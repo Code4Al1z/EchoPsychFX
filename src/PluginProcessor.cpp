@@ -173,6 +173,9 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     spatialFX.prepare(spec);
     microPitchDetune.prepare(spec);
     exciterSaturation.prepare(spec);
+
+    // The exciter's oversampling filters add a few samples of latency; tell the host so it can compensate
+    setLatencySamples(exciterSaturation.getLatencySamples());
     simpleVerbWithPredelay.prepare(spec);
 }
 

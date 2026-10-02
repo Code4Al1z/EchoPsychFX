@@ -13,8 +13,13 @@ void ExciterSaturation::prepare(const juce::dsp::ProcessSpec& spec)
     // instead of hardcoding 2 (which broke on mono instances)
     oversampling = std::make_unique<juce::dsp::Oversampling<float>>(
         static_cast<size_t>(spec.numChannels), 1,
-        juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
+        juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, true);   // integer latency
     oversampling->initProcessing(spec.maximumBlockSize);
+    latencySamples = juce::roundToInt(oversampling->getLatencyInSamples());
+
+    dryDelay.setMaximumDelayInSamples(juce::jmax(16, latencySamples + 4));
+    dryDelay.prepare(spec);
+    dryDelay.setDelay(static_cast<float>(latencySamples));
     juce::dsp::ProcessSpec oversampledSpec = spec;
     oversampledSpec.sampleRate *= 2.0;
     oversampledSpec.maximumBlockSize *= 2;
@@ -60,9 +65,9 @@ void ExciterSaturation::reset()
     deEmphasis.reset();
     dcBlocker.reset();
     toneFilter.reset();
-
-    inputRMS.fill(0.0f);
-    outputRMS.fill(0.0f);
+    dryDelay.reset();
+    autoGainValue = 1.0f;
+    autoGainPrimed = false;
 }
 
 void ExciterSaturation::setDrive(float newDrive)
@@ -84,20 +89,32 @@ void ExciterSaturation::setMix(float newMix)
 
 void ExciterSaturation::setHighpass(float freqHz)
 {
-    highpassFreq = juce::jlimit(20.0f, 20000.0f, freqHz);
+    const float newFreq = juce::jlimit(20.0f, 20000.0f, freqHz);
+    if (newFreq == highpassFreq)
+        return;
+
+    highpassFreq = newFreq;
     updateHighpass();
 }
 
 void ExciterSaturation::setToneBrightness(float brightness)
 {
-    toneBrightness = juce::jlimit(0.0f, 1.0f, brightness);
+    const float newBrightness = juce::jlimit(0.0f, 1.0f, brightness);
+    if (newBrightness == toneBrightness)
+        return;
+
+    toneBrightness = newBrightness;
     updatePreEmphasis();
     updateDeEmphasis();
 }
 
 void ExciterSaturation::setHarmonicBalance(float balance)
 {
-    harmonicBalance = juce::jlimit(0.0f, 1.0f, balance);
+    const float newBalance = juce::jlimit(0.0f, 1.0f, balance);
+    if (newBalance == harmonicBalance)
+        return;
+
+    harmonicBalance = newBalance;
     updateToneFilter();
 }
 
@@ -159,41 +176,6 @@ void ExciterSaturation::updateToneFilter()
         sampleRate, toneFreq, 0.7f, juce::Decibels::decibelsToGain(toneGain));
 }
 
-float ExciterSaturation::calculateGainCompensation()
-{
-    if (!autoGainEnabled)
-        return 1.0f;
-
-    // Calculate average RMS across channels
-    float avgInputRMS = 0.0f;
-    float avgOutputRMS = 0.0f;
-    int numChannels = 0;
-
-    for (size_t i = 0; i < inputRMS.size(); ++i)
-    {
-        if (inputRMS[i] > 0.0f)
-        {
-            avgInputRMS += inputRMS[i];
-            avgOutputRMS += outputRMS[i];
-            ++numChannels;
-        }
-    }
-
-    if (numChannels == 0)
-        return 1.0f;
-
-    avgInputRMS /= static_cast<float>(numChannels);
-    avgOutputRMS /= static_cast<float>(numChannels);
-
-    // Prevent division by zero
-    if (avgOutputRMS < 0.0001f)
-        return 1.0f;
-
-    // Calculate gain compensation with limiting
-    float compensation = avgInputRMS / avgOutputRMS;
-    return juce::jlimit(0.5f, 2.0f, compensation);  // Limit to �6dB
-}
-
 float ExciterSaturation::softSaturation(float x)
 {
     // Smooth tanh saturation
@@ -202,14 +184,9 @@ float ExciterSaturation::softSaturation(float x)
 
 float ExciterSaturation::hardClip(float x)
 {
-    // Soft clipping with polynomial
-    float abs_x = std::abs(x);
-    if (abs_x < 1.0f)
-        return x;
-    else if (abs_x < 2.0f)
-        return juce::jlimit(-1.5f, 1.5f, x * (2.0f - abs_x) / 1.0f);
-    else
-        return (x > 0.0f) ? 1.5f : -1.5f;
+    // A true hard clip. (This used to be a polynomial that fell back to zero at |x| = 2 and then
+    // jumped to +/-1.5, which put a 1.5-unit cliff in the curve and glitched on every crossing.)
+    return juce::jlimit(-1.0f, 1.0f, x);
 }
 
 float ExciterSaturation::tubeSaturation(float x)
@@ -252,60 +229,46 @@ float ExciterSaturation::digitalSaturation(float x)
     return std::round(clipped * levels) / levels;
 }
 
-float ExciterSaturation::waveshape(float x, SaturationType type, float driveAmount)
+float ExciterSaturation::curve(float u, SaturationType type)
 {
-    float driven = x * driveAmount;
-
-    float output = 0.0f;
-
     switch (type)
     {
-    case SaturationType::Soft:
-        output = softSaturation(driven);
-        break;
-    case SaturationType::Hard:
-        output = hardClip(driven);
-        break;
-    case SaturationType::Tube:
-        output = tubeSaturation(driven);
-        break;
-    case SaturationType::Tape:
-        output = tapeSaturation(driven);
-        break;
-    case SaturationType::Transformer:
-        output = transformerSaturation(driven);
-        break;
-    case SaturationType::Digital:
-        output = digitalSaturation(driven);
-        break;
+    case SaturationType::Soft:        return softSaturation(u);
+    case SaturationType::Hard:        return hardClip(u);
+    case SaturationType::Tube:        return tubeSaturation(u);
+    case SaturationType::Tape:        return tapeSaturation(u);
+    case SaturationType::Transformer: return transformerSaturation(u);
+    case SaturationType::Digital:     return digitalSaturation(u);
     }
 
-    return output / driveAmount;
+    return u;
 }
 
-float ExciterSaturation::applyHarmonicMode(float x, HarmonicMode mode)
+float ExciterSaturation::waveshape(float x, SaturationType type, HarmonicMode mode, float driveAmount)
 {
+    const float u = x * driveAmount;
+    float y = curve(u, type);
+
+    // The harmonic mode shapes the saturator output while it is still at full (about +/-1) level.
+    // It used to run after the output had been divided down by the drive, where it was nearly linear
+    // and did next to nothing (Even mode even made the 2nd harmonic quieter).
     switch (mode)
     {
     case HarmonicMode::Balanced:
-        return x;
+        break;
 
     case HarmonicMode::OddOnly:
-    {
-        // Symmetric saturation emphasizes odd harmonics
-        return std::tanh(x * 2.0f) * 0.5f;
-    }
+        // Keep only the odd-symmetric part of the curve: asymmetric types (Tube) lose their even harmonics
+        y = 0.5f * (y - curve(-u, type));
+        break;
 
     case HarmonicMode::EvenOnly:
-    {
-        // Asymmetric saturation emphasizes even harmonics
-        float rectified = std::abs(x);
-        float shaped = std::tanh(rectified * 1.5f);
-        return (x >= 0.0f) ? shaped : -shaped * 0.8f;
-    }
+        // Add a squared term, which generates 2nd (and higher even) harmonics; the DC blocker removes its offset
+        y += 0.35f * y * y;
+        break;
     }
 
-    return x;
+    return y;
 }
 
 void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
@@ -313,100 +276,131 @@ void ExciterSaturation::process(juce::dsp::AudioBlock<float>& block)
     if (block.getNumSamples() == 0 || oversampling == nullptr)
         return;
 
-    auto numSamples = static_cast<int>(block.getNumSamples());
-    auto numChannels = static_cast<int>(block.getNumChannels());
+    const int numSamples = static_cast<int>(block.getNumSamples());
+    const int numChannels = static_cast<int>(block.getNumChannels());
 
-    // Store dry signal - needed below to parallel-mix the excited band back on top of it,
-    // since processSamplesDown() overwrites block with the excited-band-only content
+    // Keep the dry signal for the parallel mix, delayed by the same amount as the oversampled wet path
+    // so the two line up (otherwise they comb-filter against each other).
     for (int ch = 0; ch < numChannels; ++ch)
-        dryBuffer.copyFrom(ch, 0, block.getChannelPointer(static_cast<size_t>(ch)), numSamples);
-
-    // Calculate input RMS for auto-gain
-    if (autoGainEnabled)
     {
-        for (int ch = 0; ch < juce::jmin(numChannels, 2); ++ch)
+        const float* in = block.getChannelPointer(static_cast<size_t>(ch));
+        float* dry = dryBuffer.getWritePointer(ch);
+        for (int i = 0; i < numSamples; ++i)
         {
-            float rms = 0.0f;
-            auto* samples = block.getChannelPointer(static_cast<size_t>(ch));
-            for (int i = 0; i < numSamples; ++i)
-                rms += samples[i] * samples[i];
-            inputRMS[static_cast<size_t>(ch)] = std::sqrt(rms / static_cast<float>(numSamples));
+            dryDelay.pushSample(ch, in[i]);
+            dry[i] = dryDelay.popSample(ch);
         }
     }
 
-    // Upsample. `block` itself is untouched by this call, so it still holds the
-    // full-band dry signal until processSamplesDown() overwrites it below.
+    // Upsample. `block` itself is untouched by this call until processSamplesDown() overwrites it
+    // with the excited band only.
     juce::dsp::AudioBlock<float> oversampledBlock = oversampling->processSamplesUp(block);
+    const int oversampledNumSamples = static_cast<int>(oversampledBlock.getNumSamples());
 
-    // From here, oversampledBlock is reworked in place into the excited band only
-    // (highpassed + saturated). Apply highpass filter
     highpass.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
-
-    // Apply pre-emphasis
     preEmphasis.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
 
-    // Apply saturation — advance drive smoother once per sample, not per channel
+    // Saturation. The drive smoother advances once per sample, not per channel. The band level going
+    // in is measured so Auto Gain can match what comes out to it.
+    double sumSquaresIn = 0.0;
+    for (int i = 0; i < oversampledNumSamples; ++i)
     {
-        auto oversampledNumSamples = static_cast<int>(oversampledBlock.getNumSamples());
-        for (int i = 0; i < oversampledNumSamples; ++i)
-        {
-            float driveAmount = juce::jmap(smoothedDrive.getNextValue(), 0.0f, 10.0f, 1.0f, 20.0f);
+        const float driveAmount = juce::jmap(smoothedDrive.getNextValue(), 0.0f, 10.0f, 1.0f, 20.0f);
 
-            for (int ch = 0; ch < numChannels; ++ch)
-            {
-                auto* samples = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
-                float input = samples[i];
-                float shaped = waveshape(input, saturationType, driveAmount);
-                shaped = applyHarmonicMode(shaped, harmonicMode);
-                samples[i] = shaped;
-            }
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            float* samples = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
+            const float x = samples[i];
+            sumSquaresIn += static_cast<double>(x) * x;
+
+            float y = waveshape(x, saturationType, harmonicMode, driveAmount);
+
+            // With Auto Gain off, keep the classic "unity gain for small signals" behaviour
+            if (!autoGainEnabled)
+                y /= driveAmount;
+
+            samples[i] = y;
         }
     }
 
-    // Apply de-emphasis
-    deEmphasis.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
-
-    // DC blocking
     dcBlocker.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
+
+    if (autoGainEnabled)
+    {
+        // Level-match the saturated band to the band that went in, so Drive changes the harmonic
+        // content rather than the loudness. Previously this compared the full-band input with the
+        // high-passed output, which pinned the gain at its limit, and it jumped once per block.
+        double sumSquaresOut = 0.0;
+        for (int ch = 0; ch < numChannels; ++ch)
+        {
+            const float* samples = oversampledBlock.getChannelPointer(static_cast<size_t>(ch));
+            for (int i = 0; i < oversampledNumSamples; ++i)
+                sumSquaresOut += static_cast<double>(samples[i]) * samples[i];
+        }
+
+        const double count = static_cast<double>(oversampledNumSamples) * numChannels;
+        const float rmsIn = static_cast<float>(std::sqrt(sumSquaresIn / count));
+        const float rmsOut = static_cast<float>(std::sqrt(sumSquaresOut / count));
+
+        float gainStart = autoGainValue;
+        float gainEnd = autoGainValue;
+
+        if (rmsIn > 1.0e-4f && rmsOut > 1.0e-6f)   // hold the last gain through silence
+        {
+            const float target = juce::jlimit(0.04f, 1.5f, rmsIn / rmsOut);
+
+            if (!autoGainPrimed)
+            {
+                gainStart = gainEnd = target;
+                autoGainPrimed = true;
+            }
+            else
+            {
+                // Come down fast when the band gets louder (no blasts on onsets), recover slowly
+                const float blockSeconds = static_cast<float>(numSamples) / sampleRate;
+                const float timeConstant = target < autoGainValue ? 0.005f : 0.040f;
+                const float alpha = 1.0f - std::exp(-blockSeconds / timeConstant);
+                gainEnd = autoGainValue + alpha * (target - autoGainValue);
+            }
+        }
+
+        // Ramp across the block so the change is never a step
+        for (int i = 0; i < oversampledNumSamples; ++i)
+        {
+            const float g = gainStart + (gainEnd - gainStart) * static_cast<float>(i + 1) / static_cast<float>(oversampledNumSamples);
+            for (int ch = 0; ch < numChannels; ++ch)
+                oversampledBlock.getChannelPointer(static_cast<size_t>(ch))[i] *= g;
+        }
+
+        autoGainValue = gainEnd;
+    }
+    else
+    {
+        autoGainValue = 1.0f;
+        autoGainPrimed = false;
+    }
+
+    deEmphasis.process(juce::dsp::ProcessContextReplacing<float>(oversampledBlock));
 
     // Downsample - block now holds the excited band only
     oversampling->processSamplesDown(block);
 
-    // Apply tone filter to the excited band (at normal sample rate)
+    // Tone shaping of the excited band (at the normal rate)
     juce::dsp::ProcessContextReplacing<float> context(block);
     toneFilter.process(context);
 
-    // Calculate output RMS and apply auto-gain
-    float gainComp = 1.0f;
-    if (autoGainEnabled)
-    {
-        for (int ch = 0; ch < juce::jmin(numChannels, 2); ++ch)
-        {
-            float rms = 0.0f;
-            auto* samples = block.getChannelPointer(static_cast<size_t>(ch));
-            for (int i = 0; i < numSamples; ++i)
-                rms += samples[i] * samples[i];
-            outputRMS[static_cast<size_t>(ch)] = std::sqrt(rms / static_cast<float>(numSamples));
-        }
-
-        gainComp = calculateGainCompensation();
-    }
-
-    // Parallel mix: layer the excited (highpassed + saturated) band on top of the
-    // untouched dry signal, rather than crossfading the dry signal away - a crossfade
-    // would replace the full band (including everything below the highpass) with a
-    // band-limited signal as Mix increases, thinning out the low end.
-    // Advance mix smoother once per sample across all channels
+    // Parallel mix: layer the excited band on top of the untouched (latency-matched) dry signal,
+    // rather than crossfading the dry signal away - a crossfade would thin out everything below the
+    // highpass as Mix increases. The mix smoother advances once per sample across all channels.
     for (int i = 0; i < numSamples; ++i)
     {
-        float currentMix = smoothedMix.getNextValue();
-        float wetAmount = currentMix * gainComp;
+        const float currentMix = smoothedMix.getNextValue();
 
         for (int ch = 0; ch < numChannels; ++ch)
         {
-            auto* wet = block.getChannelPointer(static_cast<size_t>(ch));
-            auto* dry = dryBuffer.getReadPointer(ch);
-            wet[i] = dry[i] + wet[i] * wetAmount;
+            float* wet = block.getChannelPointer(static_cast<size_t>(ch));
+            const float* dry = dryBuffer.getReadPointer(ch);
+            wet[i] = dry[i] + wet[i] * currentMix;
         }
     }
 }

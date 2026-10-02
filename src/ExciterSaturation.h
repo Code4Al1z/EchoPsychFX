@@ -64,6 +64,10 @@ public:
 
     void process(juce::dsp::AudioBlock<float>& block);
 
+    /** Latency added by the oversampling filters, in samples. The dry path is delayed by the same
+        amount so the two stay aligned; the plugin reports this to the host. Valid after prepare(). */
+    int getLatencySamples() const noexcept { return latencySamples; }
+
     // Preset management
     void loadPreset(const Preset& preset);
     Preset getCurrentPreset() const;
@@ -113,24 +117,23 @@ private:
     juce::AudioBuffer<float> dryBuffer;
     juce::AudioBuffer<float> oversampledBuffer;
 
-    // RMS metering for auto-gain
-    std::array<float, 2> inputRMS = { 0.0f, 0.0f };
-    std::array<float, 2> outputRMS = { 0.0f, 0.0f };
+    // Latency compensation: the dry signal is delayed to line up with the oversampled wet path
+    int latencySamples = 0;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::None> dryDelay;
+
+    // Smoothed level-match gain applied to the saturated band when Auto Gain is on
+    float autoGainValue = 1.0f;
+    bool autoGainPrimed = false;   // first block with signal snaps straight to the right gain
 
     // Waveshaping functions
-    float waveshape(float x, SaturationType type, float driveAmount);
+    float curve(float u, SaturationType type);
+    float waveshape(float x, SaturationType type, HarmonicMode mode, float driveAmount);
     float softSaturation(float x);
     float hardClip(float x);
     float tubeSaturation(float x);
     float tapeSaturation(float x);
     float transformerSaturation(float x);
     float digitalSaturation(float x);
-
-    // Harmonic filtering
-    float applyHarmonicMode(float x, HarmonicMode mode);
-
-    // Gain compensation
-    float calculateGainCompensation();
 
     // Filter update helpers
     void updateHighpass();
