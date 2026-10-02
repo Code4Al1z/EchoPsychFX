@@ -249,10 +249,11 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
                 const float delay1Samples = juce::jlimit(1.0f, maxSamples, baseDelaySamples + grain1Phase * windowSamples);
                 const float delay2Samples = juce::jlimit(1.0f, maxSamples, baseDelaySamples + grain2Phase * windowSamples);
 
-                tap.delay.setDelay(delay1Samples);
-                const float tapSample1 = tap.delay.popSample(0);
-                tap.delay.setDelay(delay2Samples);
-                const float tapSample2 = tap.delay.popSample(0);
+                // Both grains read from the same moment in time. popSample() moves the read pointer
+                // back one step unless told not to, so only the second read may advance it - advancing
+                // on both made the read head run at twice the write speed (output an octave high).
+                const float tapSample1 = tap.delay.popSample(0, delay1Samples, false);
+                const float tapSample2 = tap.delay.popSample(0, delay2Samples, true);
 
                 const float tapSample = tapSample1 * gain1 + tapSample2 * gain2;
 
