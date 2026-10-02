@@ -48,7 +48,7 @@ void SpatialFX::reset()
     dcBlockerR.reset();
 
     lfoPhaseL = 0.0f;
-    lfoPhaseR = lfoPhaseOffset;
+    lfoPhaseR = 0.0f;   // the L/R LFO phase offset is applied when the LFO is read, so it responds live
     randomValueL = randomValueR = 0.0f;
     randomSampleCounterL = randomSampleCounterR = 0.0f;
     lastLfoValueL = lastLfoValueR = 0.0f;
@@ -240,8 +240,13 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         if (lfoPhaseR >= twoPi) lfoPhaseR -= twoPi;
 
         // Calculate LFO modulation
+        // The right LFO is read lfoPhaseOffset radians ahead of the left one. Applying it here rather
+        // than once at reset() makes the LFO Phase control audible and live.
+        float shiftedPhaseR = lfoPhaseR + lfoPhaseOffset;
+        if (shiftedPhaseR >= twoPi) shiftedPhaseR -= twoPi;
+
         const float lfoModL = getLfoValue(lfoPhaseL, true);
-        const float lfoModR = getLfoValue(lfoPhaseR, false);
+        const float lfoModR = getLfoValue(shiftedPhaseR, false);
 
         lastLfoValueL = lfoModL;
         lastLfoValueR = lfoModR;
