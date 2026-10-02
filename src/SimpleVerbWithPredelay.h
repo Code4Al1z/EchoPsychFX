@@ -63,8 +63,13 @@ public:
     /** Returns whether bypassed */
     bool isBypassed() const noexcept { return bypassed.load(std::memory_order_relaxed); }
 
-    /** Returns the reverb tail length in samples */
+    /** Returns how long the reverb keeps ringing after the input stops (pre-delay plus time to decay
+        by 60 dB at the current room size), in samples. 0 when the reverb is fully dry. */
     int getTailLengthSamples() const noexcept;
+
+    /** Same estimate from explicit settings, so it can be asked of the parameters directly without
+        waiting for the audio thread to push them in. */
+    static int computeTailLengthSamples(float predelayMs, float roomSize, float wetLevel, double sampleRate) noexcept;
 
 private:
     //==============================================================================
@@ -86,6 +91,7 @@ private:
     // Thread-safe parameter storage
     std::atomic<float> targetPredelayMs{ 0.0f };
     std::atomic<float> targetWetLevel{ 0.3f };
+    std::atomic<float> targetRoomSize{ 0.5f };
     std::atomic<bool> bypassed{ false };
 
     mutable juce::SpinLock parameterLock;

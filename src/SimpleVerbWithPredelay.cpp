@@ -70,6 +70,7 @@ void SimpleVerbWithPredelay::setRoomSize(float size)
 {
     juce::SpinLock::ScopedLockType sl(parameterLock);
     reverbParams.roomSize = juce::jlimit(0.0f, 1.0f, size);
+    targetRoomSize.store(reverbParams.roomSize, std::memory_order_relaxed);
     needsReverbUpdate.store(true, std::memory_order_release);
 }
 
@@ -141,8 +142,10 @@ void SimpleVerbWithPredelay::applyPredelay(juce::dsp::AudioBlock<float>& inputBl
 
     for (int i = 0; i < numSamples; ++i)
     {
-        // Advance smoother once per sample
-        const float currentDelaySamples = predelaySmoothed.getNextValue();
+        // Advance smoother once per sample. The delay is kept to at least one sample: the 4-point
+        // interpolation below needs the sample one step "newer" than the read position, which for a
+        // shorter delay would not have been written yet.
+        const float currentDelaySamples = juce::jmax(1.0f, predelaySmoothed.getNextValue());
         const int delaySamplesInt = static_cast<int>(currentDelaySamples);
         const float delayFraction = currentDelaySamples - static_cast<float>(delaySamplesInt);
 
@@ -153,17 +156,20 @@ void SimpleVerbWithPredelay::applyPredelay(juce::dsp::AudioBlock<float>& inputBl
             // Write input sample to circular buffer
             predelayBuffer.getWritePointer(ch)[currentWritePos] = inputBlock.getSample(ch, i);
 
-            // Calculate read position
-            const int readPos = currentWritePos - delaySamplesInt;
+            // The wanted point lies between the samples N and N + 1 steps back, a fraction
+            // (1 - delayFraction) of the way from the older one to the newer one. (It used to
+            // interpolate towards newer samples by delayFraction, which delayed the signal by N - f
+            // instead of N + f and could read samples that had not been written yet.)
+            const int newer = currentWritePos - delaySamplesInt;
 
-            const int idx0 = (readPos - 1 + maxPredelaySamples) & (maxPredelaySamples - 1);
-            const int idx1 = (readPos + maxPredelaySamples) & (maxPredelaySamples - 1);
-            const int idx2 = (readPos + 1 + maxPredelaySamples) & (maxPredelaySamples - 1);
-            const int idx3 = (readPos + 2 + maxPredelaySamples) & (maxPredelaySamples - 1);
+            const int idx0 = (newer - 2 + maxPredelaySamples) & (maxPredelaySamples - 1);
+            const int idx1 = (newer - 1 + maxPredelaySamples) & (maxPredelaySamples - 1);
+            const int idx2 = (newer + maxPredelaySamples) & (maxPredelaySamples - 1);
+            const int idx3 = (newer + 1 + maxPredelaySamples) & (maxPredelaySamples - 1);
 
             const float* buf = predelayBuffer.getReadPointer(ch);
             outputBlock.setSample(ch, i,
-                hermiteInterpolation(delayFraction, buf[idx0], buf[idx1], buf[idx2], buf[idx3]));
+                hermiteInterpolation(1.0f - delayFraction, buf[idx0], buf[idx1], buf[idx2], buf[idx3]));
         }
     }
 
@@ -256,7 +262,25 @@ float SimpleVerbWithPredelay::getWetLevel() const noexcept
 
 int SimpleVerbWithPredelay::getTailLengthSamples() const noexcept
 {
-    // Approximate tail length based on room size
-    const float roomSize = reverbParams.roomSize;
-    return static_cast<int>(sampleRate * roomSize * 2.0); // Rough estimate
+    return computeTailLengthSamples(targetPredelayMs.load(std::memory_order_relaxed),
+        targetRoomSize.load(std::memory_order_relaxed),
+        targetWetLevel.load(std::memory_order_relaxed), sampleRate);
+}
+
+int SimpleVerbWithPredelay::computeTailLengthSamples(float predelayMs, float roomSize, float wetLevel,
+    double sampleRate) noexcept
+{
+    if (wetLevel <= 0.0f)
+        return 0;
+
+    // juce::Reverb is a Freeverb: parallel comb filters whose feedback is roomSize * 0.28 + 0.7 and
+    // whose delays average about 31 ms. Each trip round a comb loses -20*log10(feedback) dB, so
+    // decaying by 60 dB takes 60 / that many trips. (Measured against the real reverb this lands
+    // within a few percent for small rooms and ~15% long at size 1.0, where damping shortens the
+    // real tail - a safe side to err on for a host deciding when to stop processing.)
+    constexpr double averageCombSeconds = 0.0312;
+    const double feedback = juce::jlimit(0.0f, 1.0f, roomSize) * 0.28 + 0.7;
+    const double decaySeconds = averageCombSeconds * 60.0 / (-20.0 * std::log10(feedback));
+
+    return static_cast<int>(std::ceil((predelayMs * 0.001 + decaySeconds) * sampleRate));
 }

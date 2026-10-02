@@ -125,12 +125,55 @@ bool AudioPluginAudioProcessor::isMidiEffect() const
 #endif
 }
 
+namespace
+{
+    // How long a feedback loop of the given length takes to die away by 60 dB. With no feedback
+    // the signal just passes through once.
+    double feedbackLoopTailSeconds(double loopSeconds, double feedback)
+    {
+        if (feedback <= 0.001)
+            return loopSeconds;
+
+        const double dbPerTrip = -20.0 * std::log10(juce::jmin(feedback, 0.999));
+        return loopSeconds * (1.0 + 60.0 / dbPerTrip);
+    }
+
+    // Hosts use the tail to decide how long to keep rendering after the input stops. A loop at
+    // maximum delay and feedback would ask for minutes, so cap it at something hosts handle sensibly.
+    constexpr double kMaxReportedTailSeconds = 30.0;
+}
+
 double AudioPluginAudioProcessor::getTailLengthSeconds() const
 {
     if (spec.sampleRate <= 0.0)
         return 0.0;
 
-    return static_cast<double>(simpleVerbWithPredelay.getTailLengthSamples()) / spec.sampleRate;
+    auto value = [this](const char* id) { return static_cast<double>(parameters.getRawParameterValue(id)->load()); };
+
+    double tail = 0.0;
+
+    // Motion Shifter: the delay line and its feedback loop
+    if (value("modMix") > 0.001)
+        tail += feedbackLoopTailSeconds((value("delayTime") + value("modDepth")) * 0.001,
+            juce::jmax(value("feedbackL"), value("feedbackR")));
+
+    // Spatial FX: Haas delay
+    if (value("sfxWetDryMix") > 0.001)
+        tail += juce::jmax(value("haasDelayL"), value("haasDelayR")) * 0.001;
+
+    // Micro-Pitch: the taps (centre delay, grain window and diffusion spread) and their feedback
+    if (value("mix") > 0.001)
+        tail += feedbackLoopTailSeconds(value("delayCentre") + 0.032, value("detuneFeedback"));
+
+    // Reverb, including its pre-delay
+    tail += static_cast<double>(SimpleVerbWithPredelay::computeTailLengthSamples(
+                static_cast<float>(value("predelayMs")), static_cast<float>(value("size")),
+                static_cast<float>(value("wet")), spec.sampleRate)) / spec.sampleRate;
+
+    // The exciter's oversampling adds a few samples of latency
+    tail += static_cast<double>(exciterSaturation.getLatencySamples()) / spec.sampleRate;
+
+    return juce::jmin(tail, kMaxReportedTailSeconds);
 }
 
 int AudioPluginAudioProcessor::getNumPrograms()
