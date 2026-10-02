@@ -49,8 +49,8 @@ void SpatialFX::reset()
 
     lfoPhaseL = 0.0f;
     lfoPhaseR = 0.0f;   // the L/R LFO phase offset is applied when the LFO is read, so it responds live
-    randomValueL = randomValueR = 0.0f;
-    randomSampleCounterL = randomSampleCounterR = 0.0f;
+    randomL = RandomLfoState{};
+    randomR = RandomLfoState{};
     lastLfoValueL = lastLfoValueR = 0.0f;
 
     needsFilterUpdate = true;
@@ -79,13 +79,17 @@ void SpatialFX::setLfoRate(float rateL, float rateR)
 
 void SpatialFX::setLfoWaveform(LfoWaveform wf)
 {
-    if (isValidWaveform(wf))
+    // The processor sends the current choice every audio buffer, so only react to a real change.
+    // (Restarting the random generator on every call made it jump to a new value every buffer.)
+    if (!isValidWaveform(wf) || wf == waveform)
+        return;
+
+    waveform = wf;
+
+    if (wf == LfoWaveform::Random)
     {
-        waveform = wf;
-        if (wf == LfoWaveform::Random)
-        {
-            randomSampleCounterL = randomSampleCounterR = 0.0f;
-        }
+        randomL = RandomLfoState{};
+        randomR = RandomLfoState{};
     }
 }
 
@@ -94,11 +98,6 @@ void SpatialFX::setLfoPhaseOffset(float offset)
     lfoPhaseOffset = std::fmod(offset, juce::MathConstants<float>::twoPi);
     if (lfoPhaseOffset < 0.0f)
         lfoPhaseOffset += juce::MathConstants<float>::twoPi;
-}
-
-void SpatialFX::setRandomUpdateRate(float hz)
-{
-    randomUpdateRateHz = juce::jlimit(1.0f, 50.0f, hz);
 }
 
 void SpatialFX::setWetDry(float newWetDry)
@@ -141,16 +140,34 @@ void SpatialFX::updateFilters()
     *allpassR.coefficients = *coefs;
 }
 
-void SpatialFX::updateRandomLfo(bool isLeftChannel, float& counter, float& value)
+float SpatialFX::nextRandomLfoValue(RandomLfoState& s, float phase, float rateHz)
 {
-    const float samplesPerUpdate = sampleRate / randomUpdateRateHz;
+    // Time to glide to each new value: quick enough to keep the stepped sample-and-hold character,
+    // slow enough that the rotation it drives never clicks (and never longer than half a cycle).
+    const float cycleSeconds = 1.0f / juce::jmax(rateHz, 0.01f);
+    const int glideSamples = juce::jmax(1, static_cast<int>(sampleRate * juce::jmin(0.008f, 0.5f * cycleSeconds)));
 
-    if (counter <= 0.0f)
+    if (!s.initialised)
     {
-        value = random.nextFloat() * 2.0f - 1.0f;
-        counter = samplesPerUpdate;
+        s.current = s.target = random.nextFloat() * 2.0f - 1.0f;
+        s.initialised = true;
     }
-    counter -= 1.0f;
+    else if (phase < s.lastPhase)   // the phase wrapped round: a new cycle begins
+    {
+        s.target = random.nextFloat() * 2.0f - 1.0f;
+        s.glideSamplesLeft = glideSamples;
+        s.step = (s.target - s.current) / static_cast<float>(glideSamples);
+    }
+    s.lastPhase = phase;
+
+    if (s.glideSamplesLeft > 0)
+    {
+        s.current += s.step;
+        if (--s.glideSamplesLeft == 0)
+            s.current = s.target;
+    }
+
+    return s.current;
 }
 
 float SpatialFX::calculateTriangleWave(float phase) const
@@ -179,16 +196,8 @@ float SpatialFX::getLfoValue(float phase, bool isLeftChannel)
         return phase < juce::MathConstants<float>::pi ? 1.0f : -1.0f;
 
     case LfoWaveform::Random:
-        if (isLeftChannel)
-        {
-            updateRandomLfo(true, randomSampleCounterL, randomValueL);
-            return randomValueL;
-        }
-        else
-        {
-            updateRandomLfo(false, randomSampleCounterR, randomValueR);
-            return randomValueR;
-        }
+        return isLeftChannel ? nextRandomLfoValue(randomL, phase, currentRateL)
+                             : nextRandomLfoValue(randomR, phase, currentRateR);
 
     default:
         return 0.0f;
@@ -244,6 +253,9 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
         // than once at reset() makes the LFO Phase control audible and live.
         float shiftedPhaseR = lfoPhaseR + lfoPhaseOffset;
         if (shiftedPhaseR >= twoPi) shiftedPhaseR -= twoPi;
+
+        currentRateL = rateL;
+        currentRateR = rateR;
 
         const float lfoModL = getLfoValue(lfoPhaseL, true);
         const float lfoModR = getLfoValue(shiftedPhaseR, false);

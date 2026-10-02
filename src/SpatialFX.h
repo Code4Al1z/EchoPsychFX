@@ -18,7 +18,6 @@ public:
     void setLfoRate(float rateL, float rateR); // 0 to 20 Hz
     void setLfoWaveform(LfoWaveform waveform);
     void setLfoPhaseOffset(float offset); // 0 to 2pi, phase relationship between L/R
-    void setRandomUpdateRate(float hz); // For random waveform, 1-50 Hz
 
     // Mix and filtering
     void setWetDry(float newWetDry); // 0 to 1
@@ -68,12 +67,20 @@ private:
     float lastLfoValueL = 0.0f;
     float lastLfoValueR = 0.0f;
 
-    // Random LFO sample-and-hold
-    float randomValueL = 0.0f;
-    float randomValueR = 0.0f;
-    float randomSampleCounterL = 0.0f;
-    float randomSampleCounterR = 0.0f;
-    float randomUpdateRateHz = 10.0f;
+    // Random LFO: a new random value once per LFO cycle (so the Rate controls set its speed), reached
+    // through a short glide rather than a step, so the phase rotation never jumps and clicks.
+    struct RandomLfoState
+    {
+        float current = 0.0f;       // value being output
+        float target = 0.0f;        // value being glided to
+        float step = 0.0f;          // change per sample while gliding
+        int glideSamplesLeft = 0;
+        float lastPhase = 0.0f;     // to spot the phase wrapping round, which starts a new cycle
+        bool initialised = false;
+    };
+    RandomLfoState randomL, randomR;
+    float currentRateL = 1.0f;
+    float currentRateR = 1.0f;
     juce::Random random;
 
     // DSP components
@@ -93,7 +100,7 @@ private:
 
     // Helper methods
     void updateFilters();
-    void updateRandomLfo(bool isLeftChannel, float& counter, float& value);
+    float nextRandomLfoValue(RandomLfoState& state, float phase, float rateHz);
     float getLfoValue(float phase, bool isLeftChannel);
     float calculateTriangleWave(float phase) const;
     bool isValidWaveform(LfoWaveform wf) const;
