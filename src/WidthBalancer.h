@@ -36,6 +36,7 @@ private:
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> widthSmoothed;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> balanceSmoothed;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> intensitySmoothed;
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> monoSmoothed;   // 0 = stereo, 1 = mono
 
     std::atomic<float> targetWidth{ 1.0f };
     std::atomic<float> targetBalance{ 0.0f };

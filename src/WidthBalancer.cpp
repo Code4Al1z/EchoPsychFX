@@ -9,6 +9,7 @@ void WidthBalancer::prepare(const juce::dsp::ProcessSpec& spec)
     widthSmoothed.reset(sampleRate, smoothingTimeSec);
     balanceSmoothed.reset(sampleRate, smoothingTimeSec);
     intensitySmoothed.reset(sampleRate, smoothingTimeSec);
+    monoSmoothed.reset(sampleRate, smoothingTimeSec);
 
     reset();
 }
@@ -18,6 +19,7 @@ void WidthBalancer::reset()
     widthSmoothed.setCurrentAndTargetValue(targetWidth.load(std::memory_order_relaxed));
     balanceSmoothed.setCurrentAndTargetValue(targetBalance.load(std::memory_order_relaxed));
     intensitySmoothed.setCurrentAndTargetValue(targetIntensity.load(std::memory_order_relaxed));
+    monoSmoothed.setCurrentAndTargetValue(mono.load(std::memory_order_relaxed) ? 1.0f : 0.0f);
 
     // Reset correlation metering
     sumLL = 0.0f;
@@ -58,6 +60,7 @@ void WidthBalancer::setIntensity(float intensity)
 void WidthBalancer::setMono(bool shouldBeMono)
 {
     mono.store(shouldBeMono, std::memory_order_relaxed);
+    monoSmoothed.setTargetValue(shouldBeMono ? 1.0f : 0.0f);   // glide, so the toggle does not click
 }
 
 void WidthBalancer::setBypassed(bool shouldBeBypassed)
@@ -73,6 +76,7 @@ void WidthBalancer::setSmoothingTime(float timeMs)
     widthSmoothed.reset(sampleRate, timeSec);
     balanceSmoothed.reset(sampleRate, timeSec);
     intensitySmoothed.reset(sampleRate, timeSec);
+    monoSmoothed.reset(sampleRate, timeSec);
 }
 
 void WidthBalancer::updateBalanceGains(float balance)
@@ -146,21 +150,28 @@ void WidthBalancer::process(juce::dsp::AudioBlock<float>& block)
     float* right = block.getChannelPointer(1);
     const size_t numSamples = block.getNumSamples();
 
-    if (mono.load(std::memory_order_relaxed))
+    const bool monoSettled = !monoSmoothed.isSmoothing() && monoSmoothed.getTargetValue() >= 1.0f;
+    if (monoSettled)
     {
-        // Fast mono collapse
+        // Fast mono collapse. The other smoothers keep running so their values are right when
+        // Mono is switched off again.
         for (size_t i = 0; i < numSamples; ++i)
         {
             const float monoSample = (left[i] + right[i]) * 0.5f;
             left[i] = right[i] = monoSample;
         }
+        widthSmoothed.skip(static_cast<int>(numSamples));
+        balanceSmoothed.skip(static_cast<int>(numSamples));
+        intensitySmoothed.skip(static_cast<int>(numSamples));
+        cache.paramsStable = false;
         currentCorrelation.store(1.0f, std::memory_order_relaxed);
         return;
     }
 
     const bool isSmoothing = widthSmoothed.isSmoothing() ||
         balanceSmoothed.isSmoothing() ||
-        intensitySmoothed.isSmoothing();
+        intensitySmoothed.isSmoothing() ||
+        monoSmoothed.isSmoothing();
 
     if (isSmoothing)
     {
@@ -173,8 +184,12 @@ void WidthBalancer::process(juce::dsp::AudioBlock<float>& block)
             if (std::abs(currentBalance - lastBalanceForCache) > 0.001f)
                 updateBalanceGains(currentBalance);
 
-            const float effectiveWidth = 1.0f + (currentWidth - 1.0f) * currentIntensity;
-            const float effectiveMidGain = 1.0f + (cachedMidGain - 1.0f) * currentIntensity;
+            // Mono is "no side signal, plain mid": fading to it scales the side term down and
+            // eases the mid gain to unity
+            const float monoAmount = monoSmoothed.getNextValue();
+
+            const float effectiveWidth = (1.0f + (currentWidth - 1.0f) * currentIntensity) * (1.0f - monoAmount);
+            const float effectiveMidGain = (1.0f + (cachedMidGain - 1.0f) * currentIntensity) * (1.0f - monoAmount) + monoAmount;
             const float effectiveSideGain = 1.0f + (cachedSideGain - 1.0f) * currentIntensity;
 
             // Mid-side encoding
