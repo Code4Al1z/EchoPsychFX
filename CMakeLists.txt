@@ -12,7 +12,7 @@ juce_add_plugin(EchoPsychFX
     PLUGIN_CODE AE01
     VERSION "${PROJECT_VERSION}"
     DESCRIPTION "Tricks your brain into feeling space, distance, emotion, and intimacy through carefully crafted phase, stereo, and EQ illusions."
-    FORMATS AU VST3 AAX Standalone
+    FORMATS AU VST3 Standalone
     PRODUCT_NAME "EchoPsychFX"
 )
 
@@ -48,7 +48,3 @@ target_compile_definitions(EchoPsychFX PRIVATE
 target_compile_features(EchoPsychFX PUBLIC cxx_std_17)
 
 juce_generate_juce_header(EchoPsychFX)
-
-target_include_directories(EchoPsychFX PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources
-)
