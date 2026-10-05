@@ -5,6 +5,20 @@
 #include <map>
 #include <functional>
 #include "FactoryPresets.h"
+#include "PerceptionProfile.h"
+
+/** How the preset list is ordered. */
+enum class PresetSort
+{
+    FactoryOrder,    // the curated order the presets ship in
+    Alphabetical,
+    Brightness,      // from here on: sorted by a perception axis, strongest first (see PerceptionProfile.h)
+    Width,
+    Space,
+    Motion,
+    Saturation,
+    Intensity
+};
 
 /**
  * @brief Manages psychoacoustic perception presets
@@ -24,6 +38,26 @@ public:
 
     /** Names of the built-in presets, in factory order */
     juce::StringArray getFactoryPresetNames() const;
+
+    /** The preset names in the current sort order: the factory presets first, then the user presets.
+        The factory preset called "Init" always stays first, whatever the order. */
+    struct SortedNames { juce::StringArray factory; juce::StringArray user; };
+    SortedNames getSortedPresetNames() const;
+
+    PresetSort getSortMode() const noexcept { return sortMode; }
+    bool getSortReverse() const noexcept { return sortReverse; }
+
+    /** Changes the order of the preset list and remembers it between sessions. */
+    void setSort(PresetSort mode, bool reverse);
+
+    /** e.g. "Brightness - brightest first", for labels. */
+    static juce::String describeSort(PresetSort mode, bool reverse);
+
+    /** The perception profile of a named factory or user preset (neutral if there is no such preset). */
+    PerceptionProfile getProfileOf(const juce::String& presetName) const;
+
+    /** The perception profile of the live parameter values, whatever preset they came from. */
+    PerceptionProfile getLiveProfile() const;
 
     /** True if presetName names one of the built-in, read-only factory presets */
     bool isFactoryPreset(const juce::String& presetName) const;
@@ -68,6 +102,10 @@ private:
     // Live plugin state - user presets are captured from and restored to this directly
     juce::AudioProcessorValueTreeState& apvtsRef;
 
+    // List order, saved alongside the user presets
+    PresetSort sortMode = PresetSort::FactoryOrder;
+    bool sortReverse = false;
+
     // User preset storage, persisted to disk
     std::map<juce::String, juce::ValueTree> userPresets;
 
@@ -75,6 +113,11 @@ private:
     // landing in it, for matchesLastAppliedPreset() to diff the live state against. Invalid
     // until the first applyPreset() call.
     juce::ValueTree lastAppliedPresetState;
+
+    /** Plain parameter value for the profile maths: the preset's own, or the parameter's default. */
+    float defaultValueOf(const char* parameterId) const;
+    PerceptionProfile profileOfFactoryPreset(const FactoryPreset& preset) const;
+    PerceptionProfile profileOfUserPreset(const juce::ValueTree& state) const;
 
     /** Sets every parameter a factory preset lists. */
     void applyFactoryPreset(const FactoryPreset& preset);

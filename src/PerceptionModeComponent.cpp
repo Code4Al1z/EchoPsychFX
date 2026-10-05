@@ -12,6 +12,10 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     presetSelector.onChange = [this]() { comboBoxChanged(&presetSelector); };
     addAndMakeVisible(presetSelector);
 
+    sortButton.setTooltip("Sort the presets: factory order, A to Z, or by what they do to perception");
+    sortButton.onClick = [this] { showSortMenu(); };
+    addAndMakeVisible(sortButton);
+
     for (auto* button : { &saveAsButton, &renameButton, &deleteButton, &prevButton, &nextButton, &insightButton })
     {
         button->setColour(juce::TextButton::buttonColourId, PluginLookAndFeel::panelRaised);
@@ -101,6 +105,8 @@ void PerceptionModeComponent::resized()
     prevButton.setBounds(row.removeFromLeft(32));
     row.removeFromLeft(6);
     nextButton.setBounds(row.removeFromRight(32));
+    row.removeFromRight(6);
+    sortButton.setBounds(row.removeFromRight(32));
     row.removeFromRight(6);
     presetSelector.setBounds(row);
 
@@ -249,21 +255,99 @@ void PerceptionModeComponent::refreshPresetList(const juce::String& presetToSele
 
     presetSelector.clear(juce::dontSendNotification);
 
+    const auto sorted = presetManagerRef.getSortedPresetNames();
+    const bool defaultOrder = presetManagerRef.getSortMode() == PresetSort::FactoryOrder && !presetManagerRef.getSortReverse();
+    sortButton.setSortActive(!defaultOrder);
+
     int id = 1;
-    for (auto& name : factoryPresetNames)
+
+    if (!defaultOrder)
+        presetSelector.addSectionHeading("Sorted: " + PerceptionPresetManager::describeSort(
+            presetManagerRef.getSortMode(), presetManagerRef.getSortReverse()));
+
+    for (auto& name : sorted.factory)
         presetSelector.addItem(name, id++);
 
-    auto userNames = presetManagerRef.getUserPresetNames();
-    if (!userNames.isEmpty())
+    if (!sorted.user.isEmpty())
     {
         presetSelector.addSeparator();
         presetSelector.addSectionHeading("User Presets");
-        for (auto& name : userNames)
+        for (auto& name : sorted.user)
             presetSelector.addItem(name, id++);
     }
 
     presetSelector.setText(previousSelection, juce::dontSendNotification);
     updateButtonStates();
+}
+
+void PerceptionModeComponent::showSortMenu()
+{
+    using Sort = PresetSort;
+    const auto mode = presetManagerRef.getSortMode();
+    const bool reverse = presetManagerRef.getSortReverse();
+
+    juce::PopupMenu menu;
+    menu.setLookAndFeel(&getLookAndFeel());   // a popup doesn't inherit the editor's theme by itself
+    menu.addSectionHeader("Order");
+    menu.addItem(1, "Factory order", true, mode == Sort::FactoryOrder);
+    menu.addItem(2, "A to Z", true, mode == Sort::Alphabetical);
+    menu.addSeparator();
+    menu.addSectionHeader("By what they do to perception");
+
+    for (int axis = 0; axis < kNumPerceptionAxes; ++axis)
+    {
+        const auto a = static_cast<PerceptionAxis>(axis);
+        const auto thisMode = static_cast<Sort>(static_cast<int>(Sort::Brightness) + axis);
+        menu.addItem(10 + axis, juce::String(perceptionAxisName(a)) + "  -  "
+            + (reverse ? perceptionAxisLowWord(a) : perceptionAxisHighWord(a)) + " first", true, mode == thisMode);
+    }
+
+    menu.addSeparator();
+    menu.addItem(100, "Reverse order", true, reverse);
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&sortButton).withMinimumWidth(250),
+        [this](int result)
+        {
+            if (result == 0)
+                return;
+
+            auto newMode = presetManagerRef.getSortMode();
+            auto newReverse = presetManagerRef.getSortReverse();
+
+            if (result == 1)        newMode = Sort::FactoryOrder;
+            else if (result == 2)   newMode = Sort::Alphabetical;
+            else if (result >= 10 && result < 10 + kNumPerceptionAxes)
+                newMode = static_cast<Sort>(static_cast<int>(Sort::Brightness) + (result - 10));
+            else if (result == 100) newReverse = !newReverse;
+
+            presetManagerRef.setSort(newMode, newReverse);
+
+            // Keep the same preset selected; "Custom" has no list entry, so hold on to the last real one
+            refreshPresetList(presetSelector.getSelectedId() == kCustomItemId ? lastSelectedPresetName : presetSelector.getText());
+        });
+}
+
+void PerceptionModeComponent::SortButton::paintButton(juce::Graphics& g, bool highlighted, bool down)
+{
+    using L = PluginLookAndFeel;
+    auto r = getLocalBounds().toFloat().reduced(0.5f);
+    g.setColour(L::panelRaised.brighter(down ? 0.2f : highlighted ? 0.1f : 0.0f));
+    g.fillRoundedRectangle(r, 5.0f);
+    g.setColour(juce::Colours::white.withAlpha(0.08f));
+    g.drawRoundedRectangle(r, 5.0f, 1.0f);
+
+    // Three bars of decreasing length: the usual "sort" glyph
+    const float cx = r.getCentreX(), cy = r.getCentreY();
+    g.setColour(active ? L::accentSpatial.brighter(0.2f) : L::labelText.withAlpha(0.85f));
+    const float widths[] = { 14.0f, 10.0f, 6.0f };
+    for (int i = 0; i < 3; ++i)
+        g.fillRoundedRectangle(cx - 7.0f, cy - 6.0f + i * 5.0f, widths[i], 2.0f, 1.0f);
+
+    if (active)
+    {
+        g.setColour(L::accentSpatial);
+        g.fillEllipse(r.getRight() - 8.0f, r.getY() + 3.0f, 5.0f, 5.0f);
+    }
 }
 
 void PerceptionModeComponent::updateButtonStates()

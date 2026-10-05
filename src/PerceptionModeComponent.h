@@ -33,7 +33,21 @@ private:
     // real preset's ID so it never collides with the factory/user preset list.
     static constexpr int kCustomItemId = 1 << 20;
 
+    /** The small "sort" icon beside the preset name: three bars of falling length, with a dot when the
+        list isn't in its default order. */
+    class SortButton : public juce::TextButton
+    {
+    public:
+        SortButton() : juce::TextButton("") {}
+        void setSortActive(bool shouldShowDot) { if (active != shouldShowDot) { active = shouldShowDot; repaint(); } }
+        void paintButton(juce::Graphics& g, bool highlighted, bool down) override;
+
+    private:
+        bool active = false;
+    };
+
     juce::ComboBox presetSelector;
+    SortButton sortButton;
     juce::TextButton prevButton{ "<" };
     juce::TextButton nextButton{ ">" };
     juce::TextButton saveAsButton{ "Save" };
@@ -51,6 +65,7 @@ private:
     juce::Label breakdownLabel;
 
     void stepPreset(int direction);
+    void showSortMenu();
 
     juce::StringArray factoryPresetNames;
 

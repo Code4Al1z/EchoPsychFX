@@ -1,4 +1,5 @@
 #include "PerceptionPresetManager.h"
+#include <algorithm>
 
 PerceptionPresetManager::PerceptionPresetManager(juce::AudioProcessorValueTreeState& apvts)
     : apvtsRef(apvts)
@@ -9,6 +10,9 @@ PerceptionPresetManager::PerceptionPresetManager(juce::AudioProcessorValueTreeSt
 namespace
 {
     constexpr const char* kOutputTrimId = "outputGain";
+
+    // Saved in the user presets file, so keep these stable
+    constexpr const char* kSortIds[] = { "factory", "alphabetical", "brightness", "width", "space", "motion", "saturation", "intensity" };
 
     // Output trim is a monitoring-level setting, not part of a sound, so presets neither store nor
     // change it and moving it must not turn the preset into "Custom".
@@ -334,6 +338,12 @@ void PerceptionPresetManager::loadUserPresets()
     if (root == nullptr || !root->hasTagName("UserPresets"))
         return;
 
+    const auto savedSort = root->getStringAttribute("sortMode");
+    for (int i = 0; i < static_cast<int>(std::size(kSortIds)); ++i)
+        if (savedSort == kSortIds[i])
+            sortMode = static_cast<PresetSort>(i);
+    sortReverse = root->getBoolAttribute("sortReverse", false);
+
     for (auto* presetXml = root->getFirstChildElement(); presetXml != nullptr;
         presetXml = presetXml->getNextElement())
     {
@@ -349,6 +359,8 @@ void PerceptionPresetManager::loadUserPresets()
 void PerceptionPresetManager::saveUserPresetsToDisk() const
 {
     juce::XmlElement root("UserPresets");
+    root.setAttribute("sortMode", kSortIds[static_cast<int>(sortMode)]);
+    root.setAttribute("sortReverse", sortReverse);
     for (auto& entry : userPresets)
     {
         auto* presetXml = root.createNewChildElement("Preset");
@@ -357,4 +369,131 @@ void PerceptionPresetManager::saveUserPresetsToDisk() const
             presetXml->addChildElement(stateXml.release());
     }
     root.writeTo(getUserPresetsFile());
+}
+
+//==============================================================================
+// Sorting and perception profiles
+
+float PerceptionPresetManager::defaultValueOf(const char* parameterId) const
+{
+    if (auto* parameter = apvtsRef.getParameter(parameterId))
+        return parameter->convertFrom0to1(parameter->getDefaultValue());
+
+    return 0.0f;
+}
+
+PerceptionProfile PerceptionPresetManager::profileOfFactoryPreset(const FactoryPreset& preset) const
+{
+    return computePerceptionProfile([this, &preset](const char* id) { return preset.number(id, defaultValueOf(id)); });
+}
+
+PerceptionProfile PerceptionPresetManager::profileOfUserPreset(const juce::ValueTree& state) const
+{
+    // A saved state lists each parameter as a child with an "id" and a "value" (plain units)
+    std::map<juce::String, float> values;
+    for (const auto& child : state)
+        if (child.hasProperty("id") && child.hasProperty("value"))
+            values[child.getProperty("id").toString()] = static_cast<float>(static_cast<double>(child.getProperty("value")));
+
+    return computePerceptionProfile([this, &values](const char* id)
+        {
+            const auto it = values.find(id);
+            return it != values.end() ? it->second : defaultValueOf(id);
+        });
+}
+
+PerceptionProfile PerceptionPresetManager::getProfileOf(const juce::String& presetName) const
+{
+    const auto userIt = userPresets.find(presetName);
+    if (userIt != userPresets.end())
+        return profileOfUserPreset(userIt->second);
+
+    for (const auto& preset : getFactoryPresets())
+        if (preset.name == presetName)
+            return profileOfFactoryPreset(preset);
+
+    return {};
+}
+
+PerceptionProfile PerceptionPresetManager::getLiveProfile() const
+{
+    return computePerceptionProfile([this](const char* id)
+        {
+            if (auto* value = apvtsRef.getRawParameterValue(id))
+                return value->load();
+            return 0.0f;
+        });
+}
+
+PerceptionPresetManager::SortedNames PerceptionPresetManager::getSortedPresetNames() const
+{
+    struct Entry { juce::String name; float score = 0.0f; int order = 0; };
+
+    const bool byAxis = sortMode >= PresetSort::Brightness;
+    const int axis = static_cast<int>(sortMode) - static_cast<int>(PresetSort::Brightness);
+
+    // Strongest first for an axis; otherwise the natural order. Ties fall back to the natural order.
+    auto sortEntries = [&](std::vector<Entry>& entries, bool naturalIsAlphabetical)
+    {
+        std::stable_sort(entries.begin(), entries.end(), [&](const Entry& a, const Entry& b)
+            {
+                if (byAxis && a.score != b.score)
+                    return a.score > b.score;
+
+                if (naturalIsAlphabetical)
+                    return a.name.compareIgnoreCase(b.name) < 0;
+
+                return a.order < b.order;
+            });
+
+        if (sortReverse)
+            std::reverse(entries.begin(), entries.end());
+    };
+
+    std::vector<Entry> factory, user;
+    int index = 0;
+    for (const auto& preset : getFactoryPresets())
+        factory.push_back({ preset.name, byAxis ? profileOfFactoryPreset(preset).score[axis] : 0.0f, index++ });
+
+    for (const auto& [name, state] : userPresets)
+        user.push_back({ name, byAxis ? profileOfUserPreset(state).score[axis] : 0.0f, 0 });
+
+    // Alphabetical sorts both lists by name; the factory list otherwise keeps its curated order
+    sortEntries(factory, sortMode == PresetSort::Alphabetical);
+    sortEntries(user, true);
+
+    SortedNames result;
+
+    // "Init" is the blank starting point, so it stays on top in every order
+    for (const auto& entry : factory)
+        if (entry.name == "Init")
+            result.factory.add(entry.name);
+    for (const auto& entry : factory)
+        if (entry.name != "Init")
+            result.factory.add(entry.name);
+    for (const auto& entry : user)
+        result.user.add(entry.name);
+
+    return result;
+}
+
+void PerceptionPresetManager::setSort(PresetSort mode, bool reverse)
+{
+    sortMode = mode;
+    sortReverse = reverse;
+    saveUserPresetsToDisk();
+}
+
+juce::String PerceptionPresetManager::describeSort(PresetSort mode, bool reverse)
+{
+    switch (mode)
+    {
+    case PresetSort::FactoryOrder: return reverse ? "Factory order, reversed" : "Factory order";
+    case PresetSort::Alphabetical: return reverse ? "Z to A" : "A to Z";
+    default:
+    {
+        const auto axis = static_cast<PerceptionAxis>(static_cast<int>(mode) - static_cast<int>(PresetSort::Brightness));
+        return juce::String(perceptionAxisName(axis)) + " - " + (reverse ? perceptionAxisLowWord(axis) : perceptionAxisHighWord(axis)) + " first";
+    }
+    }
 }
