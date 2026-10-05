@@ -281,31 +281,3 @@ void MicroPitchDetune::process(juce::dsp::AudioBlock<float>& block)
         modPhase = std::fmod(modPhase, 1.0f);
     }
 }
-
-void MicroPitchDetune::loadPreset(const Preset& preset)
-{
-    setParams(preset.detuneCents, preset.lfoRate, preset.lfoDepth,
-        preset.delayCentre, preset.stereoSeparation, preset.mix,
-        preset.feedback, preset.diffusion);
-    setSyncEnabled(preset.syncEnabled);
-}
-
-MicroPitchDetune::Preset MicroPitchDetune::getCurrentPreset() const
-{
-    return Preset("Current", detuneCents, lfoRate, lfoDepth, delayCentre,
-        stereoSeparation, mix, feedback, diffusion, syncEnabled);
-}
-
-std::vector<MicroPitchDetune::Preset> MicroPitchDetune::getFactoryPresets()
-{
-    return {
-        Preset("Subtle Detune", 5.0f, 0.1f, 0.0f, 0.005f, 0.3f, 0.3f, 0.0f, 0.0f, false),
-        Preset("Wide Chorus", 12.0f, 0.5f, 0.003f, 0.008f, 0.7f, 0.5f, 0.2f, 0.3f, false),
-        Preset("Shimmer", 8.0f, 0.2f, 0.004f, 0.010f, 0.5f, 0.4f, 0.3f, 0.6f, false),
-        Preset("Flanger-ish", 15.0f, 0.3f, 0.006f, 0.003f, 0.4f, 0.5f, 0.4f, 0.2f, false),
-        Preset("Deep Space", 20.0f, 0.08f, 0.005f, 0.012f, 0.9f, 0.6f, 0.5f, 0.8f, false),
-        Preset("Synced Vibrato", 10.0f, 1.0f, 0.004f, 0.006f, 0.5f, 0.7f, 0.1f, 0.0f, true),
-        Preset("Lush Ensemble", 7.0f, 0.15f, 0.003f, 0.007f, 0.6f, 0.45f, 0.25f, 0.5f, false),
-        Preset("Micro Shift", 3.0f, 0.05f, 0.001f, 0.004f, 0.2f, 0.25f, 0.0f, 0.0f, false)
-    };
-}

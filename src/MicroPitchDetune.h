@@ -6,29 +6,6 @@
 class MicroPitchDetune
 {
 public:
-    // Preset structure for easy parameter management
-    struct Preset
-    {
-        juce::String name;
-        float detuneCents;
-        float lfoRate;
-        float lfoDepth;
-        float delayCentre;
-        float stereoSeparation;
-        float mix;
-        float feedback;
-        float diffusion;
-        bool syncEnabled;
-
-        Preset(const juce::String& n = "Default", float dc = 5.0f, float lr = 0.1f,
-            float ld = 0.002f, float del = 0.005f, float ss = 0.5f,
-            float m = 0.5f, float fb = 0.0f, float diff = 0.0f, bool sync = false)
-            : name(n), detuneCents(dc), lfoRate(lr), lfoDepth(ld),
-            delayCentre(del), stereoSeparation(ss), mix(m),
-            feedback(fb), diffusion(diff), syncEnabled(sync) {
-        }
-    };
-
     MicroPitchDetune();
     ~MicroPitchDetune() = default;
 
@@ -42,11 +19,6 @@ public:
     void setBpm(float newBpm);
 
     void process(juce::dsp::AudioBlock<float>& block);
-
-    // Preset management
-    void loadPreset(const Preset& preset);
-    Preset getCurrentPreset() const;
-    static std::vector<Preset> getFactoryPresets();
 
 private:
     // Multi-tap delay structure for richer sound

@@ -25,28 +25,6 @@ public:
         EvenOnly        // Even harmonics (warm, tube-like)
     };
 
-    // Preset structure
-    struct Preset
-    {
-        juce::String name;
-        float drive;
-        float mix;
-        float highpassFreq;
-        float toneBrightness;
-        float harmonicBalance;
-        SaturationType satType;
-        HarmonicMode harmonicMode;
-        bool autoGainEnabled;
-
-        Preset(const juce::String& n = "Default", float d = 0.5f, float m = 0.5f,
-            float hp = 3000.0f, float tb = 0.5f, float hb = 0.5f,
-            SaturationType st = SaturationType::Soft,
-            HarmonicMode hm = HarmonicMode::Balanced, bool ag = true)
-            : name(n), drive(d), mix(m), highpassFreq(hp), toneBrightness(tb),
-            harmonicBalance(hb), satType(st), harmonicMode(hm), autoGainEnabled(ag) {
-        }
-    };
-
     ExciterSaturation();
     ~ExciterSaturation() = default;
 
@@ -67,11 +45,6 @@ public:
     /** Latency added by the oversampling filters, in samples. The dry path is delayed by the same
         amount so the two stay aligned; the plugin reports this to the host. Valid after prepare(). */
     int getLatencySamples() const noexcept { return latencySamples; }
-
-    // Preset management
-    void loadPreset(const Preset& preset);
-    Preset getCurrentPreset() const;
-    static std::vector<Preset> getFactoryPresets();
 
 private:
     // Parameters
