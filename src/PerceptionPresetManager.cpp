@@ -172,17 +172,20 @@ void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::
             add("Diffuse Sides", "weighted toward the sides, feeling hazy and enveloping");
     }
 
-    // Left/right pull, from phase and Haas offsets together
-    const float phaseL = raw("phaseOffsetL");
-    const float phaseR = raw("phaseOffsetR");
+    // Left/right pull comes from the Haas delays alone. By the precedence effect the image moves
+    // toward the channel that arrives FIRST, so a delayed right channel pulls the image left.
+    // (A few degrees of phase offset do not move the image noticeably, so phase is ignored here.)
     const float haasL = raw("haasDelayL");
     const float haasR = raw("haasDelayR");
-    const float pull = (phaseR - phaseL) * 5.0f + (haasR - haasL) * 0.1f;
+    const float lead = haasR - haasL;   // positive: right is later, so the left leads
+    // Even a fraction of a millisecond is a clear inter-ear time difference (the head's own maximum is
+    // about 0.7 ms), and the factory presets use delays in exactly that range.
+    constexpr float kMinLeadMs = 0.15f;
 
-    if (pull > 0.3f)
-        add("Pulled Right", "pulled toward the right, a subtle sense of asymmetry");
-    else if (pull < -0.3f)
-        add("Pulled Left", "pulled toward the left, a subtle sense of asymmetry");
+    if (lead >= kMinLeadMs)
+        add("Pulled Left", "pulled toward the left, the right side arriving a touch later");
+    else if (lead <= -kMinLeadMs)
+        add("Pulled Right", "pulled toward the right, the left side arriving a touch later");
     else if (haasL > 5.0f || haasR > 5.0f)
         add("Haas Spread", "spread wide with a Haas-style stereo trick, feeling big without losing focus");
 
