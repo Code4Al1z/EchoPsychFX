@@ -24,6 +24,8 @@ const Colour PluginLookAndFeel::panelRaised{ 38, 27, 49 };
 const Colour PluginLookAndFeel::mutedText{ 155, 140, 172 };
 const Colour PluginLookAndFeel::knobTrack{ 55, 40, 66 };
 
+const Colour PluginLookAndFeel::brandCyan{ 63, 201, 238 };      // #3fc9ee
+const Colour PluginLookAndFeel::brandViolet{ 127, 107, 251 };   // #7f6bfb
 const Colour PluginLookAndFeel::accentInput{ 70, 214, 232 };
 const Colour PluginLookAndFeel::accentMotion{ 255, 150, 60 };
 const Colour PluginLookAndFeel::accentSpatial{ 255, 64, 148 };

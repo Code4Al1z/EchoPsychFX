@@ -132,17 +132,16 @@ void PerceptionModeComponent::paint(juce::Graphics& g)
     using L = PluginLookAndFeel;
     L::drawPanel(g, getLocalBounds().withHeight(getPreferredHeight()), L::panel);
 
-    // Wordmark
-    g.setFont(juce::Font(22.0f, juce::Font::bold));
-    const int y = 10, h = 32;
-    int x = 18;
-    for (auto [text, colour] : { std::pair<const char*, juce::Colour>{ "Echo", L::labelText },
-                                  { "Psych", L::accentSpatial }, { "FX", L::accentMotion } })
+    // Wordmark: the TrailblaiZ brand gradient (cyan to violet, diagonal like the website) across the whole name
     {
-        const int w = juce::roundToInt(juce::GlyphArrangement::getStringWidthInt(g.getCurrentFont(), text)) + 1;
-        g.setColour(colour);
-        g.drawText(text, x, y, w, h, juce::Justification::centredLeft, false);
-        x += w;
+        const juce::Font wordmarkFont(22.0f, juce::Font::bold);
+        const juce::String name("EchoPsychFX");
+        const int y = 10, h = 32, x = 18;
+        const int w = juce::roundToInt(juce::GlyphArrangement::getStringWidthInt(wordmarkFont, name)) + 1;
+        g.setFont(wordmarkFont);
+        g.setGradientFill(juce::ColourGradient(L::brandCyan, static_cast<float>(x), static_cast<float>(y),
+                                               L::brandViolet, static_cast<float>(x + w), static_cast<float>(y + h), false));
+        g.drawText(name, x, y, w, h, juce::Justification::centredLeft, false);
     }
 
     // Live "feeling" chips

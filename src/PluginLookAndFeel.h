@@ -58,6 +58,9 @@ public:
     static const juce::Colour knobTrack;
 
     // One accent per processing stage, in signal-flow order
+    // TrailblaiZ brand pair (same values as the website's --primary-cyan / --primary-violet)
+    static const juce::Colour brandCyan;
+    static const juce::Colour brandViolet;
     static const juce::Colour accentInput;
     static const juce::Colour accentMotion;
     static const juce::Colour accentSpatial;
