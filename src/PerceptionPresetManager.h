@@ -113,6 +113,8 @@ private:
     // landing in it, for matchesLastAppliedPreset() to diff the live state against. Invalid
     // until the first applyPreset() call.
     juce::ValueTree lastAppliedPresetState;
+    int baselinePending = 0;   // snapshots still waiting for the APVTS to flush a just-applied preset
+    void snapshotBaselineSoon();
 
     /** Plain parameter value for the profile maths: the preset's own, or the parameter's default. */
     float defaultValueOf(const char* parameterId) const;

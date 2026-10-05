@@ -43,7 +43,7 @@ void PerceptionPresetManager::applyPreset(const juce::String& presetName)
         // The APVTS only flushes parameter changes into its state ValueTree periodically,
         // so snapshot the baseline once that's had a chance to happen rather than reading
         // it back immediately.
-        juce::Timer::callAfterDelay(120, [this]() { lastAppliedPresetState = apvtsRef.copyState(); });
+        snapshotBaselineSoon();
         return;
     }
 
@@ -53,7 +53,7 @@ void PerceptionPresetManager::applyPreset(const juce::String& presetName)
         {
             applyFactoryPreset(preset);
             DBG("Applied preset: " + presetName);
-            juce::Timer::callAfterDelay(120, [this]() { lastAppliedPresetState = apvtsRef.copyState(); });
+            snapshotBaselineSoon();
             return;
         }
     }
@@ -119,8 +119,23 @@ bool PerceptionPresetManager::isUserPreset(const juce::String& presetName) const
     return userPresets.find(presetName) != userPresets.end();
 }
 
+void PerceptionPresetManager::snapshotBaselineSoon()
+{
+    // Until the snapshot is taken the old baseline would be compared against the freshly applied
+    // values, which flashed "Custom" for a moment after every preset change.
+    ++baselinePending;
+    juce::Timer::callAfterDelay(120, [this]()
+    {
+        lastAppliedPresetState = apvtsRef.copyState();
+        --baselinePending;
+    });
+}
+
 bool PerceptionPresetManager::matchesLastAppliedPreset() const
 {
+    if (baselinePending > 0)
+        return true;
+
     if (!lastAppliedPresetState.isValid())
         return true;
 
