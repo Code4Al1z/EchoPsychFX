@@ -5,16 +5,8 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     juce::AudioProcessorValueTreeState& state)
     : presetManagerRef(presetManager)
 {
-    // Factory preset names - fixed, read-only. User presets are appended dynamically.
-    factoryPresetNames = {
-        "Init",
-        "Head Trip", "Panic Room", "Intimacy", "Blade Runner", "Alien Abduction",
-        "Glass Tunnel", "Dream Logic", "Womb Space", "Bipolar Bloom", "Quiet Confidence",
-        "Falling Upwards", "Molten Light", "Ethereal Echo", "Lush Dreamscape", "Skin Contact",
-        "Sonic Embrace", "Strobe Heaven", "Glass Flame", "Celestial Vault", "Deep Illusion",
-        "Ego Dissolve", "Memory Dust", "Gentle Slap", "Moon Dance", "Biting Lips",
-        "Stormy Day", "Summer Sunset", "Ocean Waves", "Crystal Clear", "Sweetest Memory"
-    };
+    // Factory preset names come from the preset library. User presets are appended dynamically.
+    factoryPresetNames = presetManager.getFactoryPresetNames();
 
     PluginLookAndFeel::configureComboBox(presetSelector);
     presetSelector.onChange = [this]() { comboBoxChanged(&presetSelector); };

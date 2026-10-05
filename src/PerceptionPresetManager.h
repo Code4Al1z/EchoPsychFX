@@ -4,14 +4,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <map>
 #include <functional>
-#include "WidthBalancerComponent.h"
-#include "TiltEQComponent.h"
-#include "ModDelayComponent.h"
-#include "SpatialFXComponent.h"
-#include "MicroPitchDetuneComponent.h"
-#include "ExciterSaturation.h"
-#include "ExciterSaturationComponent.h"
-#include "SimpleVerbWithPredelayComponent.h"
+#include "FactoryPresets.h"
 
 /**
  * @brief Manages psychoacoustic perception presets
@@ -22,19 +15,15 @@
 class PerceptionPresetManager
 {
 public:
-    PerceptionPresetManager(juce::AudioProcessorValueTreeState& apvts,
-        TiltEQComponent& tiltEQ,
-        WidthBalancerComponent& width,
-        ModDelayComponent& delay,
-        SpatialFXComponent& spatial,
-        MicroPitchDetuneComponent& microPitch,
-        ExciterSaturationComponent& exciterSaturation,
-        SimpleVerbWithPredelayComponent& simpleVerb);
+    explicit PerceptionPresetManager(juce::AudioProcessorValueTreeState& apvts);
 
     ~PerceptionPresetManager() = default;
 
     /** Apply a preset by name (checks user presets first, then factory presets) */
     void applyPreset(const juce::String& presetName);
+
+    /** Names of the built-in presets, in factory order */
+    juce::StringArray getFactoryPresetNames() const;
 
     /** True if presetName names one of the built-in, read-only factory presets */
     bool isFactoryPreset(const juce::String& presetName) const;
@@ -79,18 +68,6 @@ private:
     // Live plugin state - user presets are captured from and restored to this directly
     juce::AudioProcessorValueTreeState& apvtsRef;
 
-    // Component references
-    TiltEQComponent& tiltEQComponent;
-    WidthBalancerComponent& widthComponent;
-    ModDelayComponent& delayComponent;
-    SpatialFXComponent& spatialFXComponent;
-    MicroPitchDetuneComponent& microPitchComponent;
-    ExciterSaturationComponent& exciterSaturationComponent;
-    SimpleVerbWithPredelayComponent& simpleVerbComponent;
-
-    // Factory preset storage
-    std::map<juce::String, std::function<void()>> presets;
-
     // User preset storage, persisted to disk
     std::map<juce::String, juce::ValueTree> userPresets;
 
@@ -99,8 +76,8 @@ private:
     // until the first applyPreset() call.
     juce::ValueTree lastAppliedPresetState;
 
-    /** Initialize all factory presets */
-    void initializePresets();
+    /** Sets every parameter a factory preset lists. */
+    void applyFactoryPreset(const FactoryPreset& preset);
 
     juce::File getUserPresetsFile() const;
     void loadUserPresets();
@@ -110,21 +87,6 @@ private:
         values once and, for each trait that stands out, appends a matching (short tag,
         full sentence) pair at the same index in both arrays. */
     void computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const;
-
-    /** Helper to apply preset parameters to all components */
-    void usePreset(ModDelay::ModulationType type, float delayTime, float feedbackLeft, float feedbackRight,
-        float modMix, float delayModDepth, float delayModRate, bool syncEnabled,
-        float width, float intensity, float midSideBalance, bool mono, float tiltEQ,
-        float phaseOffsetL, float phaseOffsetR, float modulationRateL, float modulationRateR,
-        float modulationDepthL, float modulationDepthR,
-        float wetDryMix, float lfoPhaseOffset, float allpassFrequency, float leftHaasMs,
-        float rightHaasMs, SpatialFX::LfoWaveform modShape,
-        float detuneAmount, float lfoRate, float lfoDepth, float delayCentre,
-        float stereoSeparation, float mix, float detuneFeedback, float diffusion,
-        float drive, float exciterMix, float highpass,
-        ExciterSaturation::SaturationType saturationType, ExciterSaturation::HarmonicMode harmonicMode,
-        float toneBrightness, float harmonicBalance, bool autoGainEnabled,
-        float predelay, float size, float damping, float wet);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PerceptionPresetManager)
 };

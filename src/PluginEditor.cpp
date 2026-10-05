@@ -13,15 +13,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     exciterSaturationComponent = std::make_unique<ExciterSaturationComponent>(p.parameters);
     simpleVerbComponent = std::make_unique<SimpleVerbWithPredelayComponent>(p.parameters);
 
-    presetManager = std::make_unique<PerceptionPresetManager>(
-        p.parameters,
-        inputControlsComponent->getTiltEQ(),
-        inputControlsComponent->getWidthBalancer(),
-        *modDelayComponent,
-        *spatialFXComponent,
-        *microPitchDetuneComponent,
-        *exciterSaturationComponent,
-        *simpleVerbComponent);
+    presetManager = std::make_unique<PerceptionPresetManager>(p.parameters);
 
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager, p.parameters);
 
