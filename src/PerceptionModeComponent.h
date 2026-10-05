@@ -62,6 +62,8 @@ private:
 
     juce::StringArray currentTags;
     juce::Rectangle<int> chipsArea;
+    juce::Rectangle<int> profileArea;      // the six perception bars, shown in the Insight drawer
+    PerceptionProfile currentProfile;
     juce::Label breakdownLabel;
 
     void stepPreset(int direction);

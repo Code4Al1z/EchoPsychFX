@@ -81,7 +81,7 @@ public:
     static constexpr int kEdgePad = 10;
     static constexpr int kModeToggleH = 36;
     static constexpr int kPresetBarH = 84;
-    static constexpr int kInsightDrawerH = 62;
+    static constexpr int kInsightDrawerH = 88;
 
     struct KnobWithLabel
     {

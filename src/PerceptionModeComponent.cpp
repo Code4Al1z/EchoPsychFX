@@ -62,7 +62,7 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
             onHeightChanged();
     };
 
-    breakdownLabel.setFont(juce::Font(14.0f));
+    breakdownLabel.setFont(juce::Font(13.0f));
     breakdownLabel.setColour(juce::Label::textColourId, PluginLookAndFeel::labelText.withAlpha(0.85f));
     breakdownLabel.setJustificationType(juce::Justification::topLeft);
     breakdownLabel.setMinimumHorizontalScale(1.0f);
@@ -121,6 +121,8 @@ void PerceptionModeComponent::resized()
     if (breakdownLabel.isVisible())
     {
         area.removeFromTop(8);
+        profileArea = area.removeFromRight(juce::jmin(400, area.getWidth() * 2 / 5));
+        area.removeFromRight(20);
         breakdownLabel.setBounds(area);
     }
 }
@@ -128,7 +130,7 @@ void PerceptionModeComponent::resized()
 void PerceptionModeComponent::paint(juce::Graphics& g)
 {
     using L = PluginLookAndFeel;
-    L::drawPanel(g, getLocalBounds().withHeight(L::kPresetBarH), L::panel);
+    L::drawPanel(g, getLocalBounds().withHeight(getPreferredHeight()), L::panel);
 
     // Wordmark
     g.setFont(juce::Font(22.0f, juce::Font::bold));
@@ -169,6 +171,45 @@ void PerceptionModeComponent::paint(juce::Graphics& g)
         g.setColour(juce::Colours::white.withAlpha(0.92f));
         g.drawText(tag, chip.toNearestInt(), juce::Justification::centred, false);
         cx += w + 8;
+    }
+
+    // Perception profile: two columns of three bars, in the Insight drawer
+    if (breakdownLabel.isVisible() && !profileArea.isEmpty())
+    {
+        const juce::Colour axisColour[] = { L::accentInput, L::accentSpatial, L::accentReverb,
+                                            L::accentMotion, L::accentExciter, L::accentMicroPitch };
+        const int columnGap = 18;
+        const int columnWidth = (profileArea.getWidth() - columnGap) / 2;
+        const int rowHeight = juce::jmin(24, profileArea.getHeight() / 3);
+
+        for (int axis = 0; axis < kNumPerceptionAxes; ++axis)
+        {
+            const int column = axis / 3, row = axis % 3;
+            const auto cell = juce::Rectangle<int>(profileArea.getX() + column * (columnWidth + columnGap),
+                profileArea.getY() + row * rowHeight, columnWidth, rowHeight);
+
+            const int labelWidth = 74;
+            g.setColour(L::mutedText);
+            g.setFont(juce::Font(11.5f, juce::Font::bold));
+            g.drawText(juce::String(perceptionAxisName(static_cast<PerceptionAxis>(axis))).toUpperCase(),
+                cell.getX(), cell.getY(), labelWidth, cell.getHeight(), juce::Justification::centredLeft, false);
+
+            const auto track = juce::Rectangle<float>(static_cast<float>(cell.getX() + labelWidth), cell.getCentreY() - 3.0f,
+                static_cast<float>(cell.getWidth() - labelWidth), 6.0f);
+            g.setColour(L::knobTrack);
+            g.fillRoundedRectangle(track, 3.0f);
+
+            const float score = currentProfile.score[axis];
+            g.setColour(axisColour[axis].withAlpha(0.9f));
+            g.fillRoundedRectangle(track.withWidth(juce::jmax(6.0f, track.getWidth() * score)), 3.0f);
+
+            // Brightness and Width read as "untouched" at the halfway point, so mark it
+            if (axis == static_cast<int>(PerceptionAxis::Brightness) || axis == static_cast<int>(PerceptionAxis::Width))
+            {
+                g.setColour(L::labelText.withAlpha(0.5f));
+                g.fillRect(track.getCentreX() - 0.5f, track.getY() - 3.0f, 1.0f, track.getHeight() + 6.0f);
+            }
+        }
     }
 }
 
@@ -237,6 +278,17 @@ void PerceptionModeComponent::timerCallback()
 
 void PerceptionModeComponent::refreshBreakdown()
 {
+    const auto newProfile = presetManagerRef.getLiveProfile();
+    bool profileChanged = false;
+    for (int i = 0; i < kNumPerceptionAxes; ++i)
+        profileChanged = profileChanged || std::abs(newProfile.score[i] - currentProfile.score[i]) > 0.002f;
+    if (profileChanged)
+    {
+        currentProfile = newProfile;
+        if (breakdownLabel.isVisible())
+            repaint(profileArea);
+    }
+
     const auto newTags = presetManagerRef.generateFeelingTags();
     if (newTags != currentTags)
     {
