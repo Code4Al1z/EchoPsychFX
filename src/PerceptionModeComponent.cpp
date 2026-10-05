@@ -134,14 +134,22 @@ void PerceptionModeComponent::paint(juce::Graphics& g)
 
     // Wordmark: the TrailblaiZ brand gradient (cyan to violet, diagonal like the website) across the whole name
     {
-        const juce::Font wordmarkFont(22.0f, juce::Font::bold);
+        juce::Font wordmarkFont(22.0f, juce::Font::bold);
+        wordmarkFont.setExtraKerningFactor(0.03f);   // a little air so "Psych" in the middle reads
         const juce::String name("EchoPsychFX");
-        const int y = 10, h = 32, x = 18;
+        const int y = 6, h = 26, x = 18;
         const int w = juce::roundToInt(juce::GlyphArrangement::getStringWidthInt(wordmarkFont, name)) + 1;
         g.setFont(wordmarkFont);
         g.setGradientFill(juce::ColourGradient(L::brandCyan, static_cast<float>(x), static_cast<float>(y),
                                                L::brandViolet, static_cast<float>(x + w), static_cast<float>(y + h), false));
         g.drawText(name, x, y, w, h, juce::Justification::centredLeft, false);
+
+        // Tagline: says what the plugin is in half a second
+        juce::Font taglineFont(10.5f);
+        taglineFont.setExtraKerningFactor(0.06f);
+        g.setFont(taglineFont);
+        g.setColour(L::mutedText);
+        g.drawText("Psychoacoustic space designer", x, y + h - 1, 190, 14, juce::Justification::centredLeft, false);
     }
 
     // Live "feeling" chips

@@ -8,9 +8,9 @@ namespace
 
 const Colour PluginLookAndFeel::background{ 17, 11, 23 };
 const Colour PluginLookAndFeel::knobThumb{ 255, 140, 60 };
-const Colour PluginLookAndFeel::track{ 255, 64, 148 };
+const Colour PluginLookAndFeel::track{ 255, 46, 136 };
 const Colour PluginLookAndFeel::knobBackground{ 74, 30, 70 };
-const Colour PluginLookAndFeel::knobFill{ 255, 64, 148 };
+const Colour PluginLookAndFeel::knobFill{ 255, 46, 136 };
 const Colour PluginLookAndFeel::knobOutline{ 58, 40, 68 };
 const Colour PluginLookAndFeel::labelText{ 236, 230, 246 };
 const Colour PluginLookAndFeel::groupOutline = juce::Colours::white.withAlpha(0.10f);
@@ -26,9 +26,9 @@ const Colour PluginLookAndFeel::knobTrack{ 55, 40, 66 };
 
 const Colour PluginLookAndFeel::brandCyan{ 63, 201, 238 };      // #3fc9ee
 const Colour PluginLookAndFeel::brandViolet{ 127, 107, 251 };   // #7f6bfb
-const Colour PluginLookAndFeel::accentInput{ 70, 214, 232 };
+const Colour PluginLookAndFeel::accentInput{ 63, 201, 238 };
 const Colour PluginLookAndFeel::accentMotion{ 255, 150, 60 };
-const Colour PluginLookAndFeel::accentSpatial{ 255, 64, 148 };
+const Colour PluginLookAndFeel::accentSpatial{ 255, 46, 136 };
 const Colour PluginLookAndFeel::accentMicroPitch{ 176, 120, 255 };
 const Colour PluginLookAndFeel::accentExciter{ 255, 206, 70 };
 const Colour PluginLookAndFeel::accentReverb{ 96, 156, 255 };
