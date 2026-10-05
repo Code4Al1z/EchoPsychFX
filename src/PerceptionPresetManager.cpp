@@ -434,7 +434,7 @@ void PerceptionPresetManager::initializePresets()
     // Claustrophobic and tense - a rhythmic, harsh pulse that won't let up.
     presets["Panic Room"] = [this]() {
         usePreset(ModDelay::ModulationType::Square,
-            150.0f, 0.8f, 0.7f, 0.9f, 6.0f, 1.5f, true,
+            150.0f, 0.8f, 0.7f, 0.9f, 4.0f, 8.0f, true,
             0.3f, 0.2f, 0.2f, false, -0.15f,
             0.1f, -0.1f, 1.2f, 0.8f, 0.85f, 1.1f,
             0.9f, 0.2f, 3200.0f, 0.1f, 0.2f, SpatialFX::LfoWaveform::Triangle,
@@ -458,25 +458,25 @@ void PerceptionPresetManager::initializePresets()
     // Cold, synthetic, neon-lit dystopia, driven by a mechanical pulse.
     presets["Blade Runner"] = [this]() {
         usePreset(ModDelay::ModulationType::SawtoothDown,
-            550.0f, 0.65f, 0.6f, 0.7f, 3.0f, 0.3f, true,
+            550.0f, 0.57f, 0.53f, 0.64f, 3.0f, 6.0f, true,
             1.2f, 0.7f, 0.1f, false, -0.08f,
             0.1f, -0.1f, 0.4f, 0.6f, 0.5f, 0.7f,
             0.85f, 0.3f, 4200.0f, 0.7f, 0.3f, SpatialFX::LfoWaveform::Random,
-            -2.0f, 0.6f, 0.0018f, 0.004f, 0.75f, 0.6f, 0.35f, 0.5f,
+            -2.0f, 0.6f, 0.0018f, 0.004f, 0.75f, 0.6f, 0.28f, 0.5f,
             4.5f, 0.55f, 120.0f, Sat::Digital, Harm::OddOnly, 0.65f, 0.5f, true,
-            100.0f, 0.95f, 0.6f, 0.5f);
+            100.0f, 0.89f, 0.6f, 0.45f);
         };
 
     // Otherworldly and non-human - electromagnetic hum and a smooth, alien shimmer.
     presets["Alien Abduction"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            350.0f, 0.55f, 0.6f, 0.85f, 4.5f, 0.6f, false,
+            350.0f, 0.55f, 0.6f, 0.78f, 4.5f, 0.6f, false,
             0.9f, 0.75f, 0.05f, false, -0.07f,
             0.1f, -0.1f, 0.9f, 0.9f, 0.7f, 0.7f,
             0.8f, 0.45f, 4200.0f, 0.6f, 0.6f, SpatialFX::LfoWaveform::Sine,
             4.0f, 1.2f, 0.001f, 0.0025f, 0.9f, 0.65f, 0.5f, 0.55f,
             5.5f, 0.6f, 180.0f, Sat::Transformer, Harm::EvenOnly, 0.7f, 0.6f, true,
-            100.0f, 0.9f, 0.4f, 0.55f);
+            100.0f, 0.85f, 0.4f, 0.5f);
         };
 
     // Smooth, reflective, and clean - light bouncing down a long glass corridor.
@@ -512,19 +512,19 @@ void PerceptionPresetManager::initializePresets()
             0.3f, 0.05f, 2000.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Sine,
             0.3f, 0.1f, 0.0001f, 0.001f, 0.25f, 0.2f, 0.1f, 0.3f,
             1.0f, 0.15f, 20.0f, Sat::Tube, Harm::EvenOnly, 0.15f, 0.4f, true,
-            5.0f, 0.8f, 0.25f, 0.35f);
+            5.0f, 0.35f, 0.65f, 0.35f);
         };
 
     // Unstable mood swings - erratic modulation and dynamics that surge and sag.
     presets["Bipolar Bloom"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
-            450.0f, 0.9f, 0.5f, 0.8f, 4.0f, 0.35f, false,
+            450.0f, 0.65f, 0.45f, 0.74f, 4.0f, 0.35f, false,
             1.1f, 0.65f, 0.15f, false, 0.08f,
             0.1f, -0.1f, 0.7f, 0.7f, 0.65f, 0.65f,
             0.75f, 0.3f, 4200.0f, 0.3f, 0.25f, SpatialFX::LfoWaveform::Random,
             -3.5f, 1.5f, 0.0009f, 0.0022f, 0.95f, 0.68f, 0.4f, 0.45f,
             6.5f, 0.5f, 110.0f, Sat::Hard, Harm::OddOnly, 0.6f, 0.55f, false,
-            70.0f, 0.95f, 0.35f, 0.6f);
+            70.0f, 0.89f, 0.35f, 0.49f);
         };
 
     // Calm and grounded - a subtle, weighty confidence rather than showiness.
@@ -542,152 +542,152 @@ void PerceptionPresetManager::initializePresets()
     // Weightless and paradoxically uplifting - light, airy, floating free.
     presets["Falling Upwards"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            180.0f, 0.6f, 0.65f, 0.55f, 2.5f, 0.2f, false,
+            180.0f, 0.53f, 0.57f, 0.47f, 2.5f, 0.2f, false,
             1.0f, 0.7f, 0.05f, false, 0.04f,
             0.1f, -0.07f, 0.3f, 0.3f, 0.45f, 0.45f,
             0.6f, 0.22f, 1800.0f, 0.25f, 0.25f, SpatialFX::LfoWaveform::Triangle,
-            2.2f, 0.4f, 0.0006f, 0.0018f, 0.5f, 0.5f, 0.25f, 0.5f,
-            4.0f, 0.7f, 100.0f, Sat::Digital, Harm::EvenOnly, 0.65f, 0.55f, true,
-            40.0f, 0.85f, 0.3f, 0.55f);
+            2.2f, 0.4f, 0.0006f, 0.0018f, 0.5f, 0.45f, 0.25f, 0.5f,
+            4.0f, 0.63f, 100.0f, Sat::Digital, Harm::EvenOnly, 0.65f, 0.55f, true,
+            40.0f, 0.8f, 0.3f, 0.45f);
         };
 
     // Hot, viscous, radiant - a warm glowing overdrive at its core.
     presets["Molten Light"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            270.0f, 0.8f, 0.75f, 0.7f, 3.8f, 0.25f, false,
+            270.0f, 0.7f, 0.66f, 0.59f, 3.8f, 0.25f, false,
             1.3f, 0.9f, 0.1f, false, 0.06f,
             0.1f, -0.1f, 0.5f, 0.65f, 0.75f, 0.75f,
             0.4f, 0.12f, 4200.0f, 0.5f, 0.3f, SpatialFX::LfoWaveform::Sine,
-            3.0f, 0.5f, 0.0007f, 0.002f, 0.75f, 0.55f, 0.35f, 0.55f,
-            7.5f, 0.75f, 120.0f, Sat::Tube, Harm::EvenOnly, 0.55f, 0.6f, true,
-            60.0f, 0.7f, 0.2f, 0.7f);
+            3.0f, 0.5f, 0.0007f, 0.002f, 0.75f, 0.45f, 0.35f, 0.55f,
+            7.5f, 0.61f, 120.0f, Sat::Tube, Harm::EvenOnly, 0.55f, 0.6f, true,
+            60.0f, 0.7f, 0.2f, 0.51f);
         };
 
     // Airy, ghostly, spacious - as light and untouched as an echo can be.
     presets["Ethereal Echo"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            350.0f, 0.6f, 0.65f, 0.75f, 2.5f, 0.3f, false,
+            350.0f, 0.47f, 0.5f, 0.58f, 2.5f, 0.3f, false,
             1.1f, 0.85f, -0.05f, false, 0.04f,
             0.1f, -0.1f, 0.4f, 0.55f, 0.65f, 0.65f,
             0.3f, 0.09f, 4200.0f, 0.4f, 0.3f, SpatialFX::LfoWaveform::Triangle,
-            -2.5f, 1.2f, 0.0008f, 0.0025f, 0.75f, 0.6f, 0.2f, 0.7f,
-            5.5f, 0.7f, 150.0f, Sat::Soft, Harm::EvenOnly, 0.75f, 0.5f, true,
-            50.0f, 0.9f, 0.15f, 0.65f);
+            -2.5f, 1.2f, 0.0008f, 0.0025f, 0.75f, 0.49f, 0.2f, 0.7f,
+            5.5f, 0.57f, 150.0f, Sat::Soft, Harm::EvenOnly, 0.75f, 0.5f, true,
+            50.0f, 0.75f, 0.15f, 0.48f);
         };
 
     // Rich, thick, enveloping - a lush, nostalgic dream you sink into.
     presets["Lush Dreamscape"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
-            400.0f, 0.7f, 0.75f, 0.8f, 3.0f, 0.35f, false,
+            400.0f, 0.7f, 0.75f, 0.74f, 3.0f, 0.35f, false,
             1.2f, 0.9f, 0.1f, false, 0.05f,
             0.1f, -0.1f, 0.5f, 0.65f, 0.75f, 0.75f,
             0.2f, 0.06f, 4200.0f, 0.6f, 0.3f, SpatialFX::LfoWaveform::Sine,
             -3.5f, 1.5f, 0.0009f, 0.0022f, 0.8f, 0.7f, 0.4f, 0.75f,
             6.5f, 0.8f, 200.0f, Sat::Tape, Harm::Balanced, 0.6f, 0.55f, true,
-            60.0f, 1.0f, 0.3f, 0.75f);
+            60.0f, 0.85f, 0.3f, 0.45f);
         };
 
     // Tactile and close - warm human contact, never harsh, never diffuse.
     presets["Skin Contact"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
-            90.0f, 0.35f, 0.4f, 0.4f, 1.0f, 0.08f, false,
-            0.75f, 0.95f, -0.12f, false, 0.02f,
+            60.0f, 0.35f, 0.4f, 0.4f, 1.0f, 0.08f, false,
+            0.9f, 0.95f, -0.12f, false, 0.02f,
             0.02f, -0.018f, 0.12f, 0.2f, 0.5f, 0.5f,
             0.1f, 0.03f, 4200.0f, 0.4f, 0.3f, SpatialFX::LfoWaveform::Random,
             1.1f, 0.15f, 0.0001f, 0.001f, 0.4f, 0.25f, 0.1f, 0.15f,
-            4.0f, 0.45f, 44.0f, Sat::Tube, Harm::EvenOnly, 0.35f, 0.45f, true,
-            10.0f, 0.35f, 0.1f, 0.2f);
+            4.0f, 0.45f, 44.0f, Sat::Tape, Harm::Balanced, 0.35f, 0.45f, true,
+            10.0f, 0.35f, 0.1f, 0.12f);
         };
 
     // Enveloping, wraparound warmth - a full-bodied embrace.
     presets["Sonic Embrace"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            200.0f, 0.5f, 0.55f, 0.6f, 2.0f, 0.15f, false,
+            200.0f, 0.39f, 0.42f, 0.55f, 2.0f, 0.15f, false,
             0.8f, 0.9f, -0.08f, false, 0.03f,
             0.08f, -0.06f, 0.25f, 0.35f, 0.45f, 0.45f,
             0.25f, 0.1f, 4200.0f, 0.3f, 0.25f, SpatialFX::LfoWaveform::Sine,
-            -1.5f, 0.25f, 0.0003f, 0.001f, 0.5f, 0.35f, 0.2f, 0.5f,
-            4.5f, 0.6f, 120.0f, Sat::Transformer, Harm::Balanced, 0.5f, 0.5f, true,
-            30.0f, 0.75f, 0.25f, 0.5f);
+            -1.5f, 0.25f, 0.0003f, 0.001f, 0.5f, 0.32f, 0.2f, 0.5f,
+            4.5f, 0.54f, 120.0f, Sat::Transformer, Harm::Balanced, 0.5f, 0.5f, true,
+            30.0f, 0.66f, 0.25f, 0.41f);
         };
 
     // Rhythmic, flashing, euphoric - a driving, synced strobe of a beat.
     presets["Strobe Heaven"] = [this]() {
         usePreset(ModDelay::ModulationType::Square,
-            90.0f, 0.7f, 0.7f, 0.85f, 3.2f, 1.6f, true,
-            0.4f, 0.6f, 0.3f, false, -0.1f,
+            90.0f, 0.7f, 0.7f, 0.85f, 2.5f, 10.0f, true,
+            1.3f, 0.8f, 0.3f, false, -0.1f,
             0.1f, -0.1f, 1.4f, 1.4f, 0.9f, 0.9f,
             1.0f, 0.2f, 4200.0f, 0.7f, 0.7f, SpatialFX::LfoWaveform::Triangle,
             -4.0f, 2.0f, 0.0012f, 0.0025f, 0.6f, 0.7f, 0.3f, 0.35f,
             8.5f, 0.75f, 150.0f, Sat::Digital, Harm::OddOnly, 0.85f, 0.55f, false,
-            20.0f, 0.6f, 0.1f, 0.9f);
+            10.0f, 0.35f, 0.45f, 0.3f);
         };
 
     // Cool glass meeting hot flame - smooth surfaces with a biting edge.
     presets["Glass Flame"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            300.0f, 0.5f, 0.5f, 0.65f, 2.0f, 0.18f, false,
+            300.0f, 0.44f, 0.44f, 0.6f, 2.0f, 0.18f, false,
             1.0f, 0.8f, -0.05f, false, 0.0f,
             0.05f, -0.05f, 0.35f, 0.35f, 0.5f, 0.5f,
             0.65f, 0.15f, 3300.0f, 0.4f, 0.4f, SpatialFX::LfoWaveform::Sine,
             2.0f, 0.3f, 0.0004f, 0.0016f, 0.6f, 0.4f, 0.3f, 0.5f,
             5.5f, 0.8f, 110.0f, Sat::Hard, Harm::OddOnly, 0.7f, 0.5f, true,
-            30.0f, 0.8f, 0.2f, 0.5f);
+            30.0f, 0.75f, 0.2f, 0.45f);
         };
 
     // Vast, cosmic, reverent - a huge, weighty space that dwarfs everything in it.
     presets["Celestial Vault"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            320.0f, 0.6f, 0.6f, 0.4f, 2.0f, 0.15f, false,
+            320.0f, 0.53f, 0.53f, 0.34f, 2.0f, 0.15f, false,
             1.2f, 0.7f, 0.0f, false, -0.05f,
             0.02f, 0.02f, 0.15f, 0.15f, 0.5f, 0.5f,
             0.65f, 0.05f, 2800.0f, 0.5f, 0.5f, SpatialFX::LfoWaveform::Sine,
-            2.0f, 0.2f, 0.001f, 0.005f, 0.75f, 0.4f, 0.15f, 0.6f,
-            4.5f, 0.35f, 120.0f, Sat::Transformer, Harm::EvenOnly, 0.6f, 0.5f, true,
-            100.0f, 1.0f, 0.45f, 0.7f);
+            2.0f, 0.2f, 0.001f, 0.005f, 0.75f, 0.36f, 0.15f, 0.6f,
+            4.5f, 0.32f, 120.0f, Sat::Transformer, Harm::EvenOnly, 0.6f, 0.5f, true,
+            100.0f, 0.96f, 0.45f, 0.37f);
         };
 
     // Murky and uncertain - a hazy, tape-warped trick of perception.
     presets["Deep Illusion"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
-            280.0f, 0.4f, 0.4f, 0.3f, 1.0f, 0.2f, false,
+            280.0f, 0.35f, 0.35f, 0.26f, 1.0f, 0.2f, false,
             1.6f, 0.6f, 0.1f, false, 0.02f,
             -0.02f, 0.03f, 0.2f, 0.2f, 0.35f, 0.35f,
             0.6f, 0.1f, 3600.0f, 0.3f, 0.3f, SpatialFX::LfoWaveform::Triangle,
-            2.5f, 0.15f, 0.001f, 0.004f, 0.5f, 0.35f, 0.35f, 0.45f,
-            3.5f, 0.25f, 90.0f, Sat::Tape, Harm::Balanced, 0.35f, 0.5f, true,
-            60.0f, 0.9f, 0.6f, 0.5f);
+            2.5f, 0.15f, 0.001f, 0.004f, 0.5f, 0.32f, 0.35f, 0.45f,
+            3.5f, 0.23f, 90.0f, Sat::Tape, Harm::Balanced, 0.35f, 0.5f, true,
+            60.0f, 0.8f, 0.6f, 0.41f);
         };
 
     // Dissolving self - boundaries blur into a maximally diffuse, expansive haze.
     presets["Ego Dissolve"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            500.0f, 0.3f, 0.3f, 0.5f, 3.0f, 0.4f, false,
+            500.0f, 0.3f, 0.3f, 0.46f, 3.0f, 0.4f, false,
             1.5f, 0.5f, 0.1f, false, 0.0f,
             0.1f, -0.1f, 0.35f, 0.35f, 0.5f, 0.5f,
             0.55f, 0.2f, 2400.0f, 0.4f, 0.4f, SpatialFX::LfoWaveform::Sine,
             1.5f, 0.3f, 0.0015f, 0.0065f, 0.75f, 0.45f, 0.55f, 0.8f,
             5.5f, 0.3f, 100.0f, Sat::Digital, Harm::EvenOnly, 0.55f, 0.6f, true,
-            100.0f, 0.88f, 0.7f, 0.6f);
+            100.0f, 0.88f, 0.7f, 0.54f);
         };
 
     // Faded and decayed - the gritty, tape-worn residue of an old memory.
     presets["Memory Dust"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
-            360.0f, 0.5f, 0.5f, 0.3f, 1.5f, 0.25f, false,
+            360.0f, 0.5f, 0.5f, 0.28f, 1.5f, 0.25f, false,
             1.3f, 0.65f, 0.05f, false, 0.03f,
             0.04f, 0.05f, 0.2f, 0.2f, 0.3f, 0.3f,
             0.5f, 0.15f, 1600.0f, 0.08f, 0.08f, SpatialFX::LfoWaveform::Random,
             2.8f, 0.25f, 0.001f, 0.005f, 0.7f, 0.4f, 0.25f, 0.4f,
             4.0f, 0.2f, 80.0f, Sat::Tape, Harm::OddOnly, 0.3f, 0.45f, true,
-            70.0f, 0.9f, 0.55f, 0.45f);
+            70.0f, 0.85f, 0.55f, 0.41f);
         };
 
     // Light, quick, playful - a simple, tempo-locked slapback echo.
     presets["Gentle Slap"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            100.0f, 0.4f, 0.4f, 0.1f, 0.6f, 0.05f, true,
-            0.2f, 0.4f, 0.0f, false, 0.02f,
+            100.0f, 0.4f, 0.4f, 0.1f, 0.6f, 4.0f, true,
+            0.9f, 0.5f, 0.0f, false, 0.02f,
             0.02f, -0.02f, 0.1f, 0.1f, 0.15f, 0.15f,
             0.25f, 0.2f, 4200.0f, 0.05f, 0.05f, SpatialFX::LfoWaveform::Sine,
             1.2f, 0.1f, 0.0003f, 0.0012f, 0.4f, 0.3f, 0.05f, 0.1f,
@@ -698,13 +698,13 @@ void PerceptionPresetManager::initializePresets()
     // Gentle rhythmic sway under a cool night sky - a synced, shimmering waltz.
     presets["Moon Dance"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            200.0f, 0.5f, 0.5f, 0.6f, 2.0f, 0.15f, true,
+            200.0f, 0.39f, 0.39f, 0.51f, 2.0f, 4.0f, true,
             1.2f, 0.7f, -0.05f, false, 0.02f,
             0.05f, -0.05f, 0.25f, 0.25f, 0.35f, 0.35f,
             0.45f, 0.4f, 4200.0f, 0.2f, 0.2f, SpatialFX::LfoWaveform::Triangle,
-            1.5f, 0.25f, 0.0003f, 0.001f, 0.5f, 0.35f, 0.2f, 0.45f,
-            3.0f, 0.5f, 40.0f, Sat::Digital, Harm::EvenOnly, 0.6f, 0.5f, true,
-            30.0f, 0.75f, 0.25f, 0.5f);
+            1.5f, 0.25f, 0.0003f, 0.001f, 0.5f, 0.29f, 0.2f, 0.45f,
+            3.0f, 0.41f, 40.0f, Sat::Digital, Harm::EvenOnly, 0.6f, 0.5f, true,
+            30.0f, 0.66f, 0.25f, 0.37f);
         };
 
     // Sharp sensual tension - a sting of edge and bite, distinct from a gentle slap.
@@ -722,13 +722,13 @@ void PerceptionPresetManager::initializePresets()
     // Turbulent, dark weather - rough and erratic, distinct from Glass Flame's clean bite.
     presets["Stormy Day"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            300.0f, 0.5f, 0.5f, 0.65f, 2.0f, 0.18f, false,
-            1.0f, 0.8f, -0.05f, false, -0.1f,
+            340.0f, 0.45f, 0.45f, 0.65f, 3.5f, 0.35f, false,
+            1.0f, 0.8f, -0.05f, false, -0.25f,
             0.05f, -0.05f, 0.35f, 0.35f, 0.5f, 0.5f,
             0.65f, 0.45f, 4200.0f, 0.3f, 0.3f, SpatialFX::LfoWaveform::Random,
             2.0f, 0.3f, 0.0004f, 0.0016f, 0.6f, 0.4f, 0.35f, 0.5f,
             6.5f, 0.8f, 90.0f, Sat::Hard, Harm::OddOnly, 0.35f, 0.5f, false,
-            30.0f, 0.8f, 0.35f, 0.5f);
+            30.0f, 0.7f, 0.55f, 0.5f);
         };
 
     // Warm, golden, relaxed - the glow of a fading summer evening.
@@ -740,26 +740,26 @@ void PerceptionPresetManager::initializePresets()
             0.75f, 0.15f, 4200.0f, 0.35f, 0.15f, SpatialFX::LfoWaveform::Sine,
             -0.8f, 0.8f, 0.0004f, 0.0015f, 0.6f, 0.5f, 0.15f, 0.4f,
             4.0f, 0.5f, 80.0f, Sat::Tube, Harm::EvenOnly, 0.55f, 0.5f, true,
-            60.0f, 1.0f, 0.3f, 0.75f);
+            60.0f, 0.8f, 0.3f, 0.5f);
         };
 
     // Flowing, rolling, natural - the analog warmth of vast rolling water.
     presets["Ocean Waves"] = [this]() {
         usePreset(ModDelay::ModulationType::Triangle,
-            250.0f, 0.5f, 0.5f, 0.6f, 2.5f, 0.2f, false,
+            250.0f, 0.3f, 0.3f, 0.43f, 2.5f, 0.2f, false,
             1.3f, 0.7f, 0.05f, false, 0.03f,
             0.08f, -0.06f, 0.3f, 0.3f, 0.45f, 0.45f,
             0.55f, 0.12f, 4200.0f, 0.3f, 0.12f, SpatialFX::LfoWaveform::Triangle,
-            -1.5f, 0.4f, 0.0006f, 0.0022f, 0.65f, 0.5f, 0.2f, 0.55f,
-            4.5f, 0.6f, 120.0f, Sat::Tape, Harm::Balanced, 0.5f, 0.5f, true,
-            50.0f, 0.9f, 0.25f, 0.55f);
+            -1.5f, 0.4f, 0.0006f, 0.0022f, 0.65f, 0.37f, 0.2f, 0.55f,
+            4.5f, 0.44f, 120.0f, Sat::Tape, Harm::Balanced, 0.5f, 0.5f, true,
+            50.0f, 0.9f, 0.25f, 0.33f);
         };
 
     // Pristine and transparent - minimal coloration, maximum clarity.
     presets["Crystal Clear"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
             110.0f, 0.2f, 0.2f, 0.25f, 0.6f, 0.05f, false,
-            0.6f, 0.6f, -0.15f, false, 0.01f,
+            1.0f, 0.6f, 0.0f, false, 0.01f,
             0.01f, -0.01f, 0.05f, 0.05f, 0.1f, 0.1f,
             0.2f, 0.05f, 4200.0f, 0.15f, 0.05f, SpatialFX::LfoWaveform::Sine,
             0.7f, 0.1f, 0.0002f, 0.001f, 0.5f, 0.2f, 0.0f, 0.05f,
@@ -770,12 +770,12 @@ void PerceptionPresetManager::initializePresets()
     // Sweet and nostalgic - a warm, fond, tape-like glow of remembrance.
     presets["Sweetest Memory"] = [this]() {
         usePreset(ModDelay::ModulationType::Sine,
-            220.0f, 0.45f, 0.4f, 0.55f, 1.2f, 0.15f, false,
+            220.0f, 0.35f, 0.31f, 0.43f, 1.2f, 0.15f, false,
             1.2f, 0.65f, -0.05f, false, 0.02f,
             0.07f, -0.04f, 0.28f, 0.28f, 0.38f, 0.38f,
             0.55f, 0.05f, 4200.0f, 0.4f, 0.05f, SpatialFX::LfoWaveform::Sine,
-            -1.2f, 0.25f, 0.0003f, 0.001f, 0.55f, 0.35f, 0.15f, 0.45f,
-            3.0f, 0.5f, 90.0f, Sat::Tape, Harm::EvenOnly, 0.5f, 0.5f, true,
-            60.0f, 0.8f, 0.3f, 0.65f);
+            -1.2f, 0.25f, 0.0003f, 0.001f, 0.55f, 0.29f, 0.15f, 0.45f,
+            3.0f, 0.41f, 90.0f, Sat::Tape, Harm::EvenOnly, 0.5f, 0.5f, true,
+            60.0f, 0.7f, 0.3f, 0.48f);
         };
 }
