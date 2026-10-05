@@ -19,11 +19,18 @@ void ModDelay::prepare(const juce::dsp::ProcessSpec& spec) {
     modulationTypeCrossfade.reset(sampleRate, 0.02);
     modulationTypeCrossfade.setCurrentAndTargetValue(0.0f);
 
+    // Square and sawtooth LFOs jump from one delay time to another within a single sample, which
+    // the delay line turns into a click (a jump of 2 x depth ms). A ~4 ms one-pole softens every
+    // such edge into a quick glide; on the slow waveforms it is far too fast to be noticed.
+    constexpr float edgeSoftenSeconds = 0.004f;
+    modSlewCoeff = 1.0f - std::exp(-1.0f / (edgeSoftenSeconds * sampleRate));
+
     resetState();
 }
 
 void ModDelay::resetState() {
     phase = 0.0f;
+    smoothedMod = 0.0f;
     currentModulationType = ModulationType::Sine;
     targetModulationType = ModulationType::Sine;
     modulationTypeCrossfade.setCurrentAndTargetValue(0.0f);
@@ -77,6 +84,8 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
         float mod1 = calculateModulation(phase, safeDepth, currentModulationType);
         float mod2 = calculateModulation(phase, safeDepth, targetModulationType);
         float mod = juce::jmap(crossfade, 0.0f, 1.0f, mod1, mod2);
+        smoothedMod += modSlewCoeff * (mod - smoothedMod);
+        mod = smoothedMod;
 
         // Calculate delay times with modulation (stereo spreading)
         float delayLInSamples = (dMs + mod) * 0.001f * sampleRate;

@@ -55,6 +55,8 @@ private:
     float currentRateHz = 0.25f;
     float sampleRate = 44100.0f;
     float phase = 0.0f;
+    float smoothedMod = 0.0f;   // LFO offset after the edge-softening filter
+    float modSlewCoeff = 0.0f;
     ModulationType currentModulationType = ModulationType::Sine;
     ModulationType targetModulationType = ModulationType::Sine;
     juce::LinearSmoothedValue<float> modulationTypeCrossfade;
