@@ -59,7 +59,8 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
 
     for (int i = 0; i < numSamples; ++i) {
         // Get next smoothed values
-        float dMs = std::max(params.delayMs.getNextValue(), 5.0f);
+        // 1 ms is the Delay knob's minimum (it used to be held at 5 ms, so the bottom of the knob did nothing)
+        float dMs = std::max(params.delayMs.getNextValue(), 1.0f);
         float depth = params.modDepth.getNextValue();
         float rateHz = currentRateHz;
         float fbL = juce::jlimit(0.0f, 0.95f, params.feedbackL.getNextValue());
@@ -67,8 +68,9 @@ void ModDelay::process(juce::dsp::AudioBlock<float>& block) {
         float wetMix = params.mix.getNextValue();
         crossfade = modulationTypeCrossfade.getNextValue();
 
-        // Calculate safe modulation depth - ensure we stay away from boundaries
-        float safeDepth = std::min(depth, (dMs - 5.0f) * 0.8f);
+        // Calculate safe modulation depth - ensure we stay away from boundaries (the shortest modulated delay
+        // is then 0.2 * delay + 0.8 ms, never below 1 ms)
+        float safeDepth = std::min(depth, (dMs - 1.0f) * 0.8f);
         safeDepth = std::max(safeDepth, 0.0f);
 
         // Calculate modulation for both waveform types (for crossfading)

@@ -22,7 +22,7 @@ public:
     // Mix and filtering
     void setWetDry(float newWetDry); // 0 to 1
     void setAllpassFrequency(float frequency); // Hz
-    void setHaasDelayMs(float leftMs, float rightMs); // 0 to 30ms
+    void setHaasDelayMs(float leftMs, float rightMs); // 0 to 40ms
 
     // Processing
     void process(juce::dsp::AudioBlock<float>& block);

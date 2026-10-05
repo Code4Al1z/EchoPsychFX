@@ -26,7 +26,7 @@ void SpatialFX::prepare(const juce::dsp::ProcessSpec& spec)
     allpassL.prepare(spec);
     allpassR.prepare(spec);
 
-    const int maxHaasDelaySamples = static_cast<int>(std::ceil(0.030 * spec.sampleRate)) + 1;
+    const int maxHaasDelaySamples = static_cast<int>(std::ceil(0.040 * spec.sampleRate)) + 1;   // 40 ms, the Haas knob's maximum
     haasDelayL.setMaximumDelayInSamples(maxHaasDelaySamples);
     haasDelayR.setMaximumDelayInSamples(maxHaasDelaySamples);
     haasDelayL.prepare(spec);
@@ -120,8 +120,8 @@ void SpatialFX::setAllpassFrequency(float frequency)
 
 void SpatialFX::setHaasDelayMs(float leftMs, float rightMs)
 {
-    params.haasDelayL.setTargetValue(juce::jlimit(0.0f, 30.0f, leftMs));
-    params.haasDelayR.setTargetValue(juce::jlimit(0.0f, 30.0f, rightMs));
+    params.haasDelayL.setTargetValue(juce::jlimit(0.0f, 40.0f, leftMs));
+    params.haasDelayR.setTargetValue(juce::jlimit(0.0f, 40.0f, rightMs));
 }
 
 void SpatialFX::initializeDCBlockers()

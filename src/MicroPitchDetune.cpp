@@ -97,7 +97,7 @@ void MicroPitchDetune::setParams(float detuneCentsIn, float lfoRateIn, float lfo
         lfoDepth = juce::jlimit(0.0f, 0.01f, lfoDepthIn);
     }
 
-    lfoRate = juce::jlimit(0.01f, 10.0f, lfoRateIn);
+    lfoRate = juce::jlimit(0.01f, 20.0f, lfoRateIn);   // the same range as the LFO Rate control
 
     float oldDelayCentre = delayCentre;
     delayCentre = juce::jlimit(0.001f, maxDelayTime * 0.8f, delayCentreIn);
