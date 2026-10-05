@@ -16,7 +16,7 @@ class PerceptionModeComponent : public juce::Component,
     private juce::Timer
 {
 public:
-    explicit PerceptionModeComponent(PerceptionPresetManager& presetManager);
+    PerceptionModeComponent(PerceptionPresetManager& presetManager, juce::AudioProcessorValueTreeState& state);
     ~PerceptionModeComponent() override;
 
     void resized() override;
@@ -40,6 +40,11 @@ private:
     juce::TextButton renameButton{ "Rename" };
     juce::TextButton deleteButton{ "Delete" };
     juce::TextButton insightButton{ "Insight" };
+
+    // Output trim lives here too, so the final level is always within reach
+    juce::Label outputLabel;
+    juce::Slider outputSlider;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> outputAttachment;
 
     juce::StringArray currentTags;
     juce::Rectangle<int> chipsArea;

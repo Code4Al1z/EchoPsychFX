@@ -1,7 +1,8 @@
 #include "PerceptionModeComponent.h"
 #include "PluginLookAndFeel.h"
 
-PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& presetManager)
+PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& presetManager,
+    juce::AudioProcessorValueTreeState& state)
     : presetManagerRef(presetManager)
 {
     // Factory preset names - fixed, read-only. User presets are appended dynamically.
@@ -26,6 +27,29 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
         button->setColour(juce::TextButton::textColourOnId, juce::Colours::white);
         addAndMakeVisible(button);
     }
+    // Output trim: a bipolar slider that fills outward from 0 dB. Double-click resets it.
+    PluginLookAndFeel::configureLabel(outputLabel, "OUTPUT");
+    outputLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(outputLabel);
+
+    outputSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    outputSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 74, 22);
+    outputSlider.setColour(juce::Slider::trackColourId, PluginLookAndFeel::labelText.withAlpha(0.75f));
+    outputSlider.setColour(juce::Slider::textBoxTextColourId, PluginLookAndFeel::labelText);
+    outputSlider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+    outputSlider.setTooltip("Output trim: the final level after every effect. Double-click to reset to 0 dB.");
+    addAndMakeVisible(outputSlider);
+    outputAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state, "outputGain", outputSlider);
+
+    if (auto* trimParam = state.getParameter("outputGain"))
+    {
+        outputSlider.textFromValueFunction = [trimParam](double v)
+            {
+                return trimParam->getText(trimParam->convertTo0to1(static_cast<float>(v)), 0) + " dB";
+            };
+        outputSlider.updateText();
+    }
+
     insightButton.setClickingTogglesState(true);
     insightButton.setColour(juce::TextButton::buttonOnColourId, PluginLookAndFeel::accentSpatial.withAlpha(0.8f));
     insightButton.setTooltip("Explain what this sound does to perception");
@@ -90,6 +114,11 @@ void PerceptionModeComponent::resized()
 
     area.removeFromTop(10);
     chipsArea = area.removeFromTop(26);
+
+    auto outputArea = chipsArea.removeFromRight(260);
+    chipsArea.removeFromRight(12);
+    outputLabel.setBounds(outputArea.removeFromLeft(58));
+    outputSlider.setBounds(outputArea);
 
     if (breakdownLabel.isVisible())
     {

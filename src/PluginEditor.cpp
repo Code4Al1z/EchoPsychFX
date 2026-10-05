@@ -23,7 +23,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
         *exciterSaturationComponent,
         *simpleVerbComponent);
 
-    perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager);
+    perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager, p.parameters);
 
     setLookAndFeel(&pluginLookAndFeel);
 

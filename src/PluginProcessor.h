@@ -80,6 +80,9 @@ public:
     ExciterSaturation exciterSaturation;
     SimpleVerbWithPredelay simpleVerbWithPredelay;
 
+    // Final level trim, applied after every effect
+    juce::dsp::Gain<float> outputGain;
+
 private:
     //==============================================================================
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();

@@ -21,12 +21,34 @@ PerceptionPresetManager::PerceptionPresetManager(juce::AudioProcessorValueTreeSt
     loadUserPresets();
 }
 
+namespace
+{
+    constexpr const char* kOutputTrimId = "outputGain";
+
+    // Output trim is a monitoring-level setting, not part of a sound, so presets neither store nor
+    // change it and moving it must not turn the preset into "Custom".
+    juce::ValueTree withoutOutputTrim(juce::ValueTree state)
+    {
+        for (int i = state.getNumChildren(); --i >= 0;)
+            if (state.getChild(i).getProperty("id").toString() == kOutputTrimId)
+                state.removeChild(i, nullptr);
+
+        return state;
+    }
+}
+
 void PerceptionPresetManager::applyPreset(const juce::String& presetName)
 {
     auto userIt = userPresets.find(presetName);
     if (userIt != userPresets.end())
     {
+        auto* trimParam = apvtsRef.getParameter(kOutputTrimId);
+        const float trimBefore = trimParam != nullptr ? trimParam->getValue() : 0.0f;
+
         apvtsRef.replaceState(userIt->second.createCopy());
+
+        if (trimParam != nullptr)
+            trimParam->setValueNotifyingHost(trimBefore);   // keep the user's output level
         DBG("Applied user preset: " + presetName);
 
         // The APVTS only flushes parameter changes into its state ValueTree periodically,
@@ -64,7 +86,7 @@ bool PerceptionPresetManager::matchesLastAppliedPreset() const
     if (!lastAppliedPresetState.isValid())
         return true;
 
-    return apvtsRef.copyState().isEquivalentTo(lastAppliedPresetState);
+    return withoutOutputTrim(apvtsRef.copyState()).isEquivalentTo(withoutOutputTrim(lastAppliedPresetState.createCopy()));
 }
 
 void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const
@@ -228,7 +250,7 @@ bool PerceptionPresetManager::saveCurrentAsUserPreset(const juce::String& preset
     if (presetName.isEmpty() || isFactoryPreset(presetName))
         return false;
 
-    userPresets[presetName] = apvtsRef.copyState();
+    userPresets[presetName] = withoutOutputTrim(apvtsRef.copyState());
     saveUserPresetsToDisk();
     return true;
 }

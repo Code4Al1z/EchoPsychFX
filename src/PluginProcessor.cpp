@@ -64,6 +64,7 @@ namespace
         if (id == "delayCentre")          return numeric("ms", 1, 1000.0f);        // stored in seconds
         if (id == "exciterDrive")         return numeric("", 1);
         if (id == "predelayMs")           return numeric("ms", 1);
+        if (id == "outputGain")           return numeric("dB", 1, 1.0f, true);
         return numeric("", 2);
     }
 }
@@ -216,6 +217,11 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate, int samplesPerB
     spatialFX.prepare(spec);
     microPitchDetune.prepare(spec);
     exciterSaturation.prepare(spec);
+
+    outputGain.prepare(spec);
+    outputGain.setRampDurationSeconds(0.02);
+    outputGain.setGainDecibels(*parameters.getRawParameterValue("outputGain"));
+    outputGain.reset();
 
     // The exciter's oversampling filters add a few samples of latency; tell the host so it can compensate
     setLatencySamples(exciterSaturation.getLatencySamples());
@@ -396,6 +402,12 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
         simpleVerbWithPredelay.setParams(predelayMs, size, damping, wet);
         simpleVerbWithPredelay.process(block);
+    }
+
+    // 8. Output trim - final level after every effect, ramped so moving it never zippers
+    {
+        outputGain.setGainDecibels(*parameters.getRawParameterValue("outputGain"));
+        outputGain.process(juce::dsp::ProcessContextReplacing<float>(block));
     }
 }
 
@@ -771,6 +783,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
         0.5f,
         attributesFor("wet")));
+
+    //==============================================================================
+    // Output
+    //==============================================================================
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{ "outputGain", 1 },
+        "Output",
+        juce::NormalisableRange<float>(-24.0f, 12.0f, 0.1f),
+        0.0f,
+        attributesFor("outputGain")));
 
     return { params.begin(), params.end() };
 }
