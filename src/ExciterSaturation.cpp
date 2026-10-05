@@ -1,4 +1,5 @@
 ﻿#include "ExciterSaturation.h"
+#include "FilterUtils.h"
 #include <cmath>
 
 ExciterSaturation::ExciterSaturation()
@@ -136,8 +137,8 @@ void ExciterSaturation::setAutoGainEnabled(bool enabled)
 void ExciterSaturation::updateHighpass()
 {
     float oversampledRate = sampleRate * 2.0f;
-    *highpass.state = *juce::dsp::IIR::Coefficients<float>::makeHighPass(
-        oversampledRate, highpassFreq);
+    setCoefficientsInPlace(*highpass.state,
+        juce::dsp::IIR::ArrayCoefficients<float>::makeHighPass(oversampledRate, highpassFreq));
 }
 
 void ExciterSaturation::updatePreEmphasis()
@@ -148,9 +149,9 @@ void ExciterSaturation::updatePreEmphasis()
     float emphasisQ = 0.7f;
     float emphasisGain = juce::jmap(toneBrightness, 0.0f, 6.0f);  // Up to +6dB
 
-    *preEmphasis.state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(
-        oversampledRate, emphasisFreq, emphasisQ,
-        juce::Decibels::decibelsToGain(emphasisGain));
+    setCoefficientsInPlace(*preEmphasis.state,
+        juce::dsp::IIR::ArrayCoefficients<float>::makePeakFilter(oversampledRate, emphasisFreq, emphasisQ,
+            juce::Decibels::decibelsToGain(emphasisGain)));
 }
 
 void ExciterSaturation::updateDeEmphasis()
@@ -161,9 +162,9 @@ void ExciterSaturation::updateDeEmphasis()
     float emphasisQ = 0.7f;
     float emphasisGain = juce::jmap(toneBrightness, 0.0f, 6.0f);
 
-    *deEmphasis.state = *juce::dsp::IIR::Coefficients<float>::makePeakFilter(
-        oversampledRate, emphasisFreq, emphasisQ,
-        juce::Decibels::decibelsToGain(-emphasisGain * 0.5f));  // Partial compensation
+    setCoefficientsInPlace(*deEmphasis.state,
+        juce::dsp::IIR::ArrayCoefficients<float>::makePeakFilter(oversampledRate, emphasisFreq, emphasisQ,
+            juce::Decibels::decibelsToGain(-emphasisGain * 0.5f)));  // Partial compensation
 }
 
 void ExciterSaturation::updateToneFilter()
@@ -172,8 +173,9 @@ void ExciterSaturation::updateToneFilter()
     float toneFreq = juce::jmap(harmonicBalance, 2000.0f, 8000.0f);
     float toneGain = juce::jmap(harmonicBalance, -3.0f, 3.0f);
 
-    *toneFilter.state = *juce::dsp::IIR::Coefficients<float>::makeHighShelf(
-        sampleRate, toneFreq, 0.7f, juce::Decibels::decibelsToGain(toneGain));
+    setCoefficientsInPlace(*toneFilter.state,
+        juce::dsp::IIR::ArrayCoefficients<float>::makeHighShelf(sampleRate, toneFreq, 0.7f,
+            juce::Decibels::decibelsToGain(toneGain)));
 }
 
 float ExciterSaturation::softSaturation(float x)

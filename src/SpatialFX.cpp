@@ -1,4 +1,5 @@
 #include "SpatialFX.h"
+#include "FilterUtils.h"
 
 SpatialFX::SpatialFX()
     : random(juce::Random(juce::Time::currentTimeMillis()))
@@ -108,6 +109,11 @@ void SpatialFX::setWetDry(float newWetDry)
 void SpatialFX::setAllpassFrequency(float frequency)
 {
     float clampedFreq = juce::jlimit(20.0f, sampleRate * 0.45f, frequency);
+
+    // Sent every audio block by the processor; only react to a real change
+    if (clampedFreq == params.allpassFreq.getTargetValue())
+        return;
+
     params.allpassFreq.setTargetValue(clampedFreq);
     needsFilterUpdate = true;
 }
@@ -127,7 +133,9 @@ void SpatialFX::initializeDCBlockers()
 
 void SpatialFX::updateFilters()
 {
-    const float freq = params.allpassFreq.getCurrentValue();
+    // The smoother starts at 0 Hz on the first block; an allpass at 0 Hz has infinite coefficients and
+    // would poison the filter with NaN, so never go below the control's 20 Hz minimum.
+    const float freq = juce::jmax(20.0f, params.allpassFreq.getCurrentValue());
 
     if (std::abs(freq - lastAllpassFreq) < filterUpdateThreshold && !needsFilterUpdate)
         return;
@@ -135,9 +143,10 @@ void SpatialFX::updateFilters()
     lastAllpassFreq = freq;
     needsFilterUpdate = false;
 
-    auto coefs = juce::dsp::IIR::Coefficients<float>::makeAllPass(sampleRate, freq);
-    *allpassL.coefficients = *coefs;
-    *allpassR.coefficients = *coefs;
+    // Straight into the filters' existing coefficients (no allocation on the audio thread)
+    const auto coefs = juce::dsp::IIR::ArrayCoefficients<float>::makeAllPass(sampleRate, freq);
+    setCoefficientsInPlace(*allpassL.coefficients, coefs);
+    setCoefficientsInPlace(*allpassR.coefficients, coefs);
 }
 
 float SpatialFX::nextRandomLfoValue(RandomLfoState& s, float phase, float rateHz)
@@ -220,6 +229,16 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
     const float invSampleRate = 1.0f / sampleRate;
     const float twoPi = juce::MathConstants<float>::twoPi;
 
+    // The allpass frequency is smoothed, so the filters follow it once per block while it moves
+    // (and once more at the end of the block, so they land exactly on the target). When it is
+    // still nothing is recomputed at all.
+    const bool allpassMoving = needsFilterUpdate || params.allpassFreq.isSmoothing();
+    if (allpassMoving)
+    {
+        needsFilterUpdate = true;
+        updateFilters();
+    }
+
     for (size_t i = 0; i < numSamples; ++i)
     {
         const float dryL = leftData[i];
@@ -238,8 +257,6 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
 
         // Update filters only when needed
         params.allpassFreq.getNextValue(); // Consume the value
-        if (needsFilterUpdate)
-            updateFilters();
 
         // Update LFO phases
         lfoPhaseL += twoPi * rateL * invSampleRate;
@@ -299,6 +316,13 @@ void SpatialFX::process(juce::dsp::AudioBlock<float>& block)
 
         leftData[i] = dryL * dryGain + filteredL * wetGain;
         rightData[i] = dryR * dryGain + filteredR * wetGain;
+    }
+
+    if (allpassMoving)
+    {
+        needsFilterUpdate = true;
+        updateFilters();
+        needsFilterUpdate = params.allpassFreq.isSmoothing();   // keep following until the ramp ends
     }
 }
 

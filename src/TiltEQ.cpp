@@ -1,4 +1,5 @@
 #include "TiltEQ.h"
+#include "FilterUtils.h"
 
 void TiltEQ::prepare(const juce::dsp::ProcessSpec& spec) {
     sampleRate = spec.sampleRate;
@@ -22,6 +23,12 @@ void TiltEQ::reset() {
 
 void TiltEQ::setTilt(float tiltAmount) {
     const float clampedTilt = juce::jlimit(-1.0f, 1.0f, tiltAmount);
+
+    // The processor sends the current value every audio block; only react to a real change, so a
+    // still knob costs nothing (rebuilding the filters every block used to allocate on the audio thread)
+    if (clampedTilt == tiltParam.getTargetValue())
+        return;
+
     tiltParam.setTargetValue(clampedTilt);
     needsUpdate.store(true, std::memory_order_release);
 }
@@ -65,24 +72,10 @@ void TiltEQ::updateFilters(int numSamples) {
     const float currentTilt = tiltParam.skip(numSamples);
     const float gain = currentTilt * gainRange;
 
-    // Compute coefficients
-    auto lowCoeffs = juce::dsp::IIR::Coefficients<float>::makeLowShelf(
-        sampleRate,
-        lowFreq,
-        qFactor,
-        juce::Decibels::decibelsToGain(gain)
-    );
-
-    auto highCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighShelf(
-        sampleRate,
-        highFreq,
-        qFactor,
-        juce::Decibels::decibelsToGain(-gain)
-    );
-
-    // Update filter states (thread-safe assignment)
-    *lowShelf.state = *lowCoeffs;
-    *highShelf.state = *highCoeffs;
+    // Compute the coefficients straight into the filters' existing state (no allocation)
+    using Array = juce::dsp::IIR::ArrayCoefficients<float>;
+    setCoefficientsInPlace(*lowShelf.state, Array::makeLowShelf(sampleRate, lowFreq, qFactor, juce::Decibels::decibelsToGain(gain)));
+    setCoefficientsInPlace(*highShelf.state, Array::makeHighShelf(sampleRate, highFreq, qFactor, juce::Decibels::decibelsToGain(-gain)));
 }
 
 void TiltEQ::updateFiltersIfNeeded(int numSamples) {
