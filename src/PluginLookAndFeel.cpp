@@ -40,7 +40,8 @@ PluginLookAndFeel::PluginLookAndFeel()
 
     setColour(juce::PopupMenu::backgroundColourId, popupRowA);
     setColour(juce::PopupMenu::textColourId, labelText);
-    setColour(juce::PopupMenu::highlightedBackgroundColourId, track);
+    // a soft wash of the brand pink: full-strength pink glared against the dark menu
+    setColour(juce::PopupMenu::highlightedBackgroundColourId, track.withAlpha(0.30f));
     setColour(juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
 
     setColour(juce::AlertWindow::backgroundColourId, panel);

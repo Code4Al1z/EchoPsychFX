@@ -47,7 +47,7 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
     }
 
     insightButton.setClickingTogglesState(true);
-    insightButton.setColour(juce::TextButton::buttonOnColourId, PluginLookAndFeel::accentSpatial.withAlpha(0.8f));
+    insightButton.setColour(juce::TextButton::buttonOnColourId, PluginLookAndFeel::accentSpatial);
     insightButton.setTooltip("Explain what this sound does to perception");
 
     saveAsButton.onClick = [this] { showSaveAsDialog(); };
@@ -78,6 +78,44 @@ PerceptionModeComponent::PerceptionModeComponent(PerceptionPresetManager& preset
 PerceptionModeComponent::~PerceptionModeComponent()
 {
     stopTimer();
+
+    for (auto& alert : openAlerts)
+    {
+        if (alert != nullptr)
+        {
+            alert->setLookAndFeel(nullptr);   // the editor's look-and-feel is about to go away
+            alert->exitModalState(0);
+        }
+    }
+}
+
+juce::AlertWindow* PerceptionModeComponent::createThemedAlert(const juce::String& title, const juce::String& message)
+{
+    using L = PluginLookAndFeel;
+
+    auto* aw = new juce::AlertWindow(title, message, juce::AlertWindow::NoIcon, getTopLevelComponent());   // centred on the plugin window
+    aw->setLookAndFeel(&getLookAndFeel());
+    aw->setColour(juce::AlertWindow::outlineColourId, L::brandCyan.withAlpha(0.35f));
+    openAlerts.removeIf([](const auto& p) { return p == nullptr; });
+    openAlerts.add(aw);
+    return aw;
+}
+
+void PerceptionModeComponent::showThemedMessage(const juce::String& title, const juce::String& message)
+{
+    auto* aw = createThemedAlert(title, message);
+    aw->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    aw->enterModalState(true, nullptr, true);
+}
+
+namespace
+{
+    // The confirming button gets a soft tint of the brand pink, the cancelling one stays neutral
+    void tintPrimaryButton(juce::AlertWindow& aw, const juce::String& name)
+    {
+        if (auto* b = aw.getButton(name))
+            b->setColour(juce::TextButton::buttonColourId, PluginLookAndFeel::accentSpatial.withAlpha(0.38f));
+    }
 }
 
 int PerceptionModeComponent::getPreferredHeight() const
@@ -418,11 +456,11 @@ void PerceptionModeComponent::updateButtonStates()
 
 void PerceptionModeComponent::showSaveAsDialog()
 {
-    auto* aw = new juce::AlertWindow("Save Preset", "Save the current settings as a new preset:",
-        juce::AlertWindow::NoIcon);
+    auto* aw = createThemedAlert("Save Preset", "Save the current settings as a new preset:");
     aw->addTextEditor("name", presetSelector.getText(), "Name:");
     aw->addButton("Save", 1, juce::KeyPress(juce::KeyPress::returnKey));
     aw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+    tintPrimaryButton(*aw, "Save");
 
     aw->enterModalState(true, juce::ModalCallbackFunction::create([this, aw](int result)
         {
@@ -434,7 +472,7 @@ void PerceptionModeComponent::showSaveAsDialog()
 
                 if (presetManagerRef.isFactoryPreset(name))
                 {
-                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                    showThemedMessage(
                         "Can't Overwrite Factory Preset",
                         "\"" + name + "\" is a factory preset and can't be overwritten. Choose a different name.");
                     return;
@@ -452,11 +490,11 @@ void PerceptionModeComponent::showRenameDialog()
     if (presetManagerRef.isFactoryPreset(oldName) || oldName.isEmpty())
         return;
 
-    auto* aw = new juce::AlertWindow("Rename Preset", "Enter a new name for \"" + oldName + "\":",
-        juce::AlertWindow::NoIcon);
+    auto* aw = createThemedAlert("Rename Preset", "Enter a new name for \"" + oldName + "\":");
     aw->addTextEditor("name", oldName, "Name:");
     aw->addButton("Rename", 1, juce::KeyPress(juce::KeyPress::returnKey));
     aw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+    tintPrimaryButton(*aw, "Rename");
 
     aw->enterModalState(true, juce::ModalCallbackFunction::create([this, aw, oldName](int result)
         {
@@ -468,7 +506,7 @@ void PerceptionModeComponent::showRenameDialog()
 
                 if (presetManagerRef.isFactoryPreset(newName))
                 {
-                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                    showThemedMessage(
                         "Can't Use Factory Preset Name",
                         "\"" + newName + "\" is a factory preset name. Choose a different name.");
                     return;
@@ -486,15 +524,17 @@ void PerceptionModeComponent::showDeleteConfirmation()
     if (presetManagerRef.isFactoryPreset(name) || name.isEmpty())
         return;
 
-    juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon, "Delete Preset",
-        "Delete the preset \"" + name + "\"? This can't be undone.",
-        "Delete", "Cancel", this,
-        juce::ModalCallbackFunction::create([this, name](int result)
-            {
-                if (result != 1)
-                    return;
-                presetManagerRef.deleteUserPreset(name);
-                refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
-                presetManagerRef.applyPreset(presetSelector.getText());
-            }));
+    auto* aw = createThemedAlert("Delete Preset", "Delete the preset \"" + name + "\"? This can't be undone.");
+    aw->addButton("Delete", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    aw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+    tintPrimaryButton(*aw, "Delete");
+
+    aw->enterModalState(true, juce::ModalCallbackFunction::create([this, name](int result)
+        {
+            if (result != 1)
+                return;
+            presetManagerRef.deleteUserPreset(name);
+            refreshPresetList(factoryPresetNames.isEmpty() ? juce::String() : factoryPresetNames[0]);
+            presetManagerRef.applyPreset(presetSelector.getText());
+        }), true);
 }

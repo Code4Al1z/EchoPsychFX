@@ -87,6 +87,12 @@ private:
     void showRenameDialog();
     void showDeleteConfirmation();
 
+    // Dialogs are separate windows, so they would not inherit the plugin's look unless told to.
+    // They are tracked so the look-and-feel can be released if the editor closes while one is open.
+    juce::AlertWindow* createThemedAlert(const juce::String& title, const juce::String& message);
+    void showThemedMessage(const juce::String& title, const juce::String& message);
+    juce::Array<juce::Component::SafePointer<juce::AlertWindow>> openAlerts;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PerceptionModeComponent)
 };
 
