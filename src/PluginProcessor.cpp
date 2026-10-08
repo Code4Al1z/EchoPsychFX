@@ -484,7 +484,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "intensity", 1 },
         "Intensity",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("intensity")));
 
     //==============================================================================
@@ -504,35 +504,35 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "delayTime", 1 },
         "Delay Time",
         juce::NormalisableRange<float>(1.0f, 2000.0f, 0.1f),
-        400.0f,
+        100.0f,
         attributesFor("delayTime")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "feedbackL", 1 },
         "Feedback L",
         juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
-        0.4f,
+        0.0f,
         attributesFor("feedbackL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "feedbackR", 1 },
         "Feedback R",
         juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f),
-        0.4f,
+        0.0f,
         attributesFor("feedbackR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "modMix", 1 },
         "Mod Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("modMix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "modDepth", 1 },
         "Mod Depth",
         juce::NormalisableRange<float>(0.0f, 10.0f, 0.01f),
-        2.0f,
+        0.0f,
         attributesFor("modDepth")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -574,42 +574,42 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "sfxModRateL", 1 },
         "SFX Rate L",
         juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
-        0.1f,
+        0.01f,
         attributesFor("sfxModRateL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModRateR", 1 },
         "SFX Rate R",
         juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f),
-        0.1f,
+        0.01f,
         attributesFor("sfxModRateR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModDepthL", 1 },
         "SFX Depth L",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("sfxModDepthL")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxModDepthR", 1 },
         "SFX Depth R",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("sfxModDepthR")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxWetDryMix", 1 },
         "SFX Wet/Dry",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("sfxWetDryMix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "sfxLfoPhaseOffset", 1 },
         "LFO Phase",
         juce::NormalisableRange<float>(0.0f, juce::MathConstants<float>::twoPi, 0.01f),
-        juce::MathConstants<float>::halfPi,
+        0.0f,
         attributesFor("sfxLfoPhaseOffset")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -653,14 +653,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "lfoRate", 1 },
         "LFO Rate",
         juce::NormalisableRange<float>(0.01f, 20.0f, 0.01f),
-        0.3f,
+        0.1f,
         attributesFor("lfoRate")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "lfoDepth", 1 },
         "LFO Depth",
         juce::NormalisableRange<float>(0.0f, 0.01f, 0.0001f),
-        0.002f,
+        0.0f,
         attributesFor("lfoDepth")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -674,14 +674,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "stereoSeparation", 1 },
         "Stereo Separation",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("stereoSeparation")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "mix", 1 },
         "Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("mix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -705,14 +705,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "exciterDrive", 1 },
         "Exciter Drive",
         juce::NormalisableRange<float>(0.0f, 10.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("exciterDrive")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "exciterMix", 1 },
         "Exciter Mix",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("exciterMix")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -760,14 +760,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "predelayMs", 1 },
         "Pre-delay",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
-        20.0f,
+        0.0f,
         attributesFor("predelayMs")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "size", 1 },
         "Reverb Size",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("size")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -781,7 +781,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
         juce::ParameterID{ "wet", 1 },
         "Wet Level",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f),
-        0.5f,
+        0.0f,
         attributesFor("wet")));
 
     //==============================================================================
