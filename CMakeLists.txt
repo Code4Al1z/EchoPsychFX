@@ -48,3 +48,28 @@ target_compile_definitions(EchoPsychFX PRIVATE
 target_compile_features(EchoPsychFX PUBLIC cxx_std_17)
 
 juce_generate_juce_header(EchoPsychFX)
+
+# Optional developer tests (off by default so normal plugin builds are unchanged):
+#   cmake -B build -DECHOPSYCHFX_BUILD_TESTS=ON && cmake --build build --target EchoPsychFXTests
+option(ECHOPSYCHFX_BUILD_TESTS "Build the description-consistency test" OFF)
+if(ECHOPSYCHFX_BUILD_TESTS)
+    enable_testing()
+    juce_add_console_app(EchoPsychFXTests PRODUCT_NAME "EchoPsychFXTests")
+    target_sources(EchoPsychFXTests PRIVATE tests/DescriptionConsistencyTest.cpp)
+    target_include_directories(EchoPsychFXTests PRIVATE src)
+    target_link_libraries(EchoPsychFXTests PRIVATE
+        EchoPsychFX
+        juce::juce_audio_processors juce::juce_dsp juce::juce_gui_basics juce::juce_gui_extra
+        juce::juce_data_structures juce::juce_audio_utils juce::juce_audio_devices
+        juce::juce_recommended_config_flags)
+    add_test(NAME DescriptionConsistency COMMAND EchoPsychFXTests)
+
+    juce_add_console_app(EchoPsychFXMeasure PRODUCT_NAME "EchoPsychFXMeasure")
+    target_sources(EchoPsychFXMeasure PRIVATE tools/calibration/MeasureSettings.cpp)
+    target_include_directories(EchoPsychFXMeasure PRIVATE src)
+    target_link_libraries(EchoPsychFXMeasure PRIVATE
+        EchoPsychFX
+        juce::juce_audio_processors juce::juce_dsp juce::juce_gui_basics juce::juce_gui_extra
+        juce::juce_data_structures juce::juce_audio_utils juce::juce_audio_devices
+        juce::juce_recommended_config_flags)
+endif()
