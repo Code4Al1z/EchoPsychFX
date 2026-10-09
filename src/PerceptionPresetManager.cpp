@@ -143,21 +143,26 @@ bool PerceptionPresetManager::matchesLastAppliedPreset() const
     return withoutOutputTrim(apvtsRef.copyState()).isEquivalentTo(withoutOutputTrim(lastAppliedPresetState.createCopy()));
 }
 
-void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const
-{
-    const auto character = computeSoundCharacter([this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); });
-
-    for (const auto& descriptor : describeSound(character))
-    {
-        tags.add(descriptor.tag);
-        clauses.add(descriptor.clause);
-    }
-}
-
 namespace
 {
     // Below this overall Intensity the sound really is close to untouched; above it, "neutral" would be untrue
     constexpr float kUntouchedIntensity = 0.12f;
+}
+
+void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const
+{
+    const auto character = computeSoundCharacter([this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); });
+
+    // When nothing is audible there is nothing to describe: the caller shows "Neutral" instead
+    const auto profile = computePerceptionProfile(character);
+    if (profile.get(PerceptionAxis::Intensity) < kUntouchedIntensity)
+        return;
+
+    for (const auto& descriptor : describeSound(character, profile))
+    {
+        tags.add(descriptor.tag);
+        clauses.add(descriptor.clause);
+    }
 }
 
 juce::StringArray PerceptionPresetManager::generateFeelingTags() const
@@ -176,9 +181,11 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     juce::StringArray tags, clauses;
     computeDescriptors(tags, clauses);
 
+    const auto profile = getLiveProfile();
+
     if (clauses.isEmpty())
     {
-        return getLiveProfile().get(PerceptionAxis::Intensity) < kUntouchedIntensity
+        return profile.get(PerceptionAxis::Intensity) < kUntouchedIntensity
             ? "Nothing strongly colored yet - close to a neutral, untouched signal."
             : "A subtle, understated treatment - nothing pushed far in any one direction.";
     }
@@ -187,6 +194,12 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     for (int i = 1; i < clauses.size(); ++i)
         result += (i == clauses.size() - 1 ? ", and " : ", ") + clauses[i];
     result += ".";
+
+    const auto character = computeSoundCharacter([this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); });
+    const auto feel = describeOverallFeel(character, profile);
+    if (!feel.empty())
+        result += " Overall it feels " + juce::String(feel) + ".";
+
     return result;
 }
 

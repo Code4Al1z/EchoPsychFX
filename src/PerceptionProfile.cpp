@@ -17,6 +17,65 @@ namespace
     }
 }
 
+float estimateAddedHarmonicsDb(float drive, float mix, int saturationType, int harmonicMode) noexcept
+{
+    // Added harmonic level (dB re the signal) at Mix = 1, measured at these Drive settings
+    static constexpr float kDrive[11] = { 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f };
+
+    //                                       0      0.5     1      1.5     2      3      4      5      6      8      10
+    static constexpr float oddSoft[11]  = { -51.9f, -40.6f, -34.3f, -30.1f, -27.1f, -23.2f, -20.8f, -19.2f, -18.1f, -16.8f, -16.1f };
+    static constexpr float oddTape[11]  = { -39.2f, -31.6f, -27.3f, -24.6f, -22.7f, -20.2f, -18.8f, -17.8f, -17.1f, -16.3f, -15.8f };
+    static constexpr float oddTrans[11] = { -58.6f, -46.8f, -39.6f, -34.3f, -29.9f, -22.8f, -19.5f, -17.9f, -17.0f, -15.9f, -15.4f };
+    // Hard clipping and bit-crushing add nothing until the signal reaches the clip point (about Drive 1.6 for a
+    // -12 dBFS tone); the early part of this curve allows for real program material peaking higher than that
+    static constexpr float oddClip[11]  = { -60.0f, -52.0f, -45.0f, -37.0f, -28.7f, -20.8f, -18.4f, -17.1f, -16.4f, -15.6f, -15.2f };
+    static constexpr float mixedTube[11] = { -43.7f, -36.9f, -32.4f, -29.1f, -26.5f, -22.9f, -20.7f, -19.2f, -18.1f, -16.8f, -16.1f };
+
+    static constexpr float evenSoft[11] = { -33.4f, -28.0f, -25.1f, -23.3f, -22.1f, -20.3f, -19.0f, -18.0f, -17.3f, -16.3f, -15.7f };
+    static constexpr float evenClip[11] = { -33.2f, -27.4f, -24.0f, -21.6f, -20.6f, -18.6f, -17.3f, -16.5f, -15.9f, -15.3f, -15.0f };
+    static constexpr float evenTube[11] = { -36.3f, -30.5f, -27.2f, -24.9f, -23.2f, -20.8f, -19.2f, -18.1f, -17.3f, -16.3f, -15.7f };
+    static constexpr float evenTape[11] = { -30.3f, -25.5f, -23.0f, -21.5f, -20.4f, -18.8f, -17.8f, -17.1f, -16.6f, -15.9f, -15.5f };
+    static constexpr float evenTrans[11] = { -33.3f, -27.8f, -24.7f, -22.9f, -21.6f, -19.6f, -18.0f, -17.0f, -16.4f, -15.6f, -15.2f };
+
+    const float* table = oddSoft;
+    switch (harmonicStructureOf(saturationType, harmonicMode))
+    {
+    case HarmonicStructure::Mixed:
+        table = mixedTube;
+        break;
+    case HarmonicStructure::Odd:
+        switch (saturationType)
+        {
+        case 1: case 5: table = oddClip;  break;   // Hard, Digital
+        case 3:         table = oddTape;  break;   // Tape
+        case 4:         table = oddTrans; break;   // Transformer
+        default:        table = oddSoft;  break;   // Soft, and Tube with its lopsidedness removed
+        }
+        break;
+    case HarmonicStructure::EvenAdded:
+        switch (saturationType)
+        {
+        case 1: case 5: table = evenClip;  break;
+        case 2:         table = evenTube;  break;
+        case 3:         table = evenTape;  break;
+        case 4:         table = evenTrans; break;
+        default:        table = evenSoft;  break;
+        }
+        break;
+    }
+
+    const float d = std::min(10.0f, std::max(0.0f, drive));
+    int i = 0;
+    while (i < 9 && d > kDrive[i + 1])
+        ++i;
+    const float t = (d - kDrive[i]) / (kDrive[i + 1] - kDrive[i]);
+    const float atFullMix = table[i] + t * (table[i + 1] - table[i]);
+
+    // The excited band is layered on top of the dry signal, so the signal grows with Mix as well as the harmonics
+    const float m = std::max(mix, 1.0e-4f);
+    return atFullMix + 20.0f * std::log10(2.0f * m / (1.0f + m));
+}
+
 SoundCharacter computeSoundCharacter(const ParameterGetter& p)
 {
     SoundCharacter c;
@@ -68,6 +127,7 @@ SoundCharacter computeSoundCharacter(const ParameterGetter& p)
     c.exciterBrightness = p("exciterToneBrightness");
     c.saturationType = std::min(5, std::max(0, static_cast<int>(std::lround(p("exciterSaturationType")))));
     c.harmonicMode = std::min(2, std::max(0, static_cast<int>(std::lround(p("exciterHarmonicMode")))));
+    c.addedHarmonicsDb = estimateAddedHarmonicsDb(c.exciterDrive, c.exciterMix, c.saturationType, c.harmonicMode);
 
     // --- Reverb
     c.reverbWet = p("wet");
@@ -124,8 +184,9 @@ PerceptionProfile computePerceptionProfile(const SoundCharacter& c)
         profile.score[3] = clamp01(1.5f * combine({ delayMotion, spatialMotion, microMotion }));
     }
 
-    // --- Saturation: how much harmonic colouring is added
-    profile.score[4] = clamp01(c.exciterMix * (0.15f + 0.85f * exciterDrive));
+    // --- Saturation: how much harmonic colouring is added, from the measured level of the added harmonics.
+    //     -40 dB or less is not audible (0), about -27 dB is clearly there (0.5), -15 dB is the most the exciter adds (1)
+    profile.score[4] = clamp01((c.addedHarmonicsDb + 40.0f) / 25.0f);
 
     // --- Intensity: how heavily processed the sound is overall (0 = untouched)
     {

@@ -53,6 +53,7 @@ struct SoundCharacter
     float exciterBrightness = 0.5f;
     int   saturationType = 0;      // index into Soft, Hard, Tube, Tape, Transformer, Digital
     int   harmonicMode = 0;        // 0 Balanced, 1 Odd Only, 2 Even Only
+    float addedHarmonicsDb = -100.0f; // level of the harmonics the exciter adds, in dB relative to the signal
 
     // Reverb + Predelay
     float reverbWet = 0.0f;
@@ -60,6 +61,26 @@ struct SoundCharacter
     float reverbDamping = 0.0f;
     float predelayMs = 0.0f;
 };
+
+/** Which harmonics the exciter really produces. This is not simply the Harmonics menu: the "Odd Only" setting
+    only differs from "Balanced" for the Tube curve, because every other curve is already symmetric and so
+    only makes odd harmonics, and "Even Only" adds even harmonics ON TOP of the odd ones rather than
+    replacing them. */
+enum class HarmonicStructure { Odd, Mixed, EvenAdded };
+
+inline HarmonicStructure harmonicStructureOf(int saturationType, int harmonicMode) noexcept
+{
+    if (harmonicMode == 2)
+        return HarmonicStructure::EvenAdded;
+    if (harmonicMode == 1)
+        return HarmonicStructure::Odd;
+    return saturationType == 2 ? HarmonicStructure::Mixed : HarmonicStructure::Odd;   // only Tube is lopsided
+}
+
+/** Estimated level (dB relative to the signal, about -15 dB at the most) of the harmonics the exciter adds.
+    The numbers come from measuring the real exciter with a sine wave at -12 dBFS, for every curve and
+    structure at drives from 0 to 10, with the Mix knob folded in. Lower than about -36 dB is not audible. */
+float estimateAddedHarmonicsDb(float drive, float mix, int saturationType, int harmonicMode) noexcept;
 
 SoundCharacter computeSoundCharacter(const ParameterGetter& parameter);
 
