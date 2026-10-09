@@ -17,6 +17,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
 
     perceptionModeComponent = std::make_unique<PerceptionModeComponent>(*presetManager, p.parameters);
 
+    supportFooter = std::make_unique<SupportFooter>(p, p.parameters);
+
     setLookAndFeel(&pluginLookAndFeel);
 
     addAndMakeVisible(*inputControlsComponent);
@@ -26,6 +28,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     addAndMakeVisible(*exciterSaturationComponent);
     addAndMakeVisible(*simpleVerbComponent);
     addAndMakeVisible(*perceptionModeComponent);
+    addAndMakeVisible(*supportFooter);
 
     auto collapseCallback = [this] { onBlockCollapseChanged(); };
     inputControlsComponent->onCollapseChanged = collapseCallback;
@@ -90,7 +93,7 @@ int AudioPluginAudioProcessorEditor::calculateWindowHeight() const
     const int row2 = juce::jmax(microPitchDetuneComponent->currentHeight(),
         juce::jmax(exciterSaturationComponent->currentHeight(), simpleVerbComponent->currentHeight()));
 
-    return L::kEdgePad + perceptionModeComponent->getPreferredHeight() + L::kGap + row1 + L::kGap + row2 + L::kEdgePad;
+    return L::kEdgePad + perceptionModeComponent->getPreferredHeight() + L::kGap + row1 + L::kGap + row2 + SupportFooter::kHeight + L::kEdgePad;
 }
 
 void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
@@ -101,6 +104,7 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
 void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds().reduced(L::kEdgePad);
+    supportFooter->setBounds(bounds.removeFromBottom(SupportFooter::kHeight));
 
     perceptionModeComponent->setBounds(bounds.removeFromTop(perceptionModeComponent->getPreferredHeight()));
     bounds.removeFromTop(L::kGap);

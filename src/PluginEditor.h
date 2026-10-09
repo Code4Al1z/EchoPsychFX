@@ -11,6 +11,7 @@
 #include "ExciterSaturationComponent.h"
 #include "SimpleVerbWithPredelayComponent.h"
 #include "PluginLookAndFeel.h"
+#include "SupportFooter.h"
 
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
 {
@@ -32,6 +33,8 @@ private:
     std::unique_ptr<MicroPitchDetuneComponent> microPitchDetuneComponent;
     std::unique_ptr<ExciterSaturationComponent> exciterSaturationComponent;
     std::unique_ptr<SimpleVerbWithPredelayComponent> simpleVerbComponent;
+
+    std::unique_ptr<SupportFooter> supportFooter;
 
     std::unique_ptr<PerceptionPresetManager> presetManager;
     std::unique_ptr<PerceptionModeComponent> perceptionModeComponent;
