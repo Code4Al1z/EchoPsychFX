@@ -134,6 +134,8 @@ std::vector<SoundDescriptor> describeSound(const SoundCharacter& c, const Percep
             add("Spacious", "a long, spacious reverb tail", Section::Reverb);
         else if (space < 0.15f && c.reverbWet < 0.25f && c.echoTailSeconds < 1.0f)
             add("Close & Dry", "close and dry", Section::Reverb);
+        else if (c.reverbWet >= 0.25f && c.reverbTailSeconds > 0.0f && c.reverbTailSeconds < 1.0f)
+            add("Tight Room", "a short, tight room reverb", Section::Reverb);
     }
 
     // A pre-delay this long lets the dry sound land clearly before the reverb arrives
@@ -170,7 +172,8 @@ std::string describeOverallFeel(const SoundCharacter& c, const PerceptionProfile
         return "spacious and atmospheric";
     if (width >= 0.65f && notNarrow && space >= 0.35f)
         return "open and airy";
-    if (space < 0.35f && width < 0.5f && motion < 0.3f)
+    // "Close" is judged by the same measured width change the Wide chips use, so it never contradicts them
+    if (space < 0.35f && c.widthChangeDb < 1.5f && motion < 0.3f)
         return "close, intimate and focused";
     if (brightness < 0.45f)
         return "warm and mellow";

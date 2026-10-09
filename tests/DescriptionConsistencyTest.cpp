@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     const std::vector<std::pair<std::string, std::string>> clash={
         {"collapsed to mono","wider than"},{"collapsed to mono","very wide"},{"narrower than","wider than"},{"narrower than","very wide"},
         {"much narrower","wider than"},{"much narrower","very wide"},{"eased back","lifted"},{"darker overall","brighter overall"},
-        {"close and dry","spacious"},{"close and dry","long, cascading"},
+        {"close and dry","spacious"},{"tight room","spacious reverb"},{"tight room","close and dry"},{"close and dry","long, cascading"},
         {"smooth","edgy"},{"smooth","buzzy"},{"smooth","gritty"},{"rounding","buzzy"},
         // overall feel against the facts
         {"close, intimate","wider than"},{"close, intimate","very wide"},{"close, intimate","spacious"},{"close, intimate","swirling"},
