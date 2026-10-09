@@ -52,7 +52,7 @@ struct SoundCharacter
     float exciterDrive = 0.0f;     // 0..10
     float exciterBrightness = 0.5f;
     int   saturationType = 0;      // index into Soft, Hard, Tube, Tape, Transformer, Digital
-    int   harmonicMode = 0;        // 0 Balanced, 1 Odd Only, 2 Even Only
+    int   harmonicMode = 0;        // 0 Natural, 1 Odd Only, 2 Add Even
     float addedHarmonicsDb = -100.0f; // level of the harmonics the exciter adds, in dB relative to the signal
     float exciterHighpassHz = 1000.0f;
     float exciterHarmonicBalance = 0.5f;
@@ -75,8 +75,8 @@ struct SoundCharacter
 };
 
 /** Which harmonics the exciter really produces. This is not simply the Harmonics menu: the "Odd Only" setting
-    only differs from "Balanced" for the Tube curve, because every other curve is already symmetric and so
-    only makes odd harmonics, and "Even Only" adds even harmonics ON TOP of the odd ones rather than
+    only differs from "Natural" for the Tube curve, because every other curve is already symmetric and so
+    only makes odd harmonics, and "Add Even" adds even harmonics ON TOP of the odd ones rather than
     replacing them. */
 enum class HarmonicStructure { Odd, Mixed, EvenAdded };
 

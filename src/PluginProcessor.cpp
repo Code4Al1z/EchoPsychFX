@@ -731,8 +731,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{ "exciterHarmonicMode", 1 },
         "Exciter Harmonic Mode",
-        juce::StringArray{ "Balanced", "Odd Only", "Even Only" },
-        0)); // Default: Balanced
+        juce::StringArray{ "Natural", "Odd Only", "Add Even" },
+        0)); // Default: Natural
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{ "exciterToneBrightness", 1 },

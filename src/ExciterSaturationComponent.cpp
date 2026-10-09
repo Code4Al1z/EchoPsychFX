@@ -22,10 +22,13 @@ ExciterSaturationComponent::ExciterSaturationComponent(juce::AudioProcessorValue
     addAndMakeVisible(saturationTypeBox);
 
     PluginLookAndFeel::configureComboBox(harmonicModeBox);
-    for (auto& label : { "Both", "Odd", "Even" })
+    for (auto& label : { "Natural", "Odd", "+ Even" })
         harmonicModeBox.addItem(label, harmonicModeBox.getNumItems() + 1);
     harmonicModeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         state, "exciterHarmonicMode", harmonicModeBox);
+    harmonicModeBox.setTooltip("Natural: the harmonics the chosen curve makes by itself.\n"
+                               "Odd: keeps only odd harmonics (only changes Tube, whose curve is lopsided).\n"
+                               "+ Even: adds even harmonics on top of the odd ones.");
     addAndMakeVisible(harmonicModeBox);
 
     autoGainToggle.setButtonText("Auto Gain");

@@ -15,7 +15,7 @@ R"JSON({
     "width": 1.0, "intensity": 0.0, "midSideBalance": 0.0, "mono": false, "tiltEQ": 0.0,
     "phaseOffsetL": 0.0, "phaseOffsetR": 0.0, "sfxModRateL": 0.01, "sfxModRateR": 0.01, "sfxModDepthL": 0.0, "sfxModDepthR": 0.0, "sfxWetDryMix": 0.0, "sfxLfoPhaseOffset": 0.0, "sfxAllpassFreq": 1000.0, "haasDelayL": 0.0, "haasDelayR": 0.0, "modulationShape": "Sine",
     "detuneAmount": 0.0, "lfoRate": 0.1, "lfoDepth": 0.0, "delayCentre": 0.005, "stereoSeparation": 0.0, "mix": 0.0, "detuneFeedback": 0.0, "diffusion": 0.0,
-    "exciterDrive": 0.0, "exciterMix": 0.0, "exciterHighpass": 1000.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 0.0, "exciterMix": 0.0, "exciterHighpass": 1000.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 0.0, "size": 0.0, "damping": 0.3, "wet": 0.0
   }
 })JSON",
@@ -54,7 +54,7 @@ R"JSON({
     "width": 0.8, "intensity": 0.9, "midSideBalance": -0.1, "mono": false, "tiltEQ": 0.05,
     "phaseOffsetL": 0.03, "phaseOffsetR": -0.02, "sfxModRateL": 0.15, "sfxModRateR": 0.15, "sfxModDepthL": 0.25, "sfxModDepthR": 0.25, "sfxWetDryMix": 0.35, "sfxLfoPhaseOffset": 0.1, "sfxAllpassFreq": 1600.0, "haasDelayL": 0.2, "haasDelayR": 0.2, "modulationShape": "Sine",
     "detuneAmount": 1.5, "lfoRate": 0.1, "lfoDepth": 0.0002, "delayCentre": 0.001, "stereoSeparation": 0.4, "mix": 0.3, "detuneFeedback": 0.05, "diffusion": 0.2,
-    "exciterDrive": 2.0, "exciterMix": 0.2, "exciterHighpass": 50.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.4, "exciterHarmonicBalance": 0.45, "exciterAutoGain": true,
+    "exciterDrive": 2.0, "exciterMix": 0.2, "exciterHighpass": 50.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.4, "exciterHarmonicBalance": 0.45, "exciterAutoGain": true,
     "predelayMs": 15.0, "size": 0.25, "damping": 0.3, "wet": 0.3
   }
 })JSON",
@@ -80,7 +80,7 @@ R"JSON({
     "width": 0.9, "intensity": 0.75, "midSideBalance": 0.05, "mono": false, "tiltEQ": -0.07,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 0.9, "sfxModRateR": 0.9, "sfxModDepthL": 0.7, "sfxModDepthR": 0.7, "sfxWetDryMix": 0.8, "sfxLfoPhaseOffset": 0.45, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.6, "haasDelayR": 0.6, "modulationShape": "Sine",
     "detuneAmount": 4.0, "lfoRate": 1.2, "lfoDepth": 0.001, "delayCentre": 0.0025, "stereoSeparation": 0.9, "mix": 0.65, "detuneFeedback": 0.5, "diffusion": 0.55,
-    "exciterDrive": 5.5, "exciterMix": 0.6, "exciterHighpass": 180.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.7, "exciterHarmonicBalance": 0.6, "exciterAutoGain": true,
+    "exciterDrive": 5.5, "exciterMix": 0.6, "exciterHighpass": 180.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.7, "exciterHarmonicBalance": 0.6, "exciterAutoGain": true,
     "predelayMs": 100.0, "size": 0.85, "damping": 0.4, "wet": 0.5
   }
 })JSON",
@@ -93,7 +93,7 @@ R"JSON({
     "width": 0.7, "intensity": 0.85, "midSideBalance": -0.05, "mono": false, "tiltEQ": 0.02,
     "phaseOffsetL": 0.05, "phaseOffsetR": -0.08, "sfxModRateL": 0.25, "sfxModRateR": 0.25, "sfxModDepthL": 0.4, "sfxModDepthR": 0.4, "sfxWetDryMix": 0.65, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 3200.0, "haasDelayL": 0.5, "haasDelayR": 0.5, "modulationShape": "Triangle",
     "detuneAmount": 1.0, "lfoRate": 0.3, "lfoDepth": 0.0005, "delayCentre": 0.0015, "stereoSeparation": 0.55, "mix": 0.4, "detuneFeedback": 0.2, "diffusion": 0.65,
-    "exciterDrive": 3.5, "exciterMix": 0.35, "exciterHighpass": 80.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.75, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 3.5, "exciterMix": 0.35, "exciterHighpass": 80.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.75, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 60.0, "size": 0.65, "damping": 0.8, "wet": 0.35
   }
 })JSON",
@@ -106,7 +106,7 @@ R"JSON({
     "width": 0.88, "intensity": 0.78, "midSideBalance": 0.02, "mono": false, "tiltEQ": -0.03,
     "phaseOffsetL": 0.06, "phaseOffsetR": -0.04, "sfxModRateL": 0.35, "sfxModRateR": 0.35, "sfxModDepthL": 0.48, "sfxModDepthR": 0.48, "sfxWetDryMix": 0.55, "sfxLfoPhaseOffset": 0.3, "sfxAllpassFreq": 3000.0, "haasDelayL": 0.4, "haasDelayR": 0.4, "modulationShape": "Sine",
     "detuneAmount": 1.8, "lfoRate": 0.5, "lfoDepth": 0.0007, "delayCentre": 0.002, "stereoSeparation": 0.6, "mix": 0.45, "detuneFeedback": 0.3, "diffusion": 0.6,
-    "exciterDrive": 3.0, "exciterMix": 0.3, "exciterHighpass": 70.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 3.0, "exciterMix": 0.3, "exciterHighpass": 70.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 90.0, "size": 0.75, "damping": 0.45, "wet": 0.45
   }
 })JSON",
@@ -119,7 +119,7 @@ R"JSON({
     "width": 0.55, "intensity": 1.0, "midSideBalance": -0.25, "mono": true, "tiltEQ": -0.12,
     "phaseOffsetL": 0.02, "phaseOffsetR": -0.015, "sfxModRateL": 0.08, "sfxModRateR": 0.08, "sfxModDepthL": 0.15, "sfxModDepthR": 0.15, "sfxWetDryMix": 0.3, "sfxLfoPhaseOffset": 0.05, "sfxAllpassFreq": 2000.0, "haasDelayL": 0.2, "haasDelayR": 0.2, "modulationShape": "Sine",
     "detuneAmount": 0.3, "lfoRate": 0.1, "lfoDepth": 0.0001, "delayCentre": 0.001, "stereoSeparation": 0.25, "mix": 0.2, "detuneFeedback": 0.1, "diffusion": 0.3,
-    "exciterDrive": 1.0, "exciterMix": 0.15, "exciterHighpass": 20.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.15, "exciterHarmonicBalance": 0.4, "exciterAutoGain": true,
+    "exciterDrive": 1.0, "exciterMix": 0.15, "exciterHighpass": 20.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.15, "exciterHarmonicBalance": 0.4, "exciterAutoGain": true,
     "predelayMs": 5.0, "size": 0.35, "damping": 0.65, "wet": 0.35
   }
 })JSON",
@@ -145,7 +145,7 @@ R"JSON({
     "width": 0.75, "intensity": 0.9, "midSideBalance": -0.02, "mono": false, "tiltEQ": 0.03,
     "phaseOffsetL": 0.04, "phaseOffsetR": -0.03, "sfxModRateL": 0.2, "sfxModRateR": 0.2, "sfxModDepthL": 0.35, "sfxModDepthR": 0.35, "sfxWetDryMix": 0.45, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 2400.0, "haasDelayL": 0.15, "haasDelayR": 0.2, "modulationShape": "Sine",
     "detuneAmount": 1.2, "lfoRate": 0.2, "lfoDepth": 0.0004, "delayCentre": 0.0012, "stereoSeparation": 0.45, "mix": 0.3, "detuneFeedback": 0.1, "diffusion": 0.25,
-    "exciterDrive": 2.8, "exciterMix": 0.2, "exciterHighpass": 60.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.45, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 2.8, "exciterMix": 0.2, "exciterHighpass": 60.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.45, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 20.0, "size": 0.45, "damping": 0.25, "wet": 0.3
   }
 })JSON",
@@ -158,7 +158,7 @@ R"JSON({
     "width": 1.0, "intensity": 0.7, "midSideBalance": 0.05, "mono": false, "tiltEQ": 0.04,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.07, "sfxModRateL": 0.3, "sfxModRateR": 0.3, "sfxModDepthL": 0.45, "sfxModDepthR": 0.45, "sfxWetDryMix": 0.6, "sfxLfoPhaseOffset": 0.22, "sfxAllpassFreq": 1800.0, "haasDelayL": 0.25, "haasDelayR": 0.25, "modulationShape": "Triangle",
     "detuneAmount": 2.2, "lfoRate": 0.4, "lfoDepth": 0.0006, "delayCentre": 0.0018, "stereoSeparation": 0.5, "mix": 0.45, "detuneFeedback": 0.25, "diffusion": 0.5,
-    "exciterDrive": 4.0, "exciterMix": 0.63, "exciterHighpass": 100.0, "exciterSaturationType": "Digital", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.65, "exciterHarmonicBalance": 0.55, "exciterAutoGain": true,
+    "exciterDrive": 4.0, "exciterMix": 0.63, "exciterHighpass": 100.0, "exciterSaturationType": "Digital", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.65, "exciterHarmonicBalance": 0.55, "exciterAutoGain": true,
     "predelayMs": 40.0, "size": 0.8, "damping": 0.3, "wet": 0.45
   }
 })JSON",
@@ -171,7 +171,7 @@ R"JSON({
     "width": 1.3, "intensity": 0.9, "midSideBalance": 0.1, "mono": false, "tiltEQ": 0.06,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 0.5, "sfxModRateR": 0.65, "sfxModDepthL": 0.75, "sfxModDepthR": 0.75, "sfxWetDryMix": 0.4, "sfxLfoPhaseOffset": 0.12, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.5, "haasDelayR": 0.3, "modulationShape": "Sine",
     "detuneAmount": 3.0, "lfoRate": 0.5, "lfoDepth": 0.0007, "delayCentre": 0.002, "stereoSeparation": 0.75, "mix": 0.45, "detuneFeedback": 0.35, "diffusion": 0.55,
-    "exciterDrive": 7.5, "exciterMix": 0.61, "exciterHighpass": 120.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.6, "exciterAutoGain": true,
+    "exciterDrive": 7.5, "exciterMix": 0.61, "exciterHighpass": 120.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.6, "exciterAutoGain": true,
     "predelayMs": 60.0, "size": 0.7, "damping": 0.2, "wet": 0.51
   }
 })JSON",
@@ -184,7 +184,7 @@ R"JSON({
     "width": 1.1, "intensity": 0.85, "midSideBalance": -0.05, "mono": false, "tiltEQ": 0.04,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 0.4, "sfxModRateR": 0.55, "sfxModDepthL": 0.65, "sfxModDepthR": 0.65, "sfxWetDryMix": 0.3, "sfxLfoPhaseOffset": 0.09, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.4, "haasDelayR": 0.3, "modulationShape": "Triangle",
     "detuneAmount": -2.5, "lfoRate": 1.2, "lfoDepth": 0.0008, "delayCentre": 0.0025, "stereoSeparation": 0.75, "mix": 0.49, "detuneFeedback": 0.2, "diffusion": 0.7,
-    "exciterDrive": 5.5, "exciterMix": 0.57, "exciterHighpass": 150.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.75, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 5.5, "exciterMix": 0.57, "exciterHighpass": 150.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.75, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 50.0, "size": 0.75, "damping": 0.15, "wet": 0.48
   }
 })JSON",
@@ -197,7 +197,7 @@ R"JSON({
     "width": 1.2, "intensity": 0.9, "midSideBalance": 0.1, "mono": false, "tiltEQ": 0.05,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 0.5, "sfxModRateR": 0.65, "sfxModDepthL": 0.75, "sfxModDepthR": 0.75, "sfxWetDryMix": 0.2, "sfxLfoPhaseOffset": 0.06, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.6, "haasDelayR": 0.3, "modulationShape": "Sine",
     "detuneAmount": -3.5, "lfoRate": 1.5, "lfoDepth": 0.0009, "delayCentre": 0.0022, "stereoSeparation": 0.8, "mix": 0.7, "detuneFeedback": 0.4, "diffusion": 0.75,
-    "exciterDrive": 6.5, "exciterMix": 0.8, "exciterHighpass": 200.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.6, "exciterHarmonicBalance": 0.55, "exciterAutoGain": true,
+    "exciterDrive": 6.5, "exciterMix": 0.8, "exciterHighpass": 200.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.6, "exciterHarmonicBalance": 0.55, "exciterAutoGain": true,
     "predelayMs": 60.0, "size": 0.85, "damping": 0.3, "wet": 0.45
   }
 })JSON",
@@ -210,7 +210,7 @@ R"JSON({
     "width": 0.9, "intensity": 0.95, "midSideBalance": -0.12, "mono": false, "tiltEQ": 0.02,
     "phaseOffsetL": 0.02, "phaseOffsetR": -0.018, "sfxModRateL": 0.12, "sfxModRateR": 0.2, "sfxModDepthL": 0.5, "sfxModDepthR": 0.5, "sfxWetDryMix": 0.1, "sfxLfoPhaseOffset": 0.03, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.4, "haasDelayR": 0.3, "modulationShape": "Random",
     "detuneAmount": 1.1, "lfoRate": 0.15, "lfoDepth": 0.0001, "delayCentre": 0.001, "stereoSeparation": 0.4, "mix": 0.25, "detuneFeedback": 0.1, "diffusion": 0.15,
-    "exciterDrive": 4.0, "exciterMix": 0.45, "exciterHighpass": 44.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.35, "exciterHarmonicBalance": 0.45, "exciterAutoGain": true,
+    "exciterDrive": 4.0, "exciterMix": 0.45, "exciterHighpass": 44.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.35, "exciterHarmonicBalance": 0.45, "exciterAutoGain": true,
     "predelayMs": 10.0, "size": 0.35, "damping": 0.1, "wet": 0.12
   }
 })JSON",
@@ -223,7 +223,7 @@ R"JSON({
     "width": 0.8, "intensity": 0.9, "midSideBalance": -0.08, "mono": false, "tiltEQ": 0.03,
     "phaseOffsetL": 0.08, "phaseOffsetR": -0.06, "sfxModRateL": 0.25, "sfxModRateR": 0.35, "sfxModDepthL": 0.45, "sfxModDepthR": 0.45, "sfxWetDryMix": 0.25, "sfxLfoPhaseOffset": 0.1, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.3, "haasDelayR": 0.25, "modulationShape": "Sine",
     "detuneAmount": -1.5, "lfoRate": 0.25, "lfoDepth": 0.0003, "delayCentre": 0.001, "stereoSeparation": 0.5, "mix": 0.32, "detuneFeedback": 0.2, "diffusion": 0.5,
-    "exciterDrive": 4.5, "exciterMix": 0.54, "exciterHighpass": 120.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 4.5, "exciterMix": 0.54, "exciterHighpass": 120.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 30.0, "size": 0.66, "damping": 0.25, "wet": 0.41
   }
 })JSON",
@@ -262,7 +262,7 @@ R"JSON({
     "width": 1.2, "intensity": 0.7, "midSideBalance": 0.0, "mono": false, "tiltEQ": -0.05,
     "phaseOffsetL": 0.02, "phaseOffsetR": 0.02, "sfxModRateL": 0.15, "sfxModRateR": 0.15, "sfxModDepthL": 0.5, "sfxModDepthR": 0.5, "sfxWetDryMix": 0.65, "sfxLfoPhaseOffset": 0.05, "sfxAllpassFreq": 2800.0, "haasDelayL": 0.5, "haasDelayR": 0.5, "modulationShape": "Sine",
     "detuneAmount": 2.0, "lfoRate": 0.2, "lfoDepth": 0.001, "delayCentre": 0.005, "stereoSeparation": 0.75, "mix": 0.36, "detuneFeedback": 0.15, "diffusion": 0.6,
-    "exciterDrive": 4.5, "exciterMix": 0.32, "exciterHighpass": 120.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.6, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 4.5, "exciterMix": 0.32, "exciterHighpass": 120.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.6, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 100.0, "size": 0.96, "damping": 0.45, "wet": 0.37
   }
 })JSON",
@@ -275,7 +275,7 @@ R"JSON({
     "width": 1.6, "intensity": 0.6, "midSideBalance": 0.1, "mono": false, "tiltEQ": 0.02,
     "phaseOffsetL": -0.02, "phaseOffsetR": 0.03, "sfxModRateL": 0.2, "sfxModRateR": 0.2, "sfxModDepthL": 0.35, "sfxModDepthR": 0.35, "sfxWetDryMix": 0.6, "sfxLfoPhaseOffset": 0.1, "sfxAllpassFreq": 3600.0, "haasDelayL": 0.3, "haasDelayR": 0.3, "modulationShape": "Triangle",
     "detuneAmount": 2.5, "lfoRate": 0.15, "lfoDepth": 0.001, "delayCentre": 0.004, "stereoSeparation": 0.5, "mix": 0.32, "detuneFeedback": 0.35, "diffusion": 0.45,
-    "exciterDrive": 3.5, "exciterMix": 0.23, "exciterHighpass": 90.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.35, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 3.5, "exciterMix": 0.23, "exciterHighpass": 90.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.35, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 60.0, "size": 0.8, "damping": 0.6, "wet": 0.41
   }
 })JSON",
@@ -288,7 +288,7 @@ R"JSON({
     "width": 1.5, "intensity": 0.5, "midSideBalance": 0.1, "mono": false, "tiltEQ": 0.0,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 0.35, "sfxModRateR": 0.35, "sfxModDepthL": 0.5, "sfxModDepthR": 0.5, "sfxWetDryMix": 0.55, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 2400.0, "haasDelayL": 0.4, "haasDelayR": 0.4, "modulationShape": "Sine",
     "detuneAmount": 1.5, "lfoRate": 0.3, "lfoDepth": 0.0015, "delayCentre": 0.0065, "stereoSeparation": 0.75, "mix": 0.45, "detuneFeedback": 0.55, "diffusion": 0.8,
-    "exciterDrive": 5.5, "exciterMix": 0.3, "exciterHighpass": 100.0, "exciterSaturationType": "Digital", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.6, "exciterAutoGain": true,
+    "exciterDrive": 5.5, "exciterMix": 0.3, "exciterHighpass": 100.0, "exciterSaturationType": "Digital", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.6, "exciterAutoGain": true,
     "predelayMs": 100.0, "size": 0.88, "damping": 0.7, "wet": 0.54
   }
 })JSON",
@@ -314,7 +314,7 @@ R"JSON({
     "width": 0.9, "intensity": 0.5, "midSideBalance": 0.0, "mono": false, "tiltEQ": 0.02,
     "phaseOffsetL": 0.02, "phaseOffsetR": -0.02, "sfxModRateL": 0.1, "sfxModRateR": 0.1, "sfxModDepthL": 0.15, "sfxModDepthR": 0.15, "sfxWetDryMix": 0.25, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.05, "haasDelayR": 0.05, "modulationShape": "Sine",
     "detuneAmount": 1.2, "lfoRate": 0.1, "lfoDepth": 0.0003, "delayCentre": 0.0012, "stereoSeparation": 0.4, "mix": 0.3, "detuneFeedback": 0.05, "diffusion": 0.1,
-    "exciterDrive": 2.5, "exciterMix": 0.15, "exciterHighpass": 50.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 2.5, "exciterMix": 0.15, "exciterHighpass": 50.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 20.0, "size": 0.35, "damping": 0.2, "wet": 0.3
   }
 })JSON",
@@ -327,7 +327,7 @@ R"JSON({
     "width": 1.2, "intensity": 0.7, "midSideBalance": -0.05, "mono": false, "tiltEQ": 0.02,
     "phaseOffsetL": 0.05, "phaseOffsetR": -0.05, "sfxModRateL": 0.25, "sfxModRateR": 0.25, "sfxModDepthL": 0.35, "sfxModDepthR": 0.35, "sfxWetDryMix": 0.45, "sfxLfoPhaseOffset": 0.4, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.2, "haasDelayR": 0.2, "modulationShape": "Triangle",
     "detuneAmount": 1.5, "lfoRate": 0.25, "lfoDepth": 0.0003, "delayCentre": 0.001, "stereoSeparation": 0.5, "mix": 0.29, "detuneFeedback": 0.2, "diffusion": 0.45,
-    "exciterDrive": 3.0, "exciterMix": 0.41, "exciterHighpass": 40.0, "exciterSaturationType": "Digital", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.6, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 3.0, "exciterMix": 0.41, "exciterHighpass": 40.0, "exciterSaturationType": "Digital", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.6, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 30.0, "size": 0.66, "damping": 0.25, "wet": 0.37
   }
 })JSON",
@@ -366,7 +366,7 @@ R"JSON({
     "width": 1.1, "intensity": 0.8, "midSideBalance": 0.1, "mono": false, "tiltEQ": -0.04,
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 0.25, "sfxModRateR": 0.25, "sfxModDepthL": 0.4, "sfxModDepthR": 0.4, "sfxWetDryMix": 0.75, "sfxLfoPhaseOffset": 0.15, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.35, "haasDelayR": 0.15, "modulationShape": "Sine",
     "detuneAmount": -0.8, "lfoRate": 0.8, "lfoDepth": 0.0004, "delayCentre": 0.0015, "stereoSeparation": 0.6, "mix": 0.5, "detuneFeedback": 0.15, "diffusion": 0.4,
-    "exciterDrive": 4.0, "exciterMix": 0.5, "exciterHighpass": 80.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 4.0, "exciterMix": 0.5, "exciterHighpass": 80.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.55, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 60.0, "size": 0.8, "damping": 0.3, "wet": 0.5
   }
 })JSON",
@@ -379,7 +379,7 @@ R"JSON({
     "width": 1.3, "intensity": 0.7, "midSideBalance": 0.05, "mono": false, "tiltEQ": 0.03,
     "phaseOffsetL": 0.08, "phaseOffsetR": -0.06, "sfxModRateL": 0.3, "sfxModRateR": 0.3, "sfxModDepthL": 0.45, "sfxModDepthR": 0.45, "sfxWetDryMix": 0.55, "sfxLfoPhaseOffset": 0.12, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.3, "haasDelayR": 0.12, "modulationShape": "Triangle",
     "detuneAmount": -1.5, "lfoRate": 0.4, "lfoDepth": 0.0006, "delayCentre": 0.0022, "stereoSeparation": 0.65, "mix": 0.37, "detuneFeedback": 0.2, "diffusion": 0.55,
-    "exciterDrive": 4.5, "exciterMix": 0.44, "exciterHighpass": 120.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 4.5, "exciterMix": 0.44, "exciterHighpass": 120.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 50.0, "size": 0.9, "damping": 0.25, "wet": 0.33
   }
 })JSON",
@@ -392,7 +392,7 @@ R"JSON({
     "width": 1.0, "intensity": 0.6, "midSideBalance": 0.0, "mono": false, "tiltEQ": 0.01,
     "phaseOffsetL": 0.01, "phaseOffsetR": -0.01, "sfxModRateL": 0.05, "sfxModRateR": 0.05, "sfxModDepthL": 0.1, "sfxModDepthR": 0.1, "sfxWetDryMix": 0.2, "sfxLfoPhaseOffset": 0.05, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.15, "haasDelayR": 0.05, "modulationShape": "Sine",
     "detuneAmount": 0.7, "lfoRate": 0.1, "lfoDepth": 0.0002, "delayCentre": 0.001, "stereoSeparation": 0.5, "mix": 0.2, "detuneFeedback": 0.0, "diffusion": 0.05,
-    "exciterDrive": 1.2, "exciterMix": 0.25, "exciterHighpass": 400.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Balanced", "exciterToneBrightness": 0.8, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 1.2, "exciterMix": 0.25, "exciterHighpass": 400.0, "exciterSaturationType": "Soft", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.8, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 10.0, "size": 0.4, "damping": 0.3, "wet": 0.3
   }
 })JSON",
@@ -405,7 +405,7 @@ R"JSON({
     "width": 1.2, "intensity": 0.65, "midSideBalance": -0.05, "mono": false, "tiltEQ": 0.02,
     "phaseOffsetL": 0.07, "phaseOffsetR": -0.04, "sfxModRateL": 0.28, "sfxModRateR": 0.28, "sfxModDepthL": 0.38, "sfxModDepthR": 0.38, "sfxWetDryMix": 0.55, "sfxLfoPhaseOffset": 0.05, "sfxAllpassFreq": 4200.0, "haasDelayL": 0.4, "haasDelayR": 0.05, "modulationShape": "Sine",
     "detuneAmount": -1.2, "lfoRate": 0.25, "lfoDepth": 0.0003, "delayCentre": 0.001, "stereoSeparation": 0.55, "mix": 0.29, "detuneFeedback": 0.15, "diffusion": 0.45,
-    "exciterDrive": 3.0, "exciterMix": 0.41, "exciterHighpass": 90.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Even Only", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
+    "exciterDrive": 3.0, "exciterMix": 0.41, "exciterHighpass": 90.0, "exciterSaturationType": "Tape", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.5, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 60.0, "size": 0.7, "damping": 0.3, "wet": 0.48
   }
 })JSON"
