@@ -42,7 +42,7 @@ R"JSON({
     "phaseOffsetL": 0.1, "phaseOffsetR": -0.1, "sfxModRateL": 1.2, "sfxModRateR": 0.8, "sfxModDepthL": 0.85, "sfxModDepthR": 1.1, "sfxWetDryMix": 0.9, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 3200.0, "haasDelayL": 0.1, "haasDelayR": 0.2, "modulationShape": "Triangle",
     "detuneAmount": -5.0, "lfoRate": 3.0, "lfoDepth": 0.0008, "delayCentre": 0.003, "stereoSeparation": 0.3, "mix": 0.7, "detuneFeedback": 0.15, "diffusion": 0.15,
     "exciterDrive": 7.5, "exciterMix": 0.65, "exciterHighpass": 200.0, "exciterSaturationType": "Hard", "exciterHarmonicMode": "Odd Only", "exciterToneBrightness": 0.75, "exciterHarmonicBalance": 0.6, "exciterAutoGain": false,
-    "predelayMs": 20.0, "size": 0.3, "damping": 0.85, "wet": 0.25
+    "predelayMs": 20.0, "size": 0.4, "damping": 0.4, "wet": 0.4
   }
 })JSON",
 
