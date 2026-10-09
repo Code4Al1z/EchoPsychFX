@@ -141,10 +141,10 @@ R"JSON({
   "name": "Quiet Confidence",
   "description": "Calm and grounded - a subtle, weighty confidence rather than showiness.",
   "params": {
-    "modulationType": "Triangle", "delayTime": 120.0, "feedbackL": 0.4, "feedbackR": 0.45, "modMix": 0.5, "modDepth": 1.2, "modRate": 0.12, "sync": false,
-    "width": 0.75, "intensity": 0.9, "midSideBalance": -0.02, "mono": false, "tiltEQ": 0.03,
-    "phaseOffsetL": 0.04, "phaseOffsetR": -0.03, "sfxModRateL": 0.2, "sfxModRateR": 0.2, "sfxModDepthL": 0.35, "sfxModDepthR": 0.35, "sfxWetDryMix": 0.45, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 2400.0, "haasDelayL": 0.15, "haasDelayR": 0.2, "modulationShape": "Sine",
-    "detuneAmount": 1.2, "lfoRate": 0.2, "lfoDepth": 0.0004, "delayCentre": 0.0012, "stereoSeparation": 0.45, "mix": 0.3, "detuneFeedback": 0.1, "diffusion": 0.25,
+    "modulationType": "Triangle", "delayTime": 120.0, "feedbackL": 0.4, "feedbackR": 0.45, "modMix": 0.2, "modDepth": 1.2, "modRate": 0.12, "sync": false,
+    "width": 0.5, "intensity": 0.9, "midSideBalance": -0.02, "mono": false, "tiltEQ": 0.03,
+    "phaseOffsetL": 0.04, "phaseOffsetR": -0.03, "sfxModRateL": 0.2, "sfxModRateR": 0.2, "sfxModDepthL": 0.35, "sfxModDepthR": 0.35, "sfxWetDryMix": 0.15, "sfxLfoPhaseOffset": 0.2, "sfxAllpassFreq": 2400.0, "haasDelayL": 0.15, "haasDelayR": 0.2, "modulationShape": "Sine",
+    "detuneAmount": 1.2, "lfoRate": 0.2, "lfoDepth": 0.0004, "delayCentre": 0.0012, "stereoSeparation": 0.45, "mix": 0.1, "detuneFeedback": 0.1, "diffusion": 0.25,
     "exciterDrive": 2.8, "exciterMix": 0.2, "exciterHighpass": 60.0, "exciterSaturationType": "Transformer", "exciterHarmonicMode": "Natural", "exciterToneBrightness": 0.45, "exciterHarmonicBalance": 0.5, "exciterAutoGain": true,
     "predelayMs": 20.0, "size": 0.45, "damping": 0.25, "wet": 0.3
   }
