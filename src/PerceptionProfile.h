@@ -54,12 +54,24 @@ struct SoundCharacter
     int   saturationType = 0;      // index into Soft, Hard, Tube, Tape, Transformer, Digital
     int   harmonicMode = 0;        // 0 Balanced, 1 Odd Only, 2 Even Only
     float addedHarmonicsDb = -100.0f; // level of the harmonics the exciter adds, in dB relative to the signal
+    float exciterHighpassHz = 1000.0f;
+    float exciterHarmonicBalance = 0.5f;
 
     // Reverb + Predelay
     float reverbWet = 0.0f;
     float reverbSize = 0.0f;
     float reverbDamping = 0.0f;
     float predelayMs = 0.0f;
+
+    // ---- What the settings add up to. These are predicted from measurements of the real plugin (a calibration
+    // run over hundreds of settings: see the notes in PerceptionProfile.cpp), so the chips and bars describe what
+    // is actually heard rather than just where the knobs are.
+    float decorrelation = 0.0f;       // 0..1: how much of the output is unrelated left/right ambience
+    float widthChangeDb = 0.0f;       // change in side-to-mid level against a typical stereo source (+ = wider)
+    float outputSideMidDb = -4.7f;    // the resulting side-to-mid level for that source (about -4.7 dB untouched)
+    float brightnessShiftDb = 0.0f;   // change in the highs relative to the lows (+ = brighter)
+    float reverbTailSeconds = 0.0f;   // time for the reverb to fall by 40 dB (0 when it is not audible)
+    float echoTailSeconds = 0.0f;     // the same for the echo repeats
 };
 
 /** Which harmonics the exciter really produces. This is not simply the Harmonics menu: the "Odd Only" setting

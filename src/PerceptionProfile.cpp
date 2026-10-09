@@ -15,6 +15,85 @@ namespace
             remaining *= 1.0f - clamp01(p);
         return 1.0f - remaining;
     }
+
+    // ---- Calibrated models -------------------------------------------------------------------------------------
+    // Everything below was fitted to audio measured from this plugin: noise (a stereo source with L/R correlation
+    // 0.5, and a mono one) played through 750 settings - random ones, variations of the factory presets and the
+    // presets themselves - while measuring the change in side/mid level, the high/low band balance and the decay
+    // of a noise burst. Each model was fitted on one part of the data and checked on a part it had never seen:
+    //   width change  : typical error 0.2 dB (99% within 3.1 dB), rank correlation 0.94 on unseen settings
+    //   tail lengths  : rank correlation 0.95 to 0.98, about 0.4 to 0.9 s
+    //   brightness    : about 2 dB on random settings, 1.4 dB on unseen presets
+    // They are predictions for a typical broadband source, not measurements of the user's own material.
+
+    constexpr float kReferenceSideMidDb = -4.73f;   // side/mid level of the stereo calibration source
+
+    float widthChangeFor(const SoundCharacter& c, float& decorrelationOut)
+    {
+        // 1) the Width Balancer reshapes the dry stereo image (side and mid energy, total normalised to 1)
+        float side = 0.0f, mid = 1.0f;
+        if (!c.mono)
+        {
+            const float ratioIn = std::pow(10.0f, kReferenceSideMidDb / 10.0f);
+            const float changeDb = 20.0f * std::log10(std::max(c.effectiveWidth, 1.0e-3f)) + c.sideVsMidDb;
+            const float ratio = ratioIn * std::pow(10.0f, changeDb / 10.0f);
+            side = ratio / (1.0f + ratio);
+            mid = 1.0f / (1.0f + ratio);
+        }
+
+        // 2) the reverb, echoes, Spatial FX and Micro-Pitch each add wet sound whose left and right are unrelated
+        const float reverb = 2.76f * std::pow(clamp01(c.reverbWet), 1.64f) * (0.5f + 0.5f * c.reverbSize);
+        const float echo = 1.13f * c.delayMix * (0.5f + 0.5f * clamp01(c.delayDepthMs / 5.0f));
+        const float spatial = 1.34f * c.spatialMix * (0.4f + 0.6f * c.spatialDepth);
+        const float micro = 0.69f * c.microMix * (0.3f + 0.7f * c.stereoSeparation);
+        const float d = 1.0f - (1.0f - clamp01(reverb)) * (1.0f - clamp01(echo)) * (1.0f - clamp01(spatial)) * (1.0f - clamp01(micro));
+        decorrelationOut = d;
+
+        // 3) unrelated left/right has equal side and mid energy
+        const float outSide = (1.0f - d) * side + 0.5f * d;
+        const float outMid = (1.0f - d) * mid + 0.5f * d;
+        return 10.0f * std::log10((outSide + 1.0e-9f) / (outMid + 1.0e-9f));
+    }
+
+    float brightnessShiftFor(const SoundCharacter& c)
+    {
+        const float added = c.exciterMix * clamp01((c.addedHarmonicsDb + 40.0f) / 25.0f);
+        // an exciter with a low highpass puts its harmonics into the low band as well
+        const float lowShare = clamp01(1.0f - std::log10(std::max(c.exciterHighpassHz, 20.0f) / 100.0f) / 2.0f);
+        const float busy = c.reverbWet + c.delayMix + c.microMix;
+
+        return 0.49f
+             + 7.08f * c.tilt
+             + 4.93f * c.reverbWet
+             - 7.19f * c.reverbWet * c.reverbDamping
+             - 10.14f * c.reverbWet * c.reverbSize
+             + 7.42f * added
+             - 6.32f * added * lowShare
+             - 1.23f * c.delayMix
+             - 3.92f * c.microMix
+             + 0.35f * c.delayMix * c.delayFeedback
+             + 2.97f * c.microMix * clamp01(std::abs(c.detuneCents) / 10.0f)
+             + 0.50f * busy * busy;
+    }
+
+    float reverbTailFor(const SoundCharacter& c)
+    {
+        if (c.reverbWet < 0.057f)
+            return 0.0f;
+        const float feedback = clamp01(0.7f + 0.28f * c.reverbSize);
+        return 0.929f * (c.predelayMs * 0.001f + 0.0312f * 40.0f / (-20.0f * std::log10(feedback)));
+    }
+
+    float echoTailFor(const SoundCharacter& c)
+    {
+        if (c.delayMix < 0.03f)
+            return 0.0f;
+        const float time = c.delayTimeMs * 0.001f;
+        const float feedback = std::min(c.delayFeedback, 0.95f);
+        if (feedback <= 0.001f)
+            return 1.193f * time;
+        return 1.193f * time * (1.0f + 40.0f / (-20.0f * std::log10(feedback)));
+    }
 }
 
 float estimateAddedHarmonicsDb(float drive, float mix, int saturationType, int harmonicMode) noexcept
@@ -125,6 +204,8 @@ SoundCharacter computeSoundCharacter(const ParameterGetter& p)
     c.exciterMix = p("exciterMix");
     c.exciterDrive = p("exciterDrive");
     c.exciterBrightness = p("exciterToneBrightness");
+    c.exciterHighpassHz = p("exciterHighpass");
+    c.exciterHarmonicBalance = p("exciterHarmonicBalance");
     c.saturationType = std::min(5, std::max(0, static_cast<int>(std::lround(p("exciterSaturationType")))));
     c.harmonicMode = std::min(2, std::max(0, static_cast<int>(std::lround(p("exciterHarmonicMode")))));
     c.addedHarmonicsDb = estimateAddedHarmonicsDb(c.exciterDrive, c.exciterMix, c.saturationType, c.harmonicMode);
@@ -134,6 +215,13 @@ SoundCharacter computeSoundCharacter(const ParameterGetter& p)
     c.reverbSize = p("size");
     c.reverbDamping = p("damping");
     c.predelayMs = p("predelayMs");
+
+    // --- What it all adds up to
+    c.outputSideMidDb = widthChangeFor(c, c.decorrelation);
+    c.widthChangeDb = c.outputSideMidDb - kReferenceSideMidDb;
+    c.brightnessShiftDb = brightnessShiftFor(c);
+    c.reverbTailSeconds = reverbTailFor(c);
+    c.echoTailSeconds = echoTailFor(c);
 
     return c;
 }
@@ -151,28 +239,17 @@ PerceptionProfile computePerceptionProfile(const SoundCharacter& c)
     const float effectiveWidth = c.effectiveWidth;   // 0..2, 1 = untouched
     const float exciterDrive = clamp01(c.exciterDrive / 10.0f);
 
-    // --- Brightness: tonal balance. 0.5 = untouched; Tilt EQ, added harmonics and a damped reverb move it
-    {
-        const float excitement = c.exciterMix * (0.3f + 0.7f * c.exciterBrightness) * (0.5f + 0.5f * exciterDrive);
-        profile.score[0] = clamp01(0.5f + 0.50f * c.tilt + 0.40f * excitement - 0.30f * c.reverbWet * c.reverbDamping);
-    }
+    // --- Brightness: the predicted change in the highs against the lows; 0.5 = untouched, +/-10 dB = the ends
+    profile.score[0] = clamp01(0.5f + c.brightnessShiftDb / 20.0f);
 
-    // --- Width: stereo extent. 0.5 = untouched; the width control, plus things that spread a sound sideways
-    {
-        const float haasDifference = clamp01(std::abs(c.haasLeadMs) / 10.0f);
-        const float spread = combine({ c.spatialMix * (0.5f * c.spatialDepth + 0.5f * haasDifference),
-                                       c.microMix * c.stereoSeparation * (0.4f + 0.6f * clamp01(std::abs(c.detuneCents) / 10.0f)),
-                                       c.delayMix * clamp01(c.delayDepthMs / 5.0f) * 0.5f });
-        profile.score[1] = clamp01(0.5f * effectiveWidth + 0.4f * spread);
-    }
+    // --- Width: the predicted change in stereo width against a typical stereo source; 0.5 = untouched, +/-6 dB = the ends
+    profile.score[1] = clamp01(0.5f + c.widthChangeDb / 12.0f);
 
-    // --- Space: how roomy and distant it sounds - reverb, long echoes and diffusion (low = close and dry)
+    // --- Space: how much room the sound has - how loud and how long the reverb and echo tails are
     {
-        const float audibleWet = std::pow(c.reverbWet, 0.7f);   // a quiet reverb is still clearly heard
-        const float reverb = audibleWet * (0.3f + 0.7f * c.reverbSize * c.reverbSize) + 0.15f * audibleWet * clamp01(c.predelayMs / 100.0f);
-        const float echoes = c.delayMix * (0.3f + 0.7f * c.delayFeedback) * clamp01(c.delayTimeMs / 400.0f);
-        const float diffuse = c.microMix * c.diffusion * 0.3f;
-        profile.score[2] = clamp01(1.25f * combine({ reverb, 0.7f * echoes, diffuse }));
+        const float reverb = std::pow(clamp01(c.reverbWet), 0.7f) * clamp01(c.reverbTailSeconds / 6.0f);
+        const float echoes = 0.8f * std::pow(clamp01(c.delayMix), 0.7f) * clamp01(c.echoTailSeconds / 6.0f);
+        profile.score[2] = clamp01(1.0f - (1.0f - reverb) * (1.0f - echoes));
     }
 
     // --- Motion: how much it sways, shifts and drifts over time

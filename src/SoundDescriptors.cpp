@@ -6,20 +6,28 @@ std::vector<SoundDescriptor> describeSound(const SoundCharacter& c, const Percep
     std::vector<SoundDescriptor> out;
     auto add = [&](const char* tag, const char* clause, Section section) { out.push_back({ tag, clause, section }); };
 
-    // ---- Stereo image (one of: mono, very wide, wide, narrow, slightly narrow, or nothing) ----------------
-    if (c.mono)
+    // ---- Stereo image: judged by the width the whole chain really produces (see SoundCharacter::widthChangeDb) ----
+    // One of: collapsed to mono, very wide, wide, narrow, slightly narrow, or nothing. The "Mono" switch itself is
+    // mentioned too, because the effects after it work on the mono sum even when they put the width back.
+    if (c.outputSideMidDb <= -20.0f)
         add("Mono", "collapsed to mono", Section::Input);
-    else if (c.effectiveWidth > 1.3f)
-        add("Very Wide", "very wide, reaching well beyond the speakers", Section::Input);
-    else if (c.effectiveWidth > 1.05f)
-        add("Wide", "wider than natural", Section::Input);
-    else if (c.effectiveWidth < 0.7f)
-        add("Narrow", "narrow, pulled toward the centre", Section::Input);
-    else if (c.effectiveWidth < 0.95f)
-        add("Slightly Narrow", "slightly narrowed, a touch more centred", Section::Input);
+    else
+    {
+        if (c.mono)
+            add("Mono Input", "summed to mono before the effects", Section::Input);
 
-    // ---- Centre / side weighting (after Intensity, as a level difference in dB) --------------------------
-    if (!c.mono)
+        if (c.widthChangeDb >= 4.0f)
+            add("Very Wide", "very wide, the left and right sides almost unrelated", Section::Input);
+        else if (c.widthChangeDb >= 1.5f)
+            add("Wide", "wider than the source", Section::Input);
+        else if (c.widthChangeDb <= -4.0f)
+            add("Narrow", "much narrower than the source", Section::Input);
+        else if (c.widthChangeDb <= -1.5f)
+            add("Slightly Narrow", "narrower than the source", Section::Input);
+    }
+
+    // ---- Centre / side weighting: only when the dry image is still prominent (not buried in wide ambience) -----
+    if (!c.mono && c.decorrelation < 0.7f)
     {
         constexpr float kMinWeightDb = 4.0f;
         if (c.sideVsMidDb <= -kMinWeightDb)
@@ -28,9 +36,11 @@ std::vector<SoundDescriptor> describeSound(const SoundCharacter& c, const Percep
             add("Diffuse Sides", "weighted toward the sides", Section::Input);
     }
 
-    // ---- Left / right pull: the image moves toward the channel that arrives FIRST (precedence effect) ----
-    // Even a fraction of a millisecond is a clear inter-ear time difference (the head's own maximum is about
-    // 0.7 ms), and the factory presets use delays in exactly that range.
+    // ---- Left / right pull: the image moves toward the channel that arrives FIRST (precedence effect) ----------
+    // The Haas delays act on Spatial FX's wet sound only, so the pull is only worth mentioning when enough of it is
+    // mixed in. Even a fraction of a millisecond is a clear inter-ear time difference (the head's own maximum is
+    // about 0.7 ms), and the factory presets use delays in exactly that range.
+    if (c.spatialMix >= 0.3f)
     {
         constexpr float kMinLeadMs = 0.15f;
         if (c.haasLeadMs >= kMinLeadMs)
@@ -41,11 +51,11 @@ std::vector<SoundDescriptor> describeSound(const SoundCharacter& c, const Percep
             add("Haas Spread", "spread by a Haas-style delay between the channels", Section::Spatial);
     }
 
-    // ---- Brightness (Tilt EQ) -------------------------------------------------------------------------------
-    if (c.tilt > 0.15f)
-        add("Bright", "brighter and more open, with the top end lifted", Section::Input);
-    else if (c.tilt < -0.15f)
-        add("Warm & Dark", "warmer and darker, with the top end eased back", Section::Input);
+    // ---- Brightness: the predicted change in the highs against the lows over the whole chain --------------------
+    if (c.brightnessShiftDb >= 3.0f)
+        add("Bright", "brighter overall, with the top end lifted", Section::Input);
+    else if (c.brightnessShiftDb <= -3.0f)
+        add("Warm & Dark", "warmer and darker overall, with the top end eased back", Section::Input);
 
     // ---- Delay (Motion Shifter): only spoken about when its mix lets it clearly be heard ---------------------
     if (c.delayMix >= 0.15f)
@@ -61,7 +71,7 @@ std::vector<SoundDescriptor> describeSound(const SoundCharacter& c, const Percep
                 add("Slow Drift", "a slow, deep modulation drifting underneath", Section::Motion);
         }
 
-        if (c.delayFeedback > 0.7f)
+        if (c.echoTailSeconds >= 3.0f)
             add("Cascading Echoes", "long, cascading echo trails", Section::Motion);
     }
 
@@ -120,9 +130,9 @@ std::vector<SoundDescriptor> describeSound(const SoundCharacter& c, const Percep
     // ---- Reverb: judged together with everything else that adds room (echoes, diffusion) via the Space score ----
     {
         const float space = profile.get(PerceptionAxis::Space);
-        if (c.reverbSize > 0.65f && c.reverbWet > 0.35f && space >= 0.55f)
+        if (c.reverbTailSeconds >= 2.0f && c.reverbWet >= 0.25f && space >= 0.45f)
             add("Spacious", "a long, spacious reverb tail", Section::Reverb);
-        else if (space < 0.25f && c.reverbWet < 0.25f)
+        else if (space < 0.15f && c.reverbWet < 0.25f && c.echoTailSeconds < 1.0f)
             add("Close & Dry", "close and dry", Section::Reverb);
     }
 
@@ -152,7 +162,7 @@ std::string describeOverallFeel(const SoundCharacter& c, const PerceptionProfile
         return "dense and driven";
     if (motion >= 0.6f)
         return "restless and constantly shifting";
-    const bool notNarrow = !c.mono && c.effectiveWidth >= 1.0f;
+    const bool notNarrow = c.widthChangeDb >= 1.5f;
 
     if (space >= 0.75f && width >= 0.65f && notNarrow)
         return "vast, immersive and dreamlike";
@@ -162,7 +172,7 @@ std::string describeOverallFeel(const SoundCharacter& c, const PerceptionProfile
         return "open and airy";
     if (space < 0.35f && width < 0.5f && motion < 0.3f)
         return "close, intimate and focused";
-    if (brightness < 0.45f && c.tilt <= 0.15f)
+    if (brightness < 0.45f)
         return "warm and mellow";
     return {};
 }
