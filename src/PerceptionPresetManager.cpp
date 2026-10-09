@@ -1,4 +1,5 @@
 #include "PerceptionPresetManager.h"
+#include "SoundDescriptors.h"
 #include <algorithm>
 
 PerceptionPresetManager::PerceptionPresetManager(juce::AudioProcessorValueTreeState& apvts)
@@ -144,126 +145,19 @@ bool PerceptionPresetManager::matchesLastAppliedPreset() const
 
 void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const
 {
-    auto raw = [this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); };
-    auto add = [&](const juce::String& tag, const juce::String& clause) { tags.add(tag); clauses.add(clause); };
+    const auto character = computeSoundCharacter([this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); });
 
-    // Stereo image
-    const bool isMono = raw("mono") >= 0.5f;
-    const float width = raw("width");
-    const float midSide = raw("midSideBalance");
-
-    if (isMono)
-        add("Mono", "collapsed to mono, feeling boxed-in and claustrophobic");
-    else if (width > 1.3f)
-        add("Very Wide", "very wide, pushed well beyond the speakers - feels expansive and larger-than-life");
-    else if (width > 1.05f)
-        add("Wide", "wider than natural, feeling open and airy");
-    else if (width < 0.7f)
-        add("Narrow", "narrow and pulled toward the centre, feeling close and focused");
-    else if (width < 0.95f)
-        add("Slightly Narrow", "slightly narrowed, a touch more centred");
-
-    if (!isMono)
+    for (const auto& descriptor : describeSound(character))
     {
-        // Mid/Side Balance: -1 = all mid (centre), +1 = all side. Matches the slider's left/right ends.
-        if (midSide < -0.3f)
-            add("Centre-Weighted", "weighted toward the centre image, feeling solid and grounded");
-        else if (midSide > 0.3f)
-            add("Diffuse Sides", "weighted toward the sides, feeling hazy and enveloping");
+        tags.add(descriptor.tag);
+        clauses.add(descriptor.clause);
     }
+}
 
-    // Left/right pull comes from the Haas delays alone. By the precedence effect the image moves
-    // toward the channel that arrives FIRST, so a delayed right channel pulls the image left.
-    // (A few degrees of phase offset do not move the image noticeably, so phase is ignored here.)
-    const float haasL = raw("haasDelayL");
-    const float haasR = raw("haasDelayR");
-    const float lead = haasR - haasL;   // positive: right is later, so the left leads
-    // Even a fraction of a millisecond is a clear inter-ear time difference (the head's own maximum is
-    // about 0.7 ms), and the factory presets use delays in exactly that range.
-    constexpr float kMinLeadMs = 0.15f;
-
-    if (lead >= kMinLeadMs)
-        add("Pulled Left", "pulled toward the left, the right side arriving a touch later");
-    else if (lead <= -kMinLeadMs)
-        add("Pulled Right", "pulled toward the right, the left side arriving a touch later");
-    else if (haasL > 5.0f || haasR > 5.0f)
-        add("Haas Spread", "spread wide with a Haas-style stereo trick, feeling big without losing focus");
-
-    // Brightness / tilt
-    const float tilt = raw("tiltEQ");
-    if (tilt > 0.15f)
-        add("Bright", "brighter and more forward, feeling alert and present");
-    else if (tilt < -0.15f)
-        add("Warm & Dark", "warmer and darker, feeling cosy and enclosed");
-
-    // Delay movement
-    const float modDepth = raw("modDepth");
-    const float modRate = raw("modRate");
-    const float feedbackAvg = (raw("feedbackL") + raw("feedbackR")) * 0.5f;
-
-    if (modDepth > 4.0f && modRate > 0.5f)
-        add("Swirling", "actively swirling with fast modulated echoes, feeling disorienting and dreamlike");
-    else if (modDepth > 4.0f)
-        add("Slow Drift", "a slow, deep modulation drifting underneath, feeling hypnotic");
-    else if (modDepth < 0.3f && feedbackAvg < 0.05f)
-        add("Inert", "the delay is essentially inaudible, feeling static and untouched");
-
-    if (feedbackAvg > 0.7f)
-        add("Cascading Echoes", "long, cascading echo trails, feeling vast and otherworldly");
-
-    // Micro-pitch detune
-    const float detune = raw("detuneAmount");
-    const float detuneAbs = detune < 0.0f ? -detune : detune;
-    const float diffusion = raw("diffusion");
-
-    if (detuneAbs > 15.0f)
-        add("Unstable Shimmer", "pitch visibly drifting, feeling uncanny and unsettling");
-    else if (detuneAbs > 3.0f)
-        add("Shimmering", "a subtle pitch shimmer, feeling alive and slightly magical");
-
-    if (diffusion > 0.5f)
-        add("Blurred Pitch", "blurred and diffuse in pitch, feeling hazy and dreamlike");
-
-    // Exciter / saturation character
-    const float exciterMix = raw("exciterMix");
-    const float exciterDrive = raw("exciterDrive");
-
-    if (exciterMix > 0.15f && exciterDrive > 1.0f)
-    {
-        static const char* satTags[] = {
-            "Soft Warmth", "Aggressive Edge", "Tube Warmth",
-            "Lo-Fi Character", "Analog Heft", "Cold & Digital"
-        };
-        static const char* satWords[] = {
-            "a gentle, soft-clipped warmth that feels comforting",
-            "an aggressive, hard-clipped edge that feels tense and confrontational",
-            "a vintage tube warmth that feels nostalgic and cosy",
-            "a lo-fi, tape-worn character that feels nostalgic and familiar",
-            "a weighty, analog-console heft that feels grounded",
-            "a cold, synthetic bite that feels clinical and futuristic"
-        };
-        const int satType = juce::jlimit(0, 5, juce::roundToInt(raw("exciterSaturationType")));
-        add(satTags[satType], juce::String("harmonically excited with ") + satWords[satType]);
-
-        const int harmMode = juce::roundToInt(raw("exciterHarmonicMode"));
-        if (harmMode == 1)
-            add("Hollow", "a hollow, reedy harmonic tilt, feeling thin and eerie");
-        else if (harmMode == 2)
-            add("Rounded", "a warm, rounded harmonic tilt, feeling full and inviting");
-    }
-
-    // Reverb space
-    const float size = raw("size");
-    const float wet = raw("wet");
-    const float predelay = raw("predelayMs");
-
-    if (size > 0.65f && wet > 0.45f)
-        add("Spacious", "a spacious, distant reverb tail, feeling immersive and awe-inducing");
-    else if (size < 0.25f && wet < 0.25f)
-        add("Close & Dry", "close and dry, feeling intimate and immediate");
-
-    if (predelay > 40.0f)
-        add("Detached Echo", "a distinct gap before the reverb blooms, like a held breath before it lands");
+namespace
+{
+    // Below this overall Intensity the sound really is close to untouched; above it, "neutral" would be untrue
+    constexpr float kUntouchedIntensity = 0.12f;
 }
 
 juce::StringArray PerceptionPresetManager::generateFeelingTags() const
@@ -272,7 +166,7 @@ juce::StringArray PerceptionPresetManager::generateFeelingTags() const
     computeDescriptors(tags, clauses);
 
     if (tags.isEmpty())
-        tags.add("Neutral");
+        tags.add(getLiveProfile().get(PerceptionAxis::Intensity) < kUntouchedIntensity ? "Neutral" : "Subtle");
 
     return tags;
 }
@@ -283,7 +177,11 @@ juce::String PerceptionPresetManager::generateBreakdown() const
     computeDescriptors(tags, clauses);
 
     if (clauses.isEmpty())
-        return "Nothing strongly colored yet - close to a neutral, untouched signal.";
+    {
+        return getLiveProfile().get(PerceptionAxis::Intensity) < kUntouchedIntensity
+            ? "Nothing strongly colored yet - close to a neutral, untouched signal."
+            : "A subtle, understated treatment - nothing pushed far in any one direction.";
+    }
 
     juce::String result = clauses[0].substring(0, 1).toUpperCase() + clauses[0].substring(1);
     for (int i = 1; i < clauses.size(); ++i)

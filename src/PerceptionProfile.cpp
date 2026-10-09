@@ -17,74 +17,125 @@ namespace
     }
 }
 
-PerceptionProfile computePerceptionProfile(const ParameterGetter& p)
+SoundCharacter computeSoundCharacter(const ParameterGetter& p)
+{
+    SoundCharacter c;
+
+    // --- Stereo image. The width and balance controls are scaled by Intensity (that is how the DSP applies them)
+    const float intensity = p("intensity");
+    c.mono = p("mono") >= 0.5f;
+    c.effectiveWidth = c.mono ? 0.0f : 1.0f + (p("width") - 1.0f) * intensity;
+
+    {
+        // Same maths as WidthBalancer: balance picks an angle between "all centre" and "all side"
+        const float angle = (p("midSideBalance") * 0.5f + 0.5f) * 1.57079633f;
+        const float midGain = 1.0f + (1.41421356f * std::cos(angle) - 1.0f) * intensity;
+        const float sideGain = 1.0f + (1.41421356f * std::sin(angle) - 1.0f) * intensity;
+        c.sideVsMidDb = 20.0f * std::log10(std::max(sideGain, 1.0e-3f) / std::max(midGain, 1.0e-3f));
+    }
+
+    c.tilt = p("tiltEQ");
+
+    // --- Spatial FX
+    c.spatialMix = p("sfxWetDryMix");
+    c.spatialDepth = 0.5f * (p("sfxModDepthL") + p("sfxModDepthR"));
+    c.spatialRate = 0.5f * (p("sfxModRateL") + p("sfxModRateR"));
+    c.haasLeadMs = p("haasDelayR") - p("haasDelayL");
+    c.haasMaxMs = std::max(p("haasDelayL"), p("haasDelayR"));
+    c.phaseSpread = std::abs(p("phaseOffsetL") - p("phaseOffsetR"));
+
+    // --- Motion Shifter
+    c.delayMix = p("modMix");
+    c.delayFeedback = 0.5f * (p("feedbackL") + p("feedbackR"));
+    c.delayDepthMs = p("modDepth");
+    c.delayTimeMs = p("delayTime");
+    // With Sync on, the Rate knob picks a tempo division instead of a speed; judge it at 120 BPM
+    c.delayRateHz = p("sync") >= 0.5f
+        ? 2.0f * ModDelay::getSyncCyclesPerBeat(ModDelay::getSyncDivisionIndex(p("modRate")))
+        : p("modRate");
+
+    // --- Micro-Pitch Detune
+    c.microMix = p("mix");
+    c.detuneCents = p("detuneAmount");
+    c.diffusion = p("diffusion");
+    c.stereoSeparation = p("stereoSeparation");
+    c.lfoDepth = p("lfoDepth");
+    c.lfoRate = p("lfoRate");
+
+    // --- Exciter Saturation
+    c.exciterMix = p("exciterMix");
+    c.exciterDrive = p("exciterDrive");
+    c.exciterBrightness = p("exciterToneBrightness");
+    c.saturationType = std::min(5, std::max(0, static_cast<int>(std::lround(p("exciterSaturationType")))));
+    c.harmonicMode = std::min(2, std::max(0, static_cast<int>(std::lround(p("exciterHarmonicMode")))));
+
+    // --- Reverb
+    c.reverbWet = p("wet");
+    c.reverbSize = p("size");
+    c.reverbDamping = p("damping");
+    c.predelayMs = p("predelayMs");
+
+    return c;
+}
+
+PerceptionProfile computePerceptionProfile(const ParameterGetter& parameter)
+{
+    return computePerceptionProfile(computeSoundCharacter(parameter));
+}
+
+PerceptionProfile computePerceptionProfile(const SoundCharacter& c)
 {
     PerceptionProfile profile;
 
     // --- Shared building blocks -------------------------------------------------------------------
-    const bool mono = p("mono") >= 0.5f;
-    const float effectiveWidth = mono ? 0.0f : 1.0f + (p("width") - 1.0f) * p("intensity");   // 0..2, 1 = untouched
-
-    const float delayMix = p("modMix");
-    const float feedbackAverage = 0.5f * (p("feedbackL") + p("feedbackR"));
-    const float spatialMix = p("sfxWetDryMix");
-    const float spatialDepth = 0.5f * (p("sfxModDepthL") + p("sfxModDepthR"));
-    const float spatialRate = 0.5f * (p("sfxModRateL") + p("sfxModRateR"));
-    const float microMix = p("mix");
-    const float exciterMix = p("exciterMix");
-    const float exciterDrive = clamp01(p("exciterDrive") / 10.0f);
-    const float reverbWet = p("wet");
-    const float reverbSize = p("size");
+    const float effectiveWidth = c.effectiveWidth;   // 0..2, 1 = untouched
+    const float exciterDrive = clamp01(c.exciterDrive / 10.0f);
 
     // --- Brightness: tonal balance. 0.5 = untouched; Tilt EQ, added harmonics and a damped reverb move it
     {
-        const float excitement = exciterMix * (0.3f + 0.7f * p("exciterToneBrightness")) * (0.5f + 0.5f * exciterDrive);
-        profile.score[0] = clamp01(0.5f + 0.50f * p("tiltEQ") + 0.40f * excitement - 0.30f * reverbWet * p("damping"));
+        const float excitement = c.exciterMix * (0.3f + 0.7f * c.exciterBrightness) * (0.5f + 0.5f * exciterDrive);
+        profile.score[0] = clamp01(0.5f + 0.50f * c.tilt + 0.40f * excitement - 0.30f * c.reverbWet * c.reverbDamping);
     }
 
     // --- Width: stereo extent. 0.5 = untouched; the width control, plus things that spread a sound sideways
     {
-        const float haasDifference = clamp01(std::abs(p("haasDelayL") - p("haasDelayR")) / 10.0f);
-        const float spread = combine({ spatialMix * (0.5f * spatialDepth + 0.5f * haasDifference),
-                                       microMix * p("stereoSeparation") * (0.4f + 0.6f * clamp01(std::abs(p("detuneAmount")) / 10.0f)),
-                                       delayMix * clamp01(p("modDepth") / 5.0f) * 0.5f });
+        const float haasDifference = clamp01(std::abs(c.haasLeadMs) / 10.0f);
+        const float spread = combine({ c.spatialMix * (0.5f * c.spatialDepth + 0.5f * haasDifference),
+                                       c.microMix * c.stereoSeparation * (0.4f + 0.6f * clamp01(std::abs(c.detuneCents) / 10.0f)),
+                                       c.delayMix * clamp01(c.delayDepthMs / 5.0f) * 0.5f });
         profile.score[1] = clamp01(0.5f * effectiveWidth + 0.4f * spread);
     }
 
     // --- Space: how roomy and distant it sounds - reverb, long echoes and diffusion (low = close and dry)
     {
-        const float audibleWet = std::pow(reverbWet, 0.7f);   // a quiet reverb is still clearly heard
-        const float reverb = audibleWet * (0.3f + 0.7f * reverbSize * reverbSize) + 0.15f * audibleWet * clamp01(p("predelayMs") / 100.0f);
-        const float echoes = delayMix * (0.3f + 0.7f * feedbackAverage) * clamp01(p("delayTime") / 400.0f);
-        const float diffuse = microMix * p("diffusion") * 0.3f;
+        const float audibleWet = std::pow(c.reverbWet, 0.7f);   // a quiet reverb is still clearly heard
+        const float reverb = audibleWet * (0.3f + 0.7f * c.reverbSize * c.reverbSize) + 0.15f * audibleWet * clamp01(c.predelayMs / 100.0f);
+        const float echoes = c.delayMix * (0.3f + 0.7f * c.delayFeedback) * clamp01(c.delayTimeMs / 400.0f);
+        const float diffuse = c.microMix * c.diffusion * 0.3f;
         profile.score[2] = clamp01(1.25f * combine({ reverb, 0.7f * echoes, diffuse }));
     }
 
     // --- Motion: how much it sways, shifts and drifts over time
     {
-        // With Sync on, the Rate knob picks a tempo division instead of a speed; judge it at 120 BPM
-        const float delayRateHz = p("sync") >= 0.5f
-            ? 2.0f * ModDelay::getSyncCyclesPerBeat(ModDelay::getSyncDivisionIndex(p("modRate")))
-            : p("modRate");
-        const float delayMotion = delayMix * clamp01(p("modDepth") / 6.0f) * clamp01(delayRateHz / 2.0f);
-        const float spatialMotion = spatialMix * clamp01(spatialDepth) * clamp01(spatialRate / 2.0f);
-        const float microMotion = microMix * (0.6f * clamp01(p("lfoDepth") / 0.004f) * clamp01(p("lfoRate") / 3.0f)
-                                              + 0.4f * clamp01(std::abs(p("detuneAmount")) / 20.0f));
+        const float delayMotion = c.delayMix * clamp01(c.delayDepthMs / 6.0f) * clamp01(c.delayRateHz / 2.0f);
+        const float spatialMotion = c.spatialMix * clamp01(c.spatialDepth) * clamp01(c.spatialRate / 2.0f);
+        const float microMotion = c.microMix * (0.6f * clamp01(c.lfoDepth / 0.004f) * clamp01(c.lfoRate / 3.0f)
+                                                + 0.4f * clamp01(std::abs(c.detuneCents) / 20.0f));
         profile.score[3] = clamp01(1.5f * combine({ delayMotion, spatialMotion, microMotion }));
     }
 
     // --- Saturation: how much harmonic colouring is added
-    profile.score[4] = clamp01(exciterMix * (0.15f + 0.85f * exciterDrive));
+    profile.score[4] = clamp01(c.exciterMix * (0.15f + 0.85f * exciterDrive));
 
     // --- Intensity: how heavily processed the sound is overall (0 = untouched)
     {
-        const float parts[] = { delayMix * (0.4f + 0.6f * feedbackAverage),
-                                spatialMix,
-                                microMix,
-                                exciterMix * (0.3f + 0.7f * exciterDrive),
-                                reverbWet,
+        const float parts[] = { c.delayMix * (0.4f + 0.6f * c.delayFeedback),
+                                c.spatialMix,
+                                c.microMix,
+                                c.exciterMix * (0.3f + 0.7f * exciterDrive),
+                                c.reverbWet,
                                 clamp01(std::abs(effectiveWidth - 1.0f)),
-                                std::abs(p("tiltEQ")) };
+                                std::abs(c.tilt) };
         float remaining = 1.0f;
         for (float part : parts)
             remaining *= 1.0f - 0.45f * clamp01(part);
