@@ -72,10 +72,12 @@ void TiltEQ::updateFilters(int numSamples) {
     const float currentTilt = tiltParam.skip(numSamples);
     const float gain = currentTilt * gainRange;
 
-    // Compute the coefficients straight into the filters' existing state (no allocation)
+    // Positive tilt is BRIGHT (as the slider says): the lows come down and the highs come up. (It used to be the
+    // other way round, so the slider moved the sound the opposite way to its "Dark < Tilt > Bright" label.)
+    // The coefficients go straight into the filters' existing state (no allocation)
     using Array = juce::dsp::IIR::ArrayCoefficients<float>;
-    setCoefficientsInPlace(*lowShelf.state, Array::makeLowShelf(sampleRate, lowFreq, qFactor, juce::Decibels::decibelsToGain(gain)));
-    setCoefficientsInPlace(*highShelf.state, Array::makeHighShelf(sampleRate, highFreq, qFactor, juce::Decibels::decibelsToGain(-gain)));
+    setCoefficientsInPlace(*lowShelf.state, Array::makeLowShelf(sampleRate, lowFreq, qFactor, juce::Decibels::decibelsToGain(-gain)));
+    setCoefficientsInPlace(*highShelf.state, Array::makeHighShelf(sampleRate, highFreq, qFactor, juce::Decibels::decibelsToGain(gain)));
 }
 
 void TiltEQ::updateFiltersIfNeeded(int numSamples) {
