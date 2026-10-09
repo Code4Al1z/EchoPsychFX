@@ -192,10 +192,46 @@ juce::StringArray PerceptionPresetManager::generateFeelingTags() const
     return tags;
 }
 
+namespace
+{
+    // Which sentence a section's clauses belong to: stereo picture, space and time, texture
+    int sentenceOf(Section section)
+    {
+        switch (section)
+        {
+            case Section::Input:
+            case Section::Spatial:    return 0;
+            case Section::Motion:
+            case Section::Reverb:     return 1;
+            case Section::MicroPitch:
+            case Section::Exciter:    return 2;
+        }
+        return 0;
+    }
+
+    // "a, b and c" - or "a; b; c" when a clause already contains a comma, so the list never reads as a run-on
+    juce::String joinClauses(const juce::StringArray& parts)
+    {
+        bool hasComma = false;
+        for (const auto& part : parts)
+            hasComma = hasComma || part.contains(",");
+
+        juce::String joined;
+        for (int i = 0; i < parts.size(); ++i)
+        {
+            if (i > 0)
+                joined += hasComma ? "; " : (i == parts.size() - 1 ? " and " : ", ");
+            joined += parts[i];
+        }
+        return joined.substring(0, 1).toUpperCase() + joined.substring(1) + ".";
+    }
+}
+
 juce::String PerceptionPresetManager::generateBreakdown() const
 {
     juce::StringArray tags, clauses;
-    computeDescriptors(tags, clauses);
+    std::vector<Section> sections;
+    computeDescriptors(tags, clauses, &sections);
 
     const auto profile = getLiveProfile();
 
@@ -206,10 +242,15 @@ juce::String PerceptionPresetManager::generateBreakdown() const
             : "A subtle, understated treatment - nothing pushed far in any one direction.";
     }
 
-    juce::String result = clauses[0].substring(0, 1).toUpperCase() + clauses[0].substring(1);
-    for (int i = 1; i < clauses.size(); ++i)
-        result += (i == clauses.size() - 1 ? ", and " : ", ") + clauses[i];
-    result += ".";
+    // One short sentence per theme instead of one long comma chain
+    juce::StringArray groups[3];
+    for (int i = 0; i < clauses.size(); ++i)
+        groups[sentenceOf(sections[static_cast<size_t>(i)])].add(clauses[i]);
+
+    juce::String result;
+    for (const auto& group : groups)
+        if (!group.isEmpty())
+            result += (result.isEmpty() ? "" : " ") + joinClauses(group);
 
     const auto character = computeSoundCharacter([this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); });
     const auto feel = describeOverallFeel(character, profile);
