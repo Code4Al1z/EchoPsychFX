@@ -149,7 +149,8 @@ namespace
     constexpr float kUntouchedIntensity = 0.12f;
 }
 
-void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const
+void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses,
+                                                 std::vector<Section>* sections) const
 {
     const auto character = computeSoundCharacter([this](const char* id) { return apvtsRef.getRawParameterValue(id)->load(); });
 
@@ -162,17 +163,32 @@ void PerceptionPresetManager::computeDescriptors(juce::StringArray& tags, juce::
     {
         tags.add(descriptor.tag);
         clauses.add(descriptor.clause);
+        if (sections != nullptr)
+            sections->push_back(descriptor.section);
     }
+}
+
+std::vector<PerceptionPresetManager::FeelingChip> PerceptionPresetManager::generateFeelingChips() const
+{
+    juce::StringArray tags, clauses;
+    std::vector<Section> sections;
+    computeDescriptors(tags, clauses, &sections);
+
+    std::vector<FeelingChip> chips;
+    for (int i = 0; i < tags.size(); ++i)
+        chips.push_back({ tags[i], true, sections[static_cast<size_t>(i)] });
+
+    if (chips.empty())
+        chips.push_back({ getLiveProfile().get(PerceptionAxis::Intensity) < kUntouchedIntensity ? "Neutral" : "Subtle" });
+
+    return chips;
 }
 
 juce::StringArray PerceptionPresetManager::generateFeelingTags() const
 {
-    juce::StringArray tags, clauses;
-    computeDescriptors(tags, clauses);
-
-    if (tags.isEmpty())
-        tags.add(getLiveProfile().get(PerceptionAxis::Intensity) < kUntouchedIntensity ? "Neutral" : "Subtle");
-
+    juce::StringArray tags;
+    for (const auto& chip : generateFeelingChips())
+        tags.add(chip.tag);
     return tags;
 }
 

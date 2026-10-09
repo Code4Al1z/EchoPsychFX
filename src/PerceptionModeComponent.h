@@ -60,7 +60,7 @@ private:
     juce::Slider outputSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> outputAttachment;
 
-    juce::StringArray currentTags;
+    std::vector<PerceptionPresetManager::FeelingChip> currentChips;
     juce::Rectangle<int> chipsArea;
     juce::Rectangle<int> profileArea;      // the six perception bars, shown in the Insight drawer
     PerceptionProfile currentProfile;

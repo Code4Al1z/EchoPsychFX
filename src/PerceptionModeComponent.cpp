@@ -191,23 +191,35 @@ void PerceptionModeComponent::paint(juce::Graphics& g)
     }
 
     // Live "feeling" chips
-    static const juce::Colour palette[] = { L::accentInput, L::accentMotion, L::accentSpatial,
-                                            L::accentMicroPitch, L::accentExciter, L::accentReverb };
+    // Each chip takes the colour of the section it describes (same colours as that section's header)
+    const auto sectionColour = [](Section section)
+    {
+        switch (section)
+        {
+            case Section::Input:      return L::accentInput;
+            case Section::Motion:     return L::accentMotion;
+            case Section::Spatial:    return L::accentSpatial;
+            case Section::MicroPitch: return L::accentMicroPitch;
+            case Section::Exciter:    return L::accentExciter;
+            case Section::Reverb:     return L::accentReverb;
+        }
+        return L::mutedText;
+    };
     g.setFont(juce::Font(13.0f, juce::Font::bold));
     int cx = chipsArea.getX();
-    for (int i = 0; i < currentTags.size(); ++i)
+    for (size_t i = 0; i < currentChips.size(); ++i)
     {
-        const auto& tag = currentTags[i];
+        const auto& tag = currentChips[i].tag;
         const int w = juce::roundToInt(juce::GlyphArrangement::getStringWidthInt(g.getCurrentFont(), tag)) + 22;
         if (cx + w > chipsArea.getRight())
         {
             g.setColour(L::mutedText);
-            g.drawText("+" + juce::String(currentTags.size() - i), cx, chipsArea.getY(), 40, chipsArea.getHeight(),
+            g.drawText("+" + juce::String(currentChips.size() - i), cx, chipsArea.getY(), 40, chipsArea.getHeight(),
                 juce::Justification::centredLeft, false);
             break;
         }
 
-        const auto colour = palette[static_cast<size_t>(tag.hashCode() & 0x7fffffff) % 6];
+        const auto colour = currentChips[i].hasSection ? sectionColour(currentChips[i].section) : L::mutedText;
         const auto chip = juce::Rectangle<float>((float)cx, (float)chipsArea.getY(), (float)w, (float)chipsArea.getHeight());
         g.setColour(colour.withAlpha(0.16f));
         g.fillRoundedRectangle(chip, chip.getHeight() * 0.5f);
@@ -334,10 +346,10 @@ void PerceptionModeComponent::refreshBreakdown()
             repaint(profileArea);
     }
 
-    const auto newTags = presetManagerRef.generateFeelingTags();
-    if (newTags != currentTags)
+    const auto newChips = presetManagerRef.generateFeelingChips();
+    if (newChips != currentChips)
     {
-        currentTags = newTags;
+        currentChips = newChips;
         repaint();
     }
 

@@ -3,6 +3,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <map>
+#include <vector>
 #include <functional>
 #include "FactoryPresets.h"
 #include "PerceptionProfile.h"
@@ -79,6 +80,17 @@ public:
         presets, and "Custom" alike. Returns {"Neutral"} if nothing stands out. */
     juce::StringArray generateFeelingTags() const;
 
+    /** A chip plus the part of the plugin it describes, so the UI can colour it to match that section.
+        Neutral/Subtle fallback chips describe no single section (hasSection is false). */
+    struct FeelingChip
+    {
+        juce::String tag;
+        bool hasSection = false;
+        Section section = Section::Input;
+        bool operator==(const FeelingChip& o) const { return tag == o.tag && hasSection == o.hasSection && section == o.section; }
+    };
+    std::vector<FeelingChip> generateFeelingChips() const;
+
     /** Builds a fuller plain-language description of what the *current* live parameter
         values (not any named preset) would sound and feel like - width and pull,
         brightness, delay movement, pitch drift, exciter character, and reverb space -
@@ -131,7 +143,8 @@ private:
     /** Shared logic behind generateFeelingTags()/generateBreakdown(): walks the live APVTS
         values once and, for each trait that stands out, appends a matching (short tag,
         full sentence) pair at the same index in both arrays. */
-    void computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses) const;
+    void computeDescriptors(juce::StringArray& tags, juce::StringArray& clauses,
+                            std::vector<Section>* sections = nullptr) const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PerceptionPresetManager)
 };
