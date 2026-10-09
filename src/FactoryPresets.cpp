@@ -50,10 +50,10 @@ R"JSON({
   "name": "Intimacy",
   "description": "Close, warm, gentle - a soft tube glow instead of any harshness.",
   "params": {
-    "modulationType": "Sine", "delayTime": 80.0, "feedbackL": 0.3, "feedbackR": 0.35, "modMix": 0.4, "modDepth": 1.0, "modRate": 0.1, "sync": false,
-    "width": 0.8, "intensity": 0.9, "midSideBalance": -0.1, "mono": false, "tiltEQ": 0.05,
-    "phaseOffsetL": 0.03, "phaseOffsetR": -0.02, "sfxModRateL": 0.15, "sfxModRateR": 0.15, "sfxModDepthL": 0.25, "sfxModDepthR": 0.25, "sfxWetDryMix": 0.35, "sfxLfoPhaseOffset": 0.1, "sfxAllpassFreq": 1600.0, "haasDelayL": 0.2, "haasDelayR": 0.2, "modulationShape": "Sine",
-    "detuneAmount": 1.5, "lfoRate": 0.1, "lfoDepth": 0.0002, "delayCentre": 0.001, "stereoSeparation": 0.4, "mix": 0.3, "detuneFeedback": 0.05, "diffusion": 0.2,
+    "modulationType": "Sine", "delayTime": 80.0, "feedbackL": 0.3, "feedbackR": 0.35, "modMix": 0.2, "modDepth": 1.0, "modRate": 0.1, "sync": false,
+    "width": 0.6, "intensity": 0.9, "midSideBalance": -0.1, "mono": false, "tiltEQ": 0.05,
+    "phaseOffsetL": 0.03, "phaseOffsetR": -0.02, "sfxModRateL": 0.15, "sfxModRateR": 0.15, "sfxModDepthL": 0.25, "sfxModDepthR": 0.25, "sfxWetDryMix": 0.2, "sfxLfoPhaseOffset": 0.1, "sfxAllpassFreq": 1600.0, "haasDelayL": 0.2, "haasDelayR": 0.2, "modulationShape": "Sine",
+    "detuneAmount": 1.5, "lfoRate": 0.1, "lfoDepth": 0.0002, "delayCentre": 0.001, "stereoSeparation": 0.4, "mix": 0.15, "detuneFeedback": 0.05, "diffusion": 0.2,
     "exciterDrive": 2.0, "exciterMix": 0.2, "exciterHighpass": 50.0, "exciterSaturationType": "Tube", "exciterHarmonicMode": "Add Even", "exciterToneBrightness": 0.4, "exciterHarmonicBalance": 0.45, "exciterAutoGain": true,
     "predelayMs": 15.0, "size": 0.25, "damping": 0.3, "wet": 0.3
   }
