@@ -254,8 +254,8 @@ PerceptionProfile computePerceptionProfile(const SoundCharacter& c)
 
     // --- Motion: how much it sways, shifts and drifts over time
     {
-        const float delayMotion = c.delayMix * clamp01(c.delayDepthMs / 6.0f) * clamp01(c.delayRateHz / 2.0f);
-        const float spatialMotion = c.spatialMix * clamp01(c.spatialDepth) * clamp01(c.spatialRate / 2.0f);
+        const float delayMotion = delayMotionOf(c);
+        const float spatialMotion = spatialMotionOf(c);
         const float microMotion = c.microMix * (0.6f * clamp01(c.lfoDepth / 0.004f) * clamp01(c.lfoRate / 3.0f)
                                                 + 0.4f * clamp01(std::abs(c.detuneCents) / 20.0f));
         profile.score[3] = clamp01(1.5f * combine({ delayMotion, spatialMotion, microMotion }));

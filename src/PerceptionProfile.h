@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -79,6 +81,14 @@ struct SoundCharacter
     only makes odd harmonics, and "Add Even" adds even harmonics ON TOP of the odd ones rather than
     replacing them. */
 enum class HarmonicStructure { Odd, Mixed, EvenAdded };
+
+/** How much each part of the plugin moves the sound over time (0..1). The Motion bar and the motion chips both use
+    these, so they cannot disagree about whether something is moving. */
+inline float delayMotionOf(const SoundCharacter& c) noexcept
+{ return c.delayMix * std::min(1.0f, c.delayDepthMs / 6.0f) * std::min(1.0f, c.delayRateHz / 2.0f); }
+
+inline float spatialMotionOf(const SoundCharacter& c) noexcept
+{ return c.spatialMix * std::min(1.0f, c.spatialDepth) * std::min(1.0f, c.spatialRate / 2.0f); }
 
 inline HarmonicStructure harmonicStructureOf(int saturationType, int harmonicMode) noexcept
 {

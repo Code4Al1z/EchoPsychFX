@@ -41,12 +41,12 @@ int main(int argc, char** argv)
     const std::vector<std::pair<std::string, std::string>> clash={
         {"collapsed to mono","wider than"},{"collapsed to mono","very wide"},{"narrower than","wider than"},{"narrower than","very wide"},
         {"much narrower","wider than"},{"much narrower","very wide"},{"eased back","lifted"},{"darker overall","brighter overall"},
-        {"close and dry","spacious"},{"short reverb","spacious reverb"},{"short reverb","close and dry"},{"close and dry","long, cascading"},
+        {"close and dry","spacious"},{"short reverb","spacious reverb"},{"close and dry","clear echo"},{"close and dry","slapback"},{"close and dry","reverb tail of about"},{"short reverb","reverb tail of about"},{"short reverb","close and dry"},{"close and dry","long, cascading"},
         {"smooth","edgy"},{"smooth","buzzy"},{"smooth","gritty"},{"rounding","buzzy"},
         // overall feel against the facts
         {"close, intimate","wider than"},{"close, intimate","very wide"},{"close, intimate","spacious"},{"close, intimate","swirling"},
         {"vast, immersive","narrower than"},{"vast, immersive","collapsed to mono"},{"vast, immersive","close and dry"},
-        {"open and airy","narrower than"},{"open and airy","collapsed to mono"},{"open and airy","close and dry"},
+        {"open and airy","narrower than"},{"open and airy","darker overall"},{"warm and enveloping","brighter overall"},{"warm and enveloping","lifted"},{"dense and driven","spacious and atmospheric"},{"stereo image that keeps shifting","collapsed to mono"},{"open and airy","collapsed to mono"},{"open and airy","close and dry"},
         {"spacious and atmospheric","close and dry"},{"warm and mellow","brighter overall"},{"warm and mellow","lifted"},
         {"tense and aggressive","smooth"},{"tense and aggressive","rounding"},{"gritty and synthetic","smooth"},{"gritty and synthetic","tape"},
         {"restless","collapsed to mono"}};
