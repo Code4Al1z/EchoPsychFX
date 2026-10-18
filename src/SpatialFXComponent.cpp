@@ -14,6 +14,10 @@ SpatialFXComponent::SpatialFXComponent(juce::AudioProcessorValueTreeState& state
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxModDepthR", "Depth R", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayL", "Haas L", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "haasDelayR", "Haas R", *this));
+    knobs[knobs.size() - 2]->slider->setTooltip("Delays the LEFT channel of the Spatial FX sound. The right side then arrives first, "
+                                                "so the sound is pulled toward the RIGHT.");
+    knobs.back()->slider->setTooltip("Delays the RIGHT channel of the Spatial FX sound. The left side then arrives first, "
+                                     "so the sound is pulled toward the LEFT.");
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxWetDryMix", "Mix", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxLfoPhaseOffset", "LFO Phase", *this));
     knobs.emplace_back(std::make_unique<PluginLookAndFeel::KnobWithLabel>(state, "sfxAllpassFreq", "Allpass", *this));
